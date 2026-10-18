@@ -1,10 +1,10 @@
-import {backupView} from './backup.js?v=44';
-import {privateView} from './private-view.js?v=44';
-import {modelConnectionView} from './model-connection.js?v=44';
-import {treeView,treeDialog} from './tree.js?v=44';
-import {agentsPage,workflowsPage,runsPage,automationDialogs} from './automation-views.js?v=44';
-import {icon,art} from './icons.js?v=44';
-import {groups,modules,state,currentNote} from './data.js?v=44';
+import {backupView} from './backup.js?v=51';
+import {privateView} from './private-view.js?v=51';
+import {modelConnectionView} from './model-connection.js?v=51';
+import {treeView,treeDialog} from './tree.js?v=51';
+import {agentsPage,workflowsPage,runsPage,automationDialogs} from './automation-views.js?v=51';
+import {icon,art} from './icons.js?v=51';
+import {groups,modules,state,currentNote} from './data.js?v=51';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function highlight(value,query){const text=String(value??''),term=String(query||'').trim();if(!term)return esc(text);let from=0,html='',index;const lower=text.toLowerCase(),needle=term.toLowerCase();while((index=lower.indexOf(needle,from))!==-1){html+=esc(text.slice(from,index))+'<mark>'+esc(text.slice(index,index+term.length))+'</mark>';from=index+term.length;}return html+esc(text.slice(from));}
 const arrow = '<svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 6 6-6 6"/></svg>';

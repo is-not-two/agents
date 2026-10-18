@@ -1,7 +1,7 @@
 /* 私密管理：愿望清单与私密日记。
    口令不存浏览器——每次访问都由后端校验，明文只在当前页面内存中存在。
    因此本模块不做路由级缓存，刷新即重新要求口令。 */
-import {api,state} from './data.js?v=44';
+import {api,state} from './data.js?v=51';
 
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const CATS=['想拥有','想去做'];
@@ -36,6 +36,8 @@ async function setup(password){
   finally{v.busy='';}
 }
 async function load(){
+  // 未解锁时不发请求：否则会带空票据打后端，换来一条无意义的 401 报错
+  if(!v.unlocked||!v.ticket)return;
   v.busy='load';v.error='';
   try{
     const [w,d]=await Promise.all([
@@ -43,7 +45,10 @@ async function load(){
       api('private/diary?ticket='+encodeURIComponent(v.ticket)),
     ]);
     v.wishes=w;v.diaries=d;
-  }catch(e){v.error=e.message;if(/票据|口令/.test(String(e.message)))v.unlocked=false;}
+  }catch(e){
+    v.error=e.message;
+    if(/票据|口令/.test(String(e.message))){v.unlocked=false;v.ticket='';v.error='';}
+  }
   finally{v.busy='';refreshPrivate().then(bindSlide);}
 }
 async function saveWish(form){
@@ -120,8 +125,8 @@ function gateView(){
       <div class="slide-track"><div class="slide-fill" style="width:0%"></div></div>
       <button class="slide-thumb" type="button" aria-label="向右拖动解锁，按 End 键也可解锁"
         aria-valuenow="0" role="slider" aria-valuemin="0" aria-valuemax="100">›</button>
-      <p class="slide-hint">向右拖动</p>
     </div>
+    <p class="slide-hint" id="slide-hint">向右拖动</p>
   </div>`);
 }
 
@@ -240,9 +245,11 @@ function slideTo(pct,wrap){
   v.slide=Math.max(0,Math.min(100,pct));
   const fill=wrap.querySelector('.slide-fill');
   const thumb=wrap.querySelector('.slide-thumb');
-  const hint=wrap.querySelector('.slide-hint');
+  const hint=document.getElementById('slide-hint');
   const track=wrap.querySelector('.slide-track');
-  const travel=(track?track.clientWidth:wrap.clientWidth)-42;
+  // 与 onMove 的 travel 用同一公式，两者必须一致，否则 thumb 与填充会错位
+  const thumbW=thumb?thumb.getBoundingClientRect().width:42;
+  const travel=track?Math.max(1,track.getBoundingClientRect().width-thumbW):1;
   if(fill)fill.style.width=v.slide+'%';
   if(thumb&&v.slide<100){thumb.style.background='';thumb.style.borderColor='';thumb.style.color='';thumb.textContent='›';}
   if(thumb){thumb.style.left=(travel*v.slide/100)+'px';thumb.setAttribute('aria-valuenow',String(Math.round(v.slide)));}
@@ -263,9 +270,14 @@ function bindSlide(){
   const thumb=wrap.querySelector('.slide-thumb');
   const track=wrap.querySelector('.slide-track');
   if(!thumb||!track)return;
-  const pctAt=x=>{const r=track.getBoundingClientRect();return r.width?Math.min(100,Math.max(0,(x-r.left)/r.width*100)):0;};
   slideTo(0,wrap);
-  const onMove=e=>{if(dragging)slideTo(pctAt(e.clientX),wrap);};
+  // 只跟随水平位移：此前用绝对 clientX，垂直方向移动也会改位置，
+  // 导致滑块能上下乱跑。
+  // travel 用实测宽度减去滑块自身宽度，保证拖到最右正好是 100%
+  const thumbW=thumb?thumb.getBoundingClientRect().width:42;
+  const travel=Math.max(1,track.getBoundingClientRect().width-thumbW);
+  let startX=0,startPct=0;
+  const onMove=e=>{if(dragging)slideTo(startPct+(e.clientX-startX)/travel*100,wrap);};
   const onUp=()=>{
     if(!dragging)return;
     dragging=false;
@@ -275,8 +287,10 @@ function bindSlide(){
   };
   thumb.addEventListener('pointerdown',e=>{
     if(v.busy)return;
-    e.preventDefault();
     dragging=true;
+    startX=e.clientX;startPct=v.slide;
+    // 用指针捕获而非 preventDefault：后者会抑制 pointermove，拖不动
+    try{thumb.setPointerCapture(e.pointerId);}catch(_){}
     document.addEventListener('pointermove',onMove);
     document.addEventListener('pointerup',onUp);
   });

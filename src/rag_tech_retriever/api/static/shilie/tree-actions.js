@@ -1,9 +1,9 @@
-import {bindBranch} from './branch-actions.js?v=44';
+import {bindBranch} from './branch-actions.js?v=51';
 /* 人生规划操作：同页展开的纵向列表。
    展开状态存在浏览器本地（显示偏好），完成状态走服务端版本保护。
    画布时代的拖动与缩放已移除——列表视图下二者都没有意义。 */
-import {api,state,write} from './data.js?v=44';
-import {treeState as s,treePlan,treeNodes,rootId,esc,isFolded,setFolded} from './tree.js?v=44';
+import {api,state,write} from './data.js?v=51';
+import {treeState as s,treePlan,treeNodes,rootId,esc,isFolded,setFolded} from './tree.js?v=51';
 
 export function bindTree({renderPage,refresh,toast}){
  const $=q=>document.querySelector(q),dialog=$('#tree-editor'),form=$('#tree-edit-form');

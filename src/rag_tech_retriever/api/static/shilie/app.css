@@ -251,16 +251,22 @@ button,a,input,select,textarea{transition:background-color .18s,border-color .18
 /* ================= 解锁滑块 ================= */
 /* 滑块只防误触，不构成安全边界：能打开浏览器就能拖动。
    真正的保护是内容加密——拖到底后换取的票据仍需服务端持有的口令才能解密。 */
-.slide-unlock{position:relative;margin:22px 0 10px}
-.slide-track{position:relative;height:46px;border-radius:23px;background:#e7eef0;
+.slide-unlock{position:relative;margin:22px 0 0;height:46px}
+.slide-track{position:absolute;left:0;right:0;top:12px;height:46px;border-radius:23px;background:#e7eef0;
   border:1px solid #cfe0e3;overflow:hidden}
 .slide-fill{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,#dcecee,#c9e2e4);transition:width .05s linear}
 .slide-track::after{content:"";position:absolute;right:16px;top:50%;width:5px;height:5px;
   border-radius:50%;background:#a8c4c9;box-shadow:-11px 0 0 #a8c4c9,-22px 0 0 #a8c4c9;transform:translateY(-50%)}
-.slide-thumb{position:absolute;left:0;top:50%;transform:translateY(-50%);width:42px;height:42px;
+.slide-thumb{position:absolute;left:0;top:46px;width:42px;height:42px;
   border-radius:50%;background:#fff;border:1px solid #9dbdc2;color:#2b6b73;font-size:17px;
   box-shadow:0 2px 7px #17384a26;cursor:grab;touch-action:none;display:grid;place-items:center;
   transition:box-shadow .15s}
 .slide-thumb:active{cursor:grabbing;box-shadow:0 4px 14px #17384a3d}
 .slide-thumb:focus-visible{outline:3px solid #418b99;outline-offset:2px}
-.slide-hint{margin:0;font-size:12px;color:#8aa0a6;text-align:center}
+.slide-hint{margin:9px 0 0;font-size:12px;color:#8aa0a6;text-align:center;pointer-events:none}
+
+/* base.css 有全局 `button{overflow:hidden}`，会让绝对定位的滑块圆形被裁切，
+   并使指针命中区异常。此处显式放开，并给出足够的拖动命中高度。 */
+.slide-unlock button{overflow:visible}
+.slide-thumb{touch-action:none;user-select:none;-webkit-user-select:none}
+.slide-track{touch-action:none}
