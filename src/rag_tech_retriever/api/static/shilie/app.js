@@ -1,9 +1,9 @@
-import {bindBackup} from './backup.js?v=24';
-import {bindModelConnection} from './model-connection.js?v=23';
-import {bindTree} from './tree-actions.js?v=22';
-import {bindAutomation} from './automation-actions.js?v=23';
-import {api,state,load,write,read,modules,groups,currentNote} from './data.js?v=15';
-import {render,sidebar,dialogs} from './views.js?v=24';
+import {bindBackup} from './backup.js?v=25';
+import {bindModelConnection} from './model-connection.js?v=25';
+import {bindTree} from './tree-actions.js?v=25';
+import {bindAutomation} from './automation-actions.js?v=25';
+import {api,state,load,write,read,modules,groups,currentNote} from './data.js?v=25';
+import {render,sidebar,dialogs} from './views.js?v=25';
 const $=s=>document.querySelector(s),navigationStrip=$('#navigation-strip'),content=$('#content'),stack=[location.hash||'#home'],scrolls=new Map(Object.entries(state.visits).filter(([,value])=>Number.isFinite(value)&&value>=0)),toastBox=$('#toast');
 toastBox.id='toast';toastBox.className='toast';toastBox.hidden=true;toastBox.setAttribute('role','status');
 let modelConnectionController,backupController;
@@ -15,7 +15,6 @@ function updatePosition(){const [kind,id]=location.hash.slice(1).split('/'),modu
 function renderPage({restore=false}={}){document.documentElement.dataset.layout=state.mode;document.documentElement.dataset.density=['compact','standard','comfortable'][state.density]||'standard';document.documentElement.dataset.hero=state.compactHero?'compact':'full';document.body.dataset.layout=state.mode;const moduleId=location.hash.split('/')[1];if(location.hash.startsWith('#module/')&&modules.some(m=>m.id===moduleId))state.recent=[moduleId,...state.recent.filter(id=>id!==moduleId)].slice(0,4);content.innerHTML=render();content.prepend(navigationStrip);modelConnectionController?.ensure();backupController?.ensure();navigationStrip.hidden=!location.hash||location.hash==='#home';$('#sidebar').innerHTML=sidebar();document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===state.mode)));document.title=(modules.find(m=>m.id===moduleId)?.title||'工作区')+' · 时列';if(!restore)window.scrollTo(0,0);const route=location.hash||'#home';persistRoute();}
 function go(route){if(!route.startsWith('#'))route='#'+route;location.hash=route;}
 function back(){const [kind,id,sub]=location.hash.slice(1).split('/');if(kind==='module'&&id==='planning'){go('#category/workspace');return;}if(kind==='module'&&sub){go(`#module/${id}`);return;}if(kind==='module'){const m=modules.find(x=>x.id===id);go(m?`#category/${m.group}`:'#home');return;}if(kind==='category'){go('#home');return;}go('#home');}
-function currentPlan(){return plan();}
 function showDialog(kind,values={},id=''){const d=document.querySelector(`.form-dialog[data-form="${kind}"]`);if(!d){toast('找不到对应表单',true);return;}const form=d.querySelector('form');form.reset();editingId=id;d.dataset.recordId=id;for(const [key,value] of Object.entries(values)){const field=form.elements.namedItem(key);if(!field)continue;if(field instanceof HTMLSelectElement&&field.multiple){[...field.options].forEach(o=>o.selected=(value||[]).includes(o.value));}else field.value=value??'';}d.showModal();d.querySelector('input,textarea,select')?.focus();}
 function closeDialogs(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());}
 function showDetail(title,contentHtml,trigger=null){const d=$('#detail-dialog');detailTrigger=trigger||document.activeElement;$('#detail-title').textContent=title;$('#detail-content').innerHTML=contentHtml;d.showModal();$('#detail-close').focus();}
@@ -26,9 +25,6 @@ function openHistory(){const row=currentNote();if(!row)return;api(`records/${row
 function openStageFinish(id){const rec=state.stages.find(s=>s.id===id);if(!rec)return;const d=$('#detail-dialog');detailTrigger=document.activeElement;$('#detail-title').textContent='完成阶段记录';$('#detail-content').innerHTML=`<form id="finish-stage-form"><label class="form-field">完成内容<textarea name="completed" rows="5" placeholder="每行一项"></textarea></label><label class="form-field">问题与遗留<textarea name="issues" rows="4" placeholder="每行一项"></textarea></label><label class="form-field">验证记录<textarea name="verification" rows="4" placeholder="填写检查方式和结果；选择通过时必须填写"></textarea></label><label class="form-field">状态<select name="status"><option value="passed">验证通过</option><option value="attention">仍需处理</option></select></label><div class="form-actions"><button class="primary-button">保存阶段结果</button></div></form>`;d.dataset.finishId=id;d.showModal();}
 function listText(form,name){return String(form.elements.namedItem(name).value||'').split(/\n/).map(x=>x.trim()).filter(Boolean);}
 async function saveForm(form){if(working)return;working=true;const submit=form.querySelector('[type=submit]');if(submit){submit.disabled=true;submit.textContent='保存中…';}try{const d=form.closest('dialog'),kind=d.dataset.form,fd=new FormData(form);if(kind==='knowledge'){const data={title:fd.get('title'),content:fd.get('content'),tags:String(fd.get('tags')).split(',').map(x=>x.trim()).filter(Boolean),source:fd.get('source')};const row=editingId?state.knowledge.find(n=>n.id===editingId):null;const saved=await api(editingId?`knowledge/${editingId}`:'knowledge',{data,...(row?{version:row.version}:{})},editingId?'PUT':'POST');state.selectedNote=saved.id;state.filter='all';state.query='';toast('笔记已保存');}
-
-
-
  else if(kind==='stage'){const created=await api('stages',{title:fd.get('title'),objective:fd.get('objective')});toast('阶段已创建，可以继续记录');}
  await refresh();closeDialogs();}catch(e){toast(e.message,true);}finally{working=false;if(submit){submit.disabled=false;submit.textContent='保存';}}}
 async function submitSearch(form){
