@@ -192,3 +192,58 @@ button,a,input,select,textarea{transition:background-color .18s,border-color .18
  .node-row.depth-3::before,.node-row.depth-3::after{left:73px}
  .node-row.depth-4::before,.node-row.depth-4::after{left:97px}
  .node-kids .node-kids::before{left:25px}}
+
+/* ================= 私密管理 ================= */
+.private-studio{min-width:0}
+.private-loading{color:#6c838b;padding:24px}
+.private-gate{max-width:420px;margin:34px auto;background:#fff;border:1px solid var(--line);
+  border-radius:16px;padding:32px;text-align:center;box-shadow:0 10px 34px #1d4b5814}
+.lock-mark{width:58px;height:58px;border-radius:16px;background:#f3ecf1;color:#a4596b;
+  display:grid;place-items:center;font-size:26px;margin:0 auto 18px}
+.private-gate h2{font-size:19px;margin:0 0 9px}
+.private-gate>p{font-size:13px;color:#6b828a;margin:0 0 20px;line-height:1.75}
+.private-gate-form{display:grid;gap:11px}
+.private-gate-form input{padding:12px;border:1px solid #b6cdd2;border-radius:9px;font:inherit;
+  text-align:center;letter-spacing:2px}
+.gate-hint{display:block;margin-top:15px;font-size:12px;color:#8aa0a6;line-height:1.7}
+.recovery-code{display:block;padding:15px;margin:16px 0;background:#f4f7f7;border:1px dashed #9dbdc2;
+  border-radius:9px;font-family:ui-monospace,Consolas,monospace;font-size:15px;letter-spacing:1.5px;
+  overflow-wrap:anywhere;user-select:all}
+.private-tabs{display:flex;gap:4px;padding:4px;background:#dde9ea;border-radius:10px;margin:0 0 18px;width:max-content}
+.private-tabs button{padding:9px 22px;border-radius:7px;font-size:13px;color:#4c6a72}
+.private-tabs button[aria-pressed=true]{background:#fff;color:#1d5460;font-weight:600;box-shadow:0 1px 4px #17384a1f}
+.private-filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.private-filters .search-field{flex:1;min-width:150px}
+.private-filters .primary-button{margin-left:auto}
+
+/* 愿望卡片墙 */
+.wish-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(212px,1fr));gap:14px}
+.wish-card{position:relative;background:#fff;border:1px solid var(--line);border-radius:12px;
+  overflow:hidden;display:flex;flex-direction:column;transition:.16s}
+.wish-card:hover{box-shadow:0 5px 16px #1d4b5816;transform:translateY(-2px)}
+.wish-card.is-done{background:#fbfdfb}
+.wish-card.is-done .wish-title{color:#8b9a94;text-decoration:line-through}
+.wish-badge{position:absolute;top:9px;right:9px;background:#fff;border-radius:50%;width:24px;height:24px;
+  display:grid;place-items:center;color:#4a8f5e;font-size:13px;box-shadow:0 1px 5px #17384a26;z-index:1}
+.wish-cover{height:80px;display:grid;place-items:center;font-size:28px;border-bottom:1px solid #eef3f3}
+.wish-body{padding:11px 13px;flex:1;display:grid;gap:5px}
+.wish-title{font-size:14px;font-weight:600;overflow-wrap:anywhere}
+.wish-note{font-size:12px;color:#7b929a;overflow-wrap:anywhere}
+.wish-foot{display:flex;align-items:center;gap:8px;font-size:11px;margin-top:auto}
+.wish-cat{padding:2px 8px;border-radius:4px;background:#f3ecf1;color:#8b5f6e}
+.wish-price{margin-left:auto;color:#5f7d84;font-variant-numeric:tabular-nums}
+.wish-ops{display:flex;gap:3px;padding:0 9px 9px}
+.wish-op{width:26px;height:26px;border-radius:6px;color:#9ab0b6;font-size:14px}
+.wish-op:hover{background:#eef4f4;color:#2b6b73}
+
+/* 日记 */
+.diary-list{display:grid;gap:10px}
+.diary-card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:15px 18px}
+.diary-head{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.diary-date{font-size:12px;color:#6b828a;font-variant-numeric:tabular-nums}
+.diary-title{font-size:15px;font-weight:600;flex:1;min-width:0;overflow-wrap:anywhere}
+.diary-lock{font-size:11px;padding:2px 8px;border-radius:5px;background:#f0eaf5;color:#6d5a8c}
+.diary-body{margin:8px 0 0;font-size:13px;color:#4b6a6c;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:760px){.private-gate{margin:18px auto;padding:22px}
+ .wish-wall{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}
+ .wish-cover{height:62px;font-size:23px}.private-tabs{width:100%}.private-tabs button{flex:1}}

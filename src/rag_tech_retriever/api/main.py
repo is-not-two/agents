@@ -21,6 +21,7 @@ from rag_tech_retriever.api.dependencies import WorkspaceContext
 from rag_tech_retriever.api.routes import automation, history, knowledge, planning
 from rag_tech_retriever.api.routes import exports as export_routes
 from rag_tech_retriever.api.routes import model_connection as connection_routes
+from rag_tech_retriever.api.routes import private as private_routes
 from rag_tech_retriever.api.routes import search as search_routes
 from rag_tech_retriever.api.routes import stages as stage_routes
 from rag_tech_retriever.common.config_loader import PROJECT_ROOT, ConfigLoader
@@ -201,6 +202,7 @@ def create_app(
         stage_routes,
         automation,
         connection_routes,
+        private_routes,
     ):
         application.include_router(module.create_router(context))
 

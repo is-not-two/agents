@@ -7,10 +7,16 @@ export async function api(path, body, method=body?'POST':'GET') {
 }
 export function read(key,fallback){try{return JSON.parse(localStorage.getItem('shilie-'+key))??fallback;}catch{return fallback;}}
 export function write(key,value){try{localStorage.setItem('shilie-'+key,JSON.stringify(value));}catch{/* 偏好存储不可用不影响业务保存 */}}
-export const groups=[{id:'workspace',title:'个人工作台',caption:'知识、计划与复盘'},{id:'automation',title:'自动化中心',caption:'检索与助手'},{id:'settings',title:'系统设置',caption:'连接、数据与界面'}];
+export const groups=[
+  {id:'workspace',title:'个人工作台',caption:'知识、计划与复盘'},
+  {id:'automation',title:'自动化中心',caption:'检索与助手'},
+  {id:'settings',title:'系统设置',caption:'连接、数据与界面'},
+  {id:'private',title:'私密管理',caption:'愿望清单与私密日记'}
+];
 export const modules=[
- ['knowledge','个人知识库','workspace','knowledge'],['documents','技术文档检索','workspace','search'],['planning','人生规划','workspace','planning'],['stages','阶段记录','workspace','stages'],
- ['workflows','工作流','automation','workflow'],['agents','Agent 设置','automation','agent'],['runs','运行记录','automation','stages'],['connections','模型连接','settings','connection'],['backup','数据与备份','settings','backup'],['appearance','界面偏好','settings','settings']
+  ['knowledge','个人知识库','workspace','knowledge'],['documents','技术文档检索','workspace','search'],['planning','人生规划','workspace','planning'],['stages','阶段记录','workspace','stages'],
+  ['workflows','工作流','automation','workflow'],['agents','Agent 设置','automation','agent'],['runs','运行记录','automation','stages'],['connections','模型连接','settings','connection'],['backup','数据与备份','settings','backup'],['appearance','界面偏好','settings','settings'],
+  ['private','私密管理','private','lock']
 ].map(([id,title,group,icon])=>({id,title,group,icon}));
 export const priorities=['p0','p1','p2','p3','p4'];
 export const priorityNames=['最高','较高','常规','较低','最低'];

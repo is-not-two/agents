@@ -1,9 +1,10 @@
-import {bindBackup} from './backup.js?v=34';
-import {bindModelConnection} from './model-connection.js?v=34';
-import {bindTree} from './tree-actions.js?v=34';
-import {bindAutomation} from './automation-actions.js?v=34';
-import {api,state,load,write,read,modules,groups,currentNote} from './data.js?v=34';
-import {render,sidebar,dialogs} from './views.js?v=34';
+import {bindBackup} from './backup.js?v=37';
+import {bindPrivate,setPrivateRepaint} from './private-view.js?v=37';
+import {bindModelConnection} from './model-connection.js?v=37';
+import {bindTree} from './tree-actions.js?v=37';
+import {bindAutomation} from './automation-actions.js?v=37';
+import {api,state,load,write,read,modules,groups,currentNote} from './data.js?v=37';
+import {render,sidebar,dialogs} from './views.js?v=37';
 const $=s=>document.querySelector(s),navigationStrip=$('#navigation-strip'),content=$('#content'),stack=[location.hash||'#home'],scrolls=new Map(Object.entries(state.visits).filter(([,value])=>Number.isFinite(value)&&value>=0)),toastBox=$('#toast');
 toastBox.id='toast';toastBox.className='toast';toastBox.hidden=true;toastBox.setAttribute('role','status');
 let modelConnectionController,backupController;
@@ -82,3 +83,5 @@ bindTree({renderPage,refresh,toast});
 modelConnectionController=bindModelConnection({renderPage,toast});
 
 backupController=bindBackup({renderPage,refresh,toast});
+setPrivateRepaint(()=>renderPage({restore:true}));
+bindPrivate();
