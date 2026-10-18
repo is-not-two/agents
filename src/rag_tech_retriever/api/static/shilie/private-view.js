@@ -1,7 +1,7 @@
 /* 私密管理：愿望清单与私密日记。
    口令不存浏览器——每次访问都由后端校验，明文只在当前页面内存中存在。
    因此本模块不做路由级缓存，刷新即重新要求口令。 */
-import {api,state} from './data.js?v=41';
+import {api,state} from './data.js?v=44';
 
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const CATS=['想拥有','想去做'];
@@ -244,10 +244,14 @@ function slideTo(pct,wrap){
   const track=wrap.querySelector('.slide-track');
   const travel=(track?track.clientWidth:wrap.clientWidth)-42;
   if(fill)fill.style.width=v.slide+'%';
+  if(thumb&&v.slide<100){thumb.style.background='';thumb.style.borderColor='';thumb.style.color='';thumb.textContent='›';}
   if(thumb){thumb.style.left=(travel*v.slide/100)+'px';thumb.setAttribute('aria-valuenow',String(Math.round(v.slide)));}
   if(hint)hint.textContent=v.slide>=100?'正在打开…':'向右拖动';
+  if(thumb&&v.slide>=100){thumb.style.background='#4a8f5e';thumb.style.borderColor='#4a8f5e';thumb.style.color='#fff';thumb.textContent='✓';}
 }
 async function finishSlide(wrap){
+  // 末端吸附：超过 88% 就补满，避免"差一点没解锁"的挫败感
+  if(v.slide>=88)slideTo(100,wrap);
   if(v.slide<98){slideTo(0,wrap);return;}
   await unlock();
   if(v.unlocked){v.slide=0;await repaint();}
@@ -285,6 +289,27 @@ function bindSlide(){
 
 function read(key,fallback){try{return Number(sessionStorage.getItem('shilie-'+key))||fallback}catch{return fallback}}
 function write(key,val){try{sessionStorage.setItem('shilie-'+key,String(val))}catch{}}
+
+/* 离开私密管理即丢弃票据：票据只在当前页面有效，
+   回到本模块需要重新拖动滑块。 */
+function resetOnLeave(){
+  if(!location.hash.includes('/private')&&v.unlocked){
+    v.ticket='';v.unlocked=false;v.wishes=[];v.diaries=[];v.slide=0;
+  }
+}
+window.addEventListener('hashchange',resetOnLeave);
+// 每次进入私密管理都重新上锁：滑块是入口仪式，不该因为上一秒开过就跳过
+let lastHash='';
+function relockOnEnter(){
+  const cur=location.hash;
+  if(cur===lastHash)return;
+  lastHash=cur;
+  if(cur.includes('/private')&&v.unlocked){
+    v.ticket='';v.unlocked=false;v.wishes=[];v.diaries=[];v.slide=0;
+    refreshPrivate();
+  }
+}
+window.addEventListener('hashchange',relockOnEnter);
 
 export function bindPrivate(){
   document.addEventListener('click',async e=>{

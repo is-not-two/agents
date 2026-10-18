@@ -1,10 +1,10 @@
-import {bindBackup} from './backup.js?v=41';
-import {bindPrivate,setPrivateRepaint} from './private-view.js?v=41';
-import {bindModelConnection} from './model-connection.js?v=41';
-import {bindTree} from './tree-actions.js?v=41';
-import {bindAutomation} from './automation-actions.js?v=41';
-import {api,state,load,write,read,modules,groups,currentNote} from './data.js?v=41';
-import {render,sidebar,dialogs} from './views.js?v=41';
+import {bindBackup} from './backup.js?v=44';
+import {bindPrivate,setPrivateRepaint} from './private-view.js?v=44';
+import {bindModelConnection} from './model-connection.js?v=44';
+import {bindTree} from './tree-actions.js?v=44';
+import {bindAutomation} from './automation-actions.js?v=44';
+import {api,state,load,write,read,modules,groups,currentNote} from './data.js?v=44';
+import {render,sidebar,dialogs} from './views.js?v=44';
 const $=s=>document.querySelector(s),navigationStrip=$('#navigation-strip'),content=$('#content'),stack=[location.hash||'#home'],scrolls=new Map(Object.entries(state.visits).filter(([,value])=>Number.isFinite(value)&&value>=0)),toastBox=$('#toast');
 toastBox.id='toast';toastBox.className='toast';toastBox.hidden=true;toastBox.setAttribute('role','status');
 let modelConnectionController,backupController;
