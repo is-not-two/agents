@@ -1,13 +1,15 @@
 /* 私密管理：愿望清单与私密日记。
    口令不存浏览器——每次访问都由后端校验，明文只在当前页面内存中存在。
    因此本模块不做路由级缓存，刷新即重新要求口令。 */
-import {api,state} from './data.js?v=37';
+import {api,state} from './data.js?v=41';
 
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const CATS=['想拥有','想去做'];
+/* 首次设置时的口令暂存：只在页面内存里，刷新即失。滑块解锁不需要它。 */
+const VAULT={password:''};
 
-const v={configured:null,strongCrypto:false,password:'',unlocked:false,busy:'',error:'',
-         tab:'wish',wishes:[],diaries:[],filter:'all',query:'',setupCode:'',probing:false};
+const v={configured:null,strongCrypto:false,ticket:'',unlocked:false,busy:'',error:'',
+         tab:'wish',wishes:[],diaries:[],filter:'all',query:'',setupCode:'',probing:false,slide:0};
 
 async function status(){
   try{
@@ -16,15 +18,20 @@ async function status(){
   }catch(e){v.error=e.message;}
   return v;
 }
-async function unlock(password){
+/* 滑块解锁：拖到底后调用本函数换取会话票据。
+   票据只存在于服务端内存与当前页面，进程重启或离开页面即失效。 */
+async function unlock(){
   v.busy='unlock';v.error='';
-  try{await api('private/unlock',{password});v.password=password;v.unlocked=true;await load();}
-  catch(e){v.error=e.message;}
+  try{
+    const r=await api('private/session',{password:VAULT.password});
+    v.ticket=r.ticket;v.unlocked=true;await load();
+  }catch(e){v.error=e.message;}
   finally{v.busy='';}
 }
 async function setup(password){
   v.busy='setup';v.error='';
-  try{const r=await api('private/setup',{password});v.setupCode=r.recovery_code;v.password=password;v.unlocked=true;await load();}
+  try{const r=await api('private/setup',{password});v.setupCode=r.recovery_code;
+    const s=await api('private/session',{password});v.ticket=s.ticket;v.unlocked=true;await load();}
   catch(e){v.error=e.message;}
   finally{v.busy='';}
 }
@@ -32,12 +39,12 @@ async function load(){
   v.busy='load';v.error='';
   try{
     const [w,d]=await Promise.all([
-      api('private/wish?password='+encodeURIComponent(v.password)),
-      api('private/diary?password='+encodeURIComponent(v.password)),
+      api('private/wish?ticket='+encodeURIComponent(v.ticket)),
+      api('private/diary?ticket='+encodeURIComponent(v.ticket)),
     ]);
     v.wishes=w;v.diaries=d;
-  }catch(e){v.error=e.message;if(String(e.message).includes('口令'))v.unlocked=false;}
-  finally{v.busy='';refreshPrivate();}
+  }catch(e){v.error=e.message;if(/票据|口令/.test(String(e.message)))v.unlocked=false;}
+  finally{v.busy='';refreshPrivate().then(bindSlide);}
 }
 async function saveWish(form){
   v.busy='save';v.error='';
@@ -47,7 +54,7 @@ async function saveWish(form){
       category:String(fd.get('category')||CATS[0]),emoji:String(fd.get('emoji')||'✨'),
       price:String(fd.get('price')||'').trim(),done:fd.get('done')==='on'};
     if(!data.title)throw Error('请填写愿望名称');
-    await api('private/wish',{password:v.password,data});
+    await api('private/wish',{ticket:v.ticket,data});
     await load();toast('愿望已保存');
   }catch(e){v.error=e.message;toast(e.message,true);}
   finally{v.busy='';}
@@ -56,7 +63,7 @@ async function toggleWish(id,done){
   const row=v.wishes.find(w=>w.id===id);if(!row)return;
   v.busy='save';v.error='';
   try{
-    await api('private/wish/'+id,{password:v.password,version:row.version,
+    await api('private/wish/'+id,{ticket:v.ticket,version:row.version,
       data:{...row.data,title:row.data.title,done:!done}});
     await load();
   }catch(e){v.error=e.message;toast(e.message,true);}
@@ -77,7 +84,7 @@ async function saveDiary(form){
     const data={title:String(fd.get('title')||'').trim(),content:String(fd.get('content')||'').trim(),
       date:String(fd.get('date')||new Date().toISOString().slice(0,10))};
     if(!data.title)throw Error('请填写标题');
-    await api('private/diary',{password:v.password,data});
+    await api('private/diary',{ticket:v.ticket,data});
     await load();toast('日记已保存');
   }catch(e){v.error=e.message;toast(e.message,true);}
   finally{v.busy='';}
@@ -90,7 +97,7 @@ async function removeDiary(id){
   catch(e){v.error=e.message;toast(e.message,true);}
   finally{v.busy='';}
 }
-const lock=()=>{v.password='';v.unlocked=false;v.wishes=[];v.diaries=[];};
+const lock=()=>{v.ticket='';v.unlocked=false;v.wishes=[];v.diaries=[];v.slide=0;};
 
 function shell(inner){
   return `<section class="private-studio">
@@ -103,19 +110,32 @@ function shell(inner){
 
 function gateView(){
   const setupMode=v.configured===false;
+  if(setupMode)return setupView();
   return shell(`<div class="private-gate">
-    <div class="lock-mark">${setupMode?'✦':'🔒'}</div>
-    <h2>${setupMode?'第一次使用，设置口令':'私密管理已锁定'}</h2>
-    <p>${setupMode
-      ?'愿望清单和日记会用你的口令加密后再存入数据库。没有你的口令，谁也读不到。'
-      :'输入口令继续。你的口令不会被保存在浏览器里。'}</p>
-    ${v.strongCrypto?'':'<p class="connection-feedback error-text">当前环境缺少加密库，无法提供真正的加密保护。</p>'}
+    <div class="lock-mark">🔒</div>
+    <h2>拖动滑块进入</h2>
+    <p>把下面的滑块拖到最右边，就能打开愿望清单和日记。</p>
+    ${v.strongCrypto?'':'<p class="connection-feedback error-text">当前环境缺少加密库，数据没有加密保护。</p>'}
+    <div class="slide-unlock" id="slide-unlock">
+      <div class="slide-track"><div class="slide-fill" style="width:0%"></div></div>
+      <button class="slide-thumb" type="button" aria-label="向右拖动解锁，按 End 键也可解锁"
+        aria-valuenow="0" role="slider" aria-valuemin="0" aria-valuemax="100">›</button>
+      <p class="slide-hint">向右拖动</p>
+    </div>
+  </div>`);
+}
+
+function setupView(){
+  return shell(`<div class="private-gate">
+    <div class="lock-mark">✦</div>
+    <h2>第一次使用，设置口令</h2>
+    <p>愿望清单和日记会用这个口令加密后再存入数据库。之后进页面只需拖动滑块，但解密仍需要它。</p>
+    ${v.strongCrypto?'':'<p class="connection-feedback error-text">当前环境缺少加密库，无法提供加密保护，请先安装 cryptography。</p>'}
     <form id="private-gate-form" class="private-gate-form">
-      <input name="password" type="password" ${setupMode?'required':''} minlength="${setupMode?4:1}"
-        placeholder="${setupMode?'设置口令（至少 4 位）':'输入口令'}" autocomplete="${setupMode?'new-password':'current-password'}">
-      <button class="primary-button" ${v.busy?'disabled':''}>${v.busy==='unlock'?'验证中…':v.busy==='setup'?'设置中…':setupMode?'设置并进入':'解锁'}</button>
+      <input name="password" type="password" required minlength="4" placeholder="设置口令（至少 4 位）" autocomplete="new-password">
+      <button class="primary-button" ${v.busy?'disabled':''}>${v.busy==='setup'?'设置中…':'设置并继续'}</button>
     </form>
-    ${setupMode?'<small class="gate-hint">口令遗失将无法恢复内容。设置后会给你一串恢复码，请立刻保存。</small>':''}
+    <small class="gate-hint">口令遗失将无法恢复内容。设置后会给你一串恢复码，请立刻保存。</small>
   </div>`);
 }
 
@@ -206,12 +226,65 @@ export function privateView(){
 
 /* 补齐数据后触发重绘；由 app.js 注入渲染函数，避免与 views.js 循环依赖。 */
 let repaint=()=>{};
-export function setPrivateRepaint(fn){repaint=fn;}
+export function setPrivateRepaint(fn){repaint=async()=>{await fn();bindSlide();};}
 export async function ensurePrivate(){
   if(v.busy)return;
   await load();
   await repaint();
 }
+
+/* 滑块拖动：就地更新样式，不触发整页重绘——
+   否则松手前每次移动都会重建 DOM，指针捕获随之失效。 */
+let dragging=false;
+function slideTo(pct,wrap){
+  v.slide=Math.max(0,Math.min(100,pct));
+  const fill=wrap.querySelector('.slide-fill');
+  const thumb=wrap.querySelector('.slide-thumb');
+  const hint=wrap.querySelector('.slide-hint');
+  const track=wrap.querySelector('.slide-track');
+  const travel=(track?track.clientWidth:wrap.clientWidth)-42;
+  if(fill)fill.style.width=v.slide+'%';
+  if(thumb){thumb.style.left=(travel*v.slide/100)+'px';thumb.setAttribute('aria-valuenow',String(Math.round(v.slide)));}
+  if(hint)hint.textContent=v.slide>=100?'正在打开…':'向右拖动';
+}
+async function finishSlide(wrap){
+  if(v.slide<98){slideTo(0,wrap);return;}
+  await unlock();
+  if(v.unlocked){v.slide=0;await repaint();}
+  else slideTo(0,wrap);
+}
+function bindSlide(){
+  const wrap=document.getElementById('slide-unlock');
+  if(!wrap)return;
+  const thumb=wrap.querySelector('.slide-thumb');
+  const track=wrap.querySelector('.slide-track');
+  if(!thumb||!track)return;
+  const pctAt=x=>{const r=track.getBoundingClientRect();return r.width?Math.min(100,Math.max(0,(x-r.left)/r.width*100)):0;};
+  slideTo(0,wrap);
+  const onMove=e=>{if(dragging)slideTo(pctAt(e.clientX),wrap);};
+  const onUp=()=>{
+    if(!dragging)return;
+    dragging=false;
+    document.removeEventListener('pointermove',onMove);
+    document.removeEventListener('pointerup',onUp);
+    finishSlide(wrap);
+  };
+  thumb.addEventListener('pointerdown',e=>{
+    if(v.busy)return;
+    e.preventDefault();
+    dragging=true;
+    document.addEventListener('pointermove',onMove);
+    document.addEventListener('pointerup',onUp);
+  });
+  // 键盘可达：End 或长按方向键也可解锁
+  thumb.addEventListener('keydown',e=>{
+    if(e.key==='End'||e.key==='ArrowRight'){e.preventDefault();slideTo(100,wrap);finishSlide(wrap);}
+    if(e.key==='Home'){e.preventDefault();slideTo(0,wrap);}
+  });
+}
+
+function read(key,fallback){try{return Number(sessionStorage.getItem('shilie-'+key))||fallback}catch{return fallback}}
+function write(key,val){try{sessionStorage.setItem('shilie-'+key,String(val))}catch{}}
 
 export function bindPrivate(){
   document.addEventListener('click',async e=>{
@@ -260,8 +333,9 @@ export function bindPrivate(){
   document.addEventListener('submit',async e=>{
     if(e.target.id==='private-gate-form'){
       e.preventDefault();
-      const pw=new FormData(e.target).get('password');
-      if(v.configured===false)await setup(String(pw));else await unlock(String(pw));
+      const pw=String(new FormData(e.target).get('password')||'');
+      VAULT.password=pw;
+      await setup(pw);
       await refreshPrivate();
     }
     if(e.target.id==='private-recovery-form'){e.preventDefault();v.setupCode='';await refreshPrivate();}

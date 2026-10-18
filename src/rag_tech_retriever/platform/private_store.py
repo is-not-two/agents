@@ -146,5 +146,60 @@ def recovery_digest(password: str, salt: bytes) -> str:
     return hashlib.sha256(derive_key(password, salt) + b"recovery").hexdigest()
 
 
+def encrypt_with_key(plaintext: str, key: bytes) -> dict:
+    """用已派生的密钥直接加密，供票据会话使用——避免从密钥反推口令。"""
+
+    nonce = secrets.token_bytes(_NONCE_BYTES)
+    raw = plaintext.encode("utf-8")
+    if _HAVE_AESGCM:
+        return {
+            "alg": "aes-gcm",
+            "salt": "",  # 密钥已由会话派生，无需再存盐
+            "nonce": base64.b64encode(nonce).decode("ascii"),
+            "data": base64.b64encode(AESGCM(key).encrypt(nonce, raw, None)).decode("ascii"),
+        }
+    stream = _xor_stream(key, nonce, len(raw))
+    body = bytes(a ^ b for a, b in zip(raw, stream))
+    tag = hmac.new(key, nonce + body, hashlib.sha256).digest()[:16]
+    return {
+        "alg": "xor-hmac",
+        "salt": "",
+        "nonce": base64.b64encode(nonce).decode("ascii"),
+        "data": base64.b64encode(tag + body).decode("ascii"),
+    }
+
+
+def decrypt_with_key(payload: dict, key: bytes) -> str:
+    """decrypt_with_key 的逆操作，密钥已由会话持有。"""
+
+    try:
+        nonce = base64.b64decode(payload["nonce"])
+        blob = base64.b64decode(payload["data"])
+        alg = payload.get("alg", "xor-hmac")
+    except (KeyError, ValueError) as exc:
+        raise ValueError("加密数据格式不正确") from exc
+    if alg == "aes-gcm" and _HAVE_AESGCM:
+        try:
+            return AESGCM(key).decrypt(nonce, blob, None).decode("utf-8")
+        except Exception as exc:
+            raise ValueError("票据无效或数据已损坏") from exc
+    if alg == "xor-hmac":
+        tag, body = blob[:16], blob[16:]
+        expect = hmac.new(key, nonce + body, hashlib.sha256).digest()[:16]
+        if not hmac.compare_digest(tag, expect):
+            raise ValueError("票据无效或数据已损坏")
+        stream = _xor_stream(key, nonce, len(body))
+        return bytes(a ^ b for a, b in zip(body, stream)).decode("utf-8")
+    raise ValueError(f"不支持的加密算法：{alg}")
+
+
+def encrypt_json_with_key(data: dict, key: bytes) -> dict:
+    return encrypt_with_key(json.dumps(data, ensure_ascii=False), key)
+
+
+def decrypt_json_with_key(payload: dict, key: bytes) -> dict:
+    return json.loads(decrypt_with_key(payload, key))
+
+
 def random_salt_hex() -> str:
     return os.urandom(_SALT_BYTES).hex()
