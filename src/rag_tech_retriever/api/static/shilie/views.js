@@ -1,9 +1,9 @@
-import {backupView} from './backup.js?v=26';
-import {modelConnectionView} from './model-connection.js?v=26';
-import {treeView,treeDialog} from './tree.js?v=26';
-import {agentsPage,workflowsPage,runsPage,automationDialogs} from './automation-views.js?v=26';
-import {icon,art} from './icons.js?v=26';
-import {groups,modules,state,currentNote} from './data.js?v=26';
+import {backupView} from './backup.js?v=34';
+import {modelConnectionView} from './model-connection.js?v=34';
+import {treeView,treeDialog} from './tree.js?v=34';
+import {agentsPage,workflowsPage,runsPage,automationDialogs} from './automation-views.js?v=34';
+import {icon,art} from './icons.js?v=34';
+import {groups,modules,state,currentNote} from './data.js?v=34';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function highlight(value,query){const text=String(value??''),term=String(query||'').trim();if(!term)return esc(text);let from=0,html='',index;const lower=text.toLowerCase(),needle=term.toLowerCase();while((index=lower.indexOf(needle,from))!==-1){html+=esc(text.slice(from,index))+'<mark>'+esc(text.slice(index,index+term.length))+'</mark>';from=index+term.length;}return html+esc(text.slice(from));}
 const arrow = '<svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 6 6-6 6"/></svg>';

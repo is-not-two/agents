@@ -105,3 +105,90 @@ button,a,input,select,textarea{transition:background-color .18s,border-color .18
    按钮右缘会溢出卡片 17px。改为贴合卡片右上角内侧，层级关系仍由缩进表达。 */
 .tree-node-tools{right:8px;top:8px;flex-direction:row;gap:6px}
 .tree-fold{margin-left:0}
+
+/* ================= 人生规划：同页展开列表 ================= */
+/* 由画布改为纵向列表：点方向或节点在下方展开，不跳页。
+   层级靠缩进与竖线表达，方向行常驻进度条，收起时也能看到完成度。 */
+.tree-list{padding:22px 26px 26px;display:grid;gap:14px;min-width:0}
+.dir-card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px #17384a0a}
+.dir-card.is-empty .dir-desc{padding:0 20px 18px;margin:0}
+.dir-head{display:flex;align-items:center;gap:13px;padding:15px 19px}
+.dir-title{font-size:16px;font-weight:600;text-align:left;flex:1;min-width:0;color:inherit}
+.dir-title.plain{font-weight:600;flex:1}
+.dir-tw{width:21px;height:21px;flex:none;display:grid;place-items:center;color:#5c7f87;font-size:11px;
+  transition:transform .18s;border-radius:4px}
+.dir-tw[hidden]{visibility:hidden}
+.dir-card.is-open .dir-tw,.dir-tw[aria-expanded=true]{transform:rotate(90deg)}
+.dir-tw:hover{background:#e9f2f2}
+.dir-track{width:104px;height:6px;background:#e3ebec;border-radius:4px;overflow:hidden;flex:none}
+.dir-track i{display:block;height:100%;background:var(--accent,#2b7884);border-radius:4px;transition:width .3s}
+.tree-list.is-side .dir-track i{background:#9a7f4a}
+.dir-count{font-size:12px;color:#6c838b;width:48px;text-align:right;font-variant-numeric:tabular-nums;flex:none}
+.dir-tools,.node-tools{display:flex;gap:2px;flex:none}
+.node-tool{width:28px;height:28px;border-radius:6px;color:#9ab0b6;font-size:14px;display:grid;place-items:center}
+.node-tool:hover{background:#eef4f4;color:#2b6b73}
+.node-tool.danger:hover{background:#fbeeea;color:#a4595a}
+.dir-desc{margin:0;padding:0 19px 15px 53px;font-size:13px;color:#6b828a}
+.dir-empty{padding:14px 19px 18px 53px;font-size:13px;color:#8aa0a6;margin:0}
+.dir-kids{border-top:1px solid #eef3f3;background:#fbfdfd;padding:5px 0}
+.dir-kids[hidden]{display:none}
+
+/* 节点行 */
+.node-row{display:flex;align-items:flex-start;gap:11px;padding:11px 19px 11px 22px;position:relative}
+.node-row:hover{background:#f4fafa}
+.node-tw{width:19px;height:19px;flex:none;display:grid;place-items:center;color:#5c7f87;
+  font-size:10px;margin-top:4px;transition:transform .18s;border-radius:4px}
+.node-tw[hidden]{visibility:hidden}
+.node-tw[aria-expanded=true]{transform:rotate(90deg)}
+.node-tw:hover{background:#e4efef}
+.node-tick{width:23px;height:23px;border-radius:50%;border:2px solid #b7cdd1;flex:none;margin-top:1px;
+  display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;transition:.15s}
+.node-tick:hover:not(:disabled){border-color:var(--accent,#2b7884);background:#e9f3f3}
+.node-tick[aria-pressed=true]{background:#4a8f5e;border-color:#4a8f5e}
+.node-tick:disabled{opacity:.45;cursor:not-allowed}
+.node-body{flex:1;min-width:0}
+.node-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.node-title{font-size:14.5px;text-align:left;color:inherit;padding:0}
+.node-title:disabled{cursor:default}
+.node-row.is-done .node-title{color:#7d8f94;text-decoration:line-through}
+.node-tag{font-size:11px;padding:2px 7px;border-radius:4px;background:#eef4f4;color:#5f7d84}
+.node-tag.wait{background:#f8f0e0;color:#8a6b2e}
+.node-pri{font-size:11px;padding:2px 7px;border-radius:4px;background:#f0f4f4;color:#7b929a;font-weight:500}
+.node-mark{font-size:13px;font-weight:700;color:#4a8f5e;flex:none;width:13px;text-align:center}
+.node-mark.no{color:#b08a5a}
+.node-meta{margin-top:4px;font-size:12px;color:#7b929a}
+.node-meta .due{color:#6b828a}
+
+/* 层级缩进与竖线：depth-N 为真实深度，每层缩进 32px。
+   竖线用 padding + ::before 绘制，::after 是横向引出线。 */
+.node-kids{padding:0}
+.node-kids[hidden]{display:none}
+.node-row.depth-1{padding-left:53px}
+.node-row.depth-2{padding-left:85px}
+.node-row.depth-3{padding-left:117px}
+.node-row.depth-4{padding-left:149px}
+.node-row[class*="depth-"]::before{content:"";position:absolute;top:0;bottom:0;width:2px;background:#d5e8e8}
+.node-row.depth-1::before{left:33px}
+.node-row.depth-2::before{left:65px}
+.node-row.depth-3::before{left:97px}
+.node-row.depth-4::before{left:129px}
+.node-row[class*="depth-"]::after{content:"";position:absolute;top:26px;width:14px;height:2px;background:#d5e8e8}
+.node-row.depth-1::after{left:33px}
+.node-row.depth-2::after{left:65px}
+.node-row.depth-3::after{left:97px}
+.node-row.depth-4::after{left:129px}
+/* 子树容器自带一条连接父级的竖线 */
+.node-kids .node-kids{position:relative}
+.node-kids .node-kids::before{content:"";position:absolute;left:33px;top:0;bottom:0;width:2px;background:#d5e8e8}
+
+/* 方向行的新建按钮 */
+.tree-new{margin-left:auto}
+@media(max-width:760px){.tree-list{padding:16px 14px 20px}.dir-head{flex-wrap:wrap;gap:9px}
+ .dir-title{flex-basis:100%;order:-1}.dir-track{width:80px}.dir-tools{margin-left:auto}
+ .node-row.depth-1{padding-left:42px}.node-row.depth-2{padding-left:66px}
+ .node-row.depth-3{padding-left:90px}.node-row.depth-4{padding-left:114px}
+ .node-row.depth-1::before,.node-row.depth-1::after{left:25px}
+ .node-row.depth-2::before,.node-row.depth-2::after{left:49px}
+ .node-row.depth-3::before,.node-row.depth-3::after{left:73px}
+ .node-row.depth-4::before,.node-row.depth-4::after{left:97px}
+ .node-kids .node-kids::before{left:25px}}

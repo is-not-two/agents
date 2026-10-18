@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>时列 · 人生规划（展开式）预览</title>
+<style>
+:root{
+  --ink:#142f42;--accent:#2b7884;--line:#cedde1;--bg:#e8f0f2;
+  --done:#4a8f5e;--todo:#b08a5a;--gold:#9a7f4a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Segoe UI","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit;color:inherit}
+
+.note{background:#fff;border-bottom:1px solid var(--line);padding:15px 28px;
+  display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.note h1{font-size:16px;margin:0;font-weight:600}
+.note p{margin:2px 0 0;font-size:12px;color:#6b828a}
+.tools{margin-left:auto;display:flex;gap:8px}
+.btn{padding:8px 15px;border:1px solid #b6cdd2;border-radius:8px;background:#fff;font-size:13px}
+.btn:hover{background:#e9f3f3;border-color:#7ba7ae}
+
+.wrap{max-width:1120px;margin:0 auto;padding:26px 24px 60px}
+.caption{font-size:11px;color:#6c838b;margin:0 0 8px;letter-spacing:1.5px}
+h2{font-size:25px;margin:0 0 5px;font-weight:600}
+.sub{color:#6b828a;font-size:13px;margin:0 0 22px}
+
+.grp{margin-bottom:26px}
+.grp-head{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+.grp-head h3{font-size:13px;margin:0;color:#3d6b74;font-weight:600;letter-spacing:.5px}
+.grp-head .ln{width:30px;height:2px;background:#aac5c9}
+.grp-head .newdir{margin-left:auto;padding:8px 15px;border-radius:8px;
+  background:var(--accent);color:#fff;font-size:13px}
+.grp-head .newdir.side{background:var(--gold)}
+
+.card{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden;
+  margin-bottom:11px;box-shadow:0 1px 3px #17384a0a}
+
+/* 方向行（根节点） */
+.dir{display:flex;align-items:center;gap:12px;padding:15px 18px;width:100%;text-align:left}
+.dir:hover{background:#fafcfc}
+.tw{width:20px;height:20px;flex:none;display:grid;place-items:center;color:#5c7f87;
+  font-size:11px;transition:transform .18s}
+.node.open>.tw{transform:rotate(90deg)}
+.tick{width:23px;height:23px;border-radius:50%;border:2px solid #b7cdd1;flex:none;
+  display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700}
+.tick:hover{border-color:var(--accent);background:#e9f3f3}
+.tick.on{background:var(--done);border-color:var(--done)}
+.dir-name{font-size:16px;font-weight:600;flex:1;min-width:0}
+.body{flex:1;min-width:0}
+.dir>.body{min-width:0}
+.dir.on .dir-name{color:#7d8f94;text-decoration:line-through}
+.chk{font-size:13px;font-weight:700;color:var(--done);flex:none;width:14px;text-align:center}
+.chk.no{color:var(--todo);display:none}
+.chk.no.show{display:inline}
+.bar{width:96px;height:6px;background:#e4ebec;border-radius:4px;overflow:hidden;flex:none}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.bar.gold i{background:var(--gold)}
+.cnt{font-size:12px;color:#6c838b;width:46px;text-align:right;font-variant-numeric:tabular-nums;flex:none}
+.opts{display:flex;gap:2px;flex:none}
+.opt{width:28px;height:28px;border-radius:6px;color:#9ab0b6;font-size:15px}
+.opt:hover{background:#eef4f4;color:#2b6b73}
+
+/* 展开区 */
+.kids{border-top:1px solid #eef3f3;background:#fbfdfd;padding:4px 0}
+.kids[hidden]{display:none}
+
+.row{display:flex;align-items:flex-start;gap:12px;padding:11px 18px 11px 22px;position:relative}
+.row:hover{background:#f4fafa}
+.row .tw{margin-top:3px}
+.body{flex:1;min-width:0}
+.t{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14.5px}
+.row.on .t .nm{color:#7d8f94;text-decoration:line-through}
+.tag{font-size:11px;padding:2px 7px;border-radius:4px;background:#eef4f4;color:#5f7d84}
+.tag.wait{background:#f8f0e0;color:#8a6b2e}
+.meta{margin-top:3px;font-size:12px;color:#7b929a;display:flex;gap:11px;flex-wrap:wrap}
+.meta .due::before{content:"◷ "}
+
+/* 子层级：缩进 + 竖线（层级类 lvl2/lvl3 决定缩进，leaf 只影响竖线形状） */
+.lvl2{padding-left:30px}
+.lvl3{padding-left:62px}
+.lvl2>.row::before,.lvl3>.row::before{content:"";position:absolute;top:-1px;bottom:0;
+  width:2px;background:#d5e8e8}
+.lvl2>.row::before{left:14px}
+.lvl3>.row::before{left:46px}
+.lvl2>.row::after,.lvl3>.row::after{content:"";position:absolute;top:26px;
+  width:14px;height:2px;background:#d5e8e8}
+.lvl2>.row::after{left:14px}
+.lvl3>.row::after{left:46px}
+.leaf>.row::before{bottom:auto;height:24px;top:12px}
+.lvl2.leaf>.row::before,.lvl3.leaf>.row::before{height:24px;top:12px}
+
+.hint{margin-top:5px;padding-left:22px;font-size:12px;color:#9ab0b6}
+.empty{padding:13px 22px;font-size:13px;color:#8aa0a6}
+
+.note-box{background:#fff8e6;border:1px solid #e8d5a8;border-radius:9px;padding:12px 16px;
+  margin:14px 0;font-size:13px;color:#7a6224}
+.note-box b{color:#5f4b18}
+</style>
+</head>
+<body>
+
+<div class="note">
+  <div>
+    <h1>人生规划 · 同页展开版</h1>
+    <p>点方向或节点即在下方展开，不跳页。行首可点圆圈切换完成。示例数据，不入库。</p>
+  </div>
+  <div class="tools">
+    <button class="btn" onclick="expandAll(true)">全部展开</button>
+    <button class="btn" onclick="expandAll(false)">全部收起</button>
+    <button class="btn" id="bx" onclick="togX()">✗ 显示：开</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <p class="caption">PLANNING</p>
+  <h2>人生规划</h2>
+  <p class="sub">主线与支线各自展开，点节点在下方继续展开下一步。</p>
+
+  <div class="note-box">
+    <b>这一版和上一版的区别：</b>上一版做成「总览 → 点卡片跳转到清单页」，
+    偏离了你最初说的「点击主节点，在下方展开」。这一版<b>不跳页</b>——
+    点哪里就在哪里展开，收起后回到一行摘要。
+  </div>
+
+  <div id="root"></div>
+</div>
+
+<script>
+const DB={
+ main:[
+  {id:'d1',t:'学习与生活',done:false,kids:[
+    {id:'n1',t:'读完《置身事内》',due:'2026-10-20',st:'doing',p:'P1',kids:[
+      {id:'n1a',t:'每周读一章',st:'doing',p:'P2',kids:[]}
+    ]},
+    {id:'n2',t:'每周跑步三次',st:'doing',p:'P2',kids:[]},
+    {id:'n3',t:'学会基础财务',st:'todo',p:'P1',kids:[
+      {id:'n3a',t:'读完《小狗钱钱》',st:'done',p:'P2',kids:[]},
+      {id:'n3b',t:'连续记账三个月',st:'doing',p:'P3',kids:[]}
+    ]},
+    {id:'n4',t:'整理书桌',st:'done',p:'P3',kids:[]},
+    {id:'n5',t:'考取 PMP 证书',due:'2026-12-01',st:'doing',p:'P0',kids:[]}
+  ]},
+  {id:'d2',t:'副业探索',done:false,kids:[
+    {id:'n6',t:'写第一篇文章',st:'done',p:'P1',kids:[]},
+    {id:'n7',t:'开一个写作账号',st:'todo',p:'P2',kids:[]}
+  ]}
+ ],
+ side:[
+  {id:'d3',t:'换个活法',done:false,kids:[
+    {id:'n8',t:'存够半年生活费',st:'todo',p:'P0',kids:[]}
+  ]}
+ ]
+};
+const openSet=new Set(['d1','n3']);
+let showX=true;
+const ST={done:'已完成',doing:'进行中',todo:'未开始'};
+
+function allNodes(g,kids){return kids.flatMap(n=>[n,...allNodes(g,n.kids||[])]);}
+function count(g){const a=allNodes(g,g.kids);return {d:a.filter(n=>n.st==='done').length,t:a.length};}
+
+function node(n,depth,isDir){
+  const isOpen=openSet.has(n.id);
+  const kids=n.kids||[];
+  const done=isDir?n.done:n.st==='done';
+  const hasKids=kids.length>0;
+  const c=count(n);
+
+  const box=document.createElement('div');
+  // 层级类由深度决定；leaf 仅表示该节点没有子项，不能替代层级
+  box.className='node'+(isOpen?' open':'')+(depth>0?(' lvl'+(depth+1)+(hasKids?'':' leaf')):'');
+
+  const row=document.createElement('div');
+  row.className='row';
+  if(isDir) row.style.padding='15px 18px';
+  row.innerHTML=`
+    <button class="tw" data-act="tog" ${hasKids?'':'style="visibility:hidden"'}
+      aria-label="${isOpen?'收起':'展开'}" aria-expanded="${isOpen}">▶</button>
+    <button class="tick ${done?'on':''}" data-act="flip" aria-label="切换完成状态">${done?'✓':''}</button>
+    <div class="body">
+      <div class="t">
+        <span class="${isDir?'dir-name':'nm'}">${n.t}</span>
+        ${!isDir?`<span class="tag ${n.st==='todo'?'wait':''}">${ST[n.st]}</span>
+                 <span class="tag">${n.p}</span>`:''}
+      </div>
+      ${n.due?`<div class="meta"><span class="due">${n.due}</span></div>`:''}
+    </div>
+    <span class="chk ${done?'':'no'} ${done?'':'show'}">${done?'✓':'✗'}</span>
+    ${isDir?`<span class="bar ${g0(n)?'gold':''}"><i style="width:${c.t?c.d/c.t*100:0}%"></i></span>
+            <span class="cnt">${c.d}/${c.t}</span>`:''}
+    <div class="opts">
+      <button class="opt" data-act="add" title="添加下一步">＋</button>
+      <button class="opt" data-act="edit" title="编辑">✎</button>
+      <button class="opt" data-act="del" title="删除">×</button>
+    </div>`;
+  box.appendChild(row);
+
+  if(hasKids){
+    const kb=document.createElement('div');
+    kb.className='kids';
+    if(!isOpen) kb.hidden=true;
+    for(const k of kids) kb.appendChild(node(k,depth+1,false));
+    box.appendChild(kb);
+  }
+  box.dataset.id=n.id;
+  return box;
+}
+function isLeaf(n){return !(n.kids&&n.kids.length);}
+function g0(){return false;}
+
+function render(){
+  const r=document.getElementById('root');
+  r.innerHTML='';
+  for(const [kind,label,cls] of [['main','主线',''],['side','支线','side']]){
+    if(!DB[kind].length)continue;
+    const g=document.createElement('div');g.className='grp';
+    const head=document.createElement('div');head.className='grp-head';
+    head.innerHTML=`<h3>${label}</h3><span class="ln"></span>
+      <button class="newdir ${cls}">＋ 新建${label}</button>`;
+    g.appendChild(head);
+    for(const d of DB[kind]){
+      const card=document.createElement('div');card.className='card';
+      card.appendChild(node(d,0,true));
+      g.appendChild(card);
+    }
+    r.appendChild(g);
+  }
+  if(!showX)document.querySelectorAll('.chk.no').forEach(e=>e.classList.remove('show'));
+}
+
+/* 事件委托：避免内联 onclick 与数据重建冲突 */
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-act]');
+  if(btn){
+    const box=btn.closest('.node');
+    const id=box&&box.dataset.id;
+    if(id){
+      if(btn.dataset.act==='tog')return tog(id);
+      if(btn.dataset.act==='flip')return flip(id);
+    }
+    return;
+  }
+  const name=e.target.closest('.nm,.dir-name');
+  if(name){
+    const box=name.closest('.node');
+    const n=box&&find(box.dataset.id);
+    if(n&&(n.kids||[]).length)return tog(box.dataset.id);
+  }
+});
+function tog(id){
+  openSet.has(id)?openSet.delete(id):openSet.add(id);
+  render();
+}
+function find(id){
+  for(const k of ['main','side'])for(const d of DB[k]){
+    if(d.id===id)return d;
+    const f=allNodes(d,d.kids).find(n=>n.id===id);
+    if(f)return f;
+  }
+  return null;
+}
+function flip(id){
+  const n=find(id);if(!n)return;
+  if(n.kids)n.done=!n.done;else n.st=n.st==='done'?'todo':'done';
+  render();
+}
+function expandAll(v){openSet.clear();
+  if(v)for(const k of ['main','side'])for(const d of DB[k]){
+    openSet.add(d.id);allNodes(d,d.kids).forEach(n=>{if(n.kids&&n.kids.length)openSet.add(n.id);});}
+  render();}
+function togX(){
+  showX=!showX;
+  document.querySelectorAll('.chk.no').forEach(e=>e.classList.toggle('show',showX));
+  const b=document.getElementById('bx');
+  b.textContent='✗ 显示：'+(showX?'开':'关');
+}
+render();
+</script>
+</body>
+</html>

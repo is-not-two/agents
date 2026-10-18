@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>时列 · 改版预览</title>
+<style>
+:root{
+  --ink:#142f42;--accent:#2b7884;--line:#cedde1;--bg:#e8f0f2;
+  --done:#4a8f5e;--todo:#a48a4a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Segoe UI","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+
+/* 顶部说明条 */
+.note{background:#fff;border-bottom:1px solid var(--line);padding:16px 28px;
+  display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.note h1{font-size:17px;margin:0;font-weight:600}
+.note p{margin:0;font-size:13px;color:#5d7680}
+.switch{display:flex;gap:4px;padding:4px;background:#e2ecec;border-radius:9px;margin-left:auto}
+.switch button{padding:8px 18px;border-radius:6px;font-size:13px;color:#4c6a72}
+.switch button[aria-pressed=true]{background:#fff;color:#1d5460;font-weight:600;box-shadow:0 1px 4px #17384a1f}
+
+.view{display:none;padding:28px;max-width:1180px;margin:0 auto}
+.view.on{display:block}
+
+.caption{font-size:12px;color:#6c838b;margin:0 0 18px;letter-spacing:1px}
+h2.title{font-size:25px;margin:0 0 6px;font-weight:600}
+.sub{color:#6b828a;font-size:13px;margin:0 0 26px}
+
+/* 方向卡片 */
+.group{margin-bottom:30px}
+.group-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.group-head h3{font-size:14px;margin:0;color:#3d6b74;font-weight:600}
+.group-head .bar{width:34px;height:2px;background:#a9c4c8}
+.newdir{margin-left:auto;padding:9px 16px;border-radius:8px;background:var(--accent);
+  color:#fff;font-size:13px}
+
+.dir{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);
+  border-radius:13px;padding:18px 22px;margin-bottom:11px;transition:.16s}
+.dir:hover{border-color:#7ba7ae;box-shadow:0 6px 20px #1d4b5814;transform:translateY(-1px)}
+.dir-top{display:flex;align-items:center;gap:13px}
+.mark{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:13px;color:#fff;font-weight:700}
+.mark.done{background:var(--done)}
+.mark.todo{background:#fff;border:2px solid var(--todo);color:var(--todo)}
+.dir-name{font-size:17px;font-weight:600;flex:1;min-width:0}
+.count{font-size:13px;color:#5b757e;font-variant-numeric:tabular-nums;white-space:nowrap}
+.track{width:110px;height:6px;background:#e3ebec;border-radius:4px;overflow:hidden;flex:none}
+.track i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.pct{font-size:12px;color:#6c838b;width:34px;text-align:right;font-variant-numeric:tabular-nums}
+.dir-tags{margin-top:9px;padding-left:35px;display:flex;gap:7px;flex-wrap:wrap}
+.dir-tags span{font-size:12px;padding:3px 9px;background:#eef4f4;border-radius:5px;color:#5f7d84}
+
+/* 清单页 */
+.crumb{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.back{padding:8px 16px;border:1px solid #9dbdc2;border-radius:8px;background:#fff;
+  font-size:13px;color:#2b6b73}
+.back:hover{background:#e4f0f0}
+.crumb-title{font-size:19px;font-weight:600}
+.crumb-title small{font-size:12px;color:#7b929a;font-weight:400;margin-left:9px}
+
+.summary{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.chip{padding:8px 16px;border-radius:8px;background:#fff;border:1px solid var(--line);font-size:13px}
+.chip b{font-size:16px;margin-right:5px}
+
+.list{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.row{display:flex;align-items:flex-start;gap:13px;padding:15px 20px;border-bottom:1px solid #edf2f2}
+.row:last-child{border-bottom:0}
+.row:hover{background:#fafcfc}
+.tick{width:24px;height:24px;border-radius:50%;border:2px solid #b7cdd1;flex:none;margin-top:2px;
+  display:grid;place-items:center;color:#fff;font-size:13px;transition:.15s}
+.tick:hover{border-color:var(--accent);background:#e8f2f2}
+.tick.on{background:var(--done);border-color:var(--done)}
+.row-body{flex:1;min-width:0}
+.row-title{font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row-title .name{}
+.row.on .row-title .name{color:#7d8f94;text-decoration:line-through}
+.mark2{font-size:13px;font-weight:700}
+.mark2.yes{color:var(--done)}
+.mark2.no{display:none}
+.row:not(.on) .mark2.no.show{display:inline}
+.tag{font-size:11px;padding:2px 8px;border-radius:4px;background:#eef4f4;color:#5f7d84}
+.tag.wait{background:#f7efdf;color:#8a6b2e}
+.row-meta{margin-top:5px;font-size:12px;color:#7b929a;display:flex;gap:12px;flex-wrap:wrap}
+.row-meta .due::before{content:"◷ "}
+.kids{margin-left:31px;padding-left:15px;border-left:2px solid #dceaea}
+.kids .row{background:#fbfdfd;padding:12px 16px}
+.opts{margin-left:auto;display:flex;gap:6px;flex:none}
+.opt{width:28px;height:28px;border-radius:6px;color:#8aa3a9;font-size:15px}
+.opt:hover{background:#eef4f4;color:#2b6b73}
+
+/* 对比标注 */
+.callout{background:#fff8e6;border:1px solid #e8d5a8;border-radius:9px;padding:13px 17px;
+  margin:16px 0;font-size:13px;color:#7a6224}
+.callout b{color:#5f4b18}
+</style>
+</head>
+<body>
+
+<div class="note">
+  <div>
+    <h1>时列 · 人生规划改版预览</h1>
+    <p>两个视图分工：<b>总览</b>看全部方向的完成进度，点进<b>清单</b>处理具体事项。示例数据，不写入数据库。</p>
+  </div>
+  <div class="switch">
+    <button id="btnA" aria-pressed="true" onclick="show('a')">规划总览</button>
+    <button id="btnB" aria-pressed="false" onclick="show('b')">方向清单</button>
+    <button id="btnX" aria-pressed="false" onclick="togX()" title="切换未完成项是否显示叉号">✗ 显示：开</button>
+  </div>
+</div>
+
+<section class="view on" id="view-a">
+  <p class="caption">PLANNING OVERVIEW</p>
+  <h2 class="title">人生规划</h2>
+  <p class="sub">一眼看清每个方向完成了多少，点任意一张卡片进入明细。</p>
+
+  <div class="callout">
+    <b>对比现在的改动：</b>卡片里原本塞了「子节点 · 可开始 · P2」三个字段加一句教学文案，
+    现在改为<b>完成数 / 进度条</b>——扫一眼就知道做到哪了。画布与缩放滑块从这个视图移走。
+  </div>
+
+  <div class="group">
+    <div class="group-head"><h3>主线</h3><span class="bar"></span>
+      <button class="newdir">＋ 新建主线</button></div>
+
+    <button class="dir" onclick="show('b')">
+      <div class="dir-top">
+        <span class="mark done">✓</span>
+        <span class="dir-name">学习与生活</span>
+        <span class="count">3 / 8</span>
+        <span class="track"><i style="width:37.5%"></i></span>
+        <span class="pct">37%</span>
+      </div>
+      <div class="dir-tags"><span>学习</span><span>健康</span><span>财务</span></div>
+    </button>
+
+    <button class="dir" onclick="show('b')">
+      <div class="dir-top">
+        <span class="mark todo"></span>
+        <span class="dir-name">副业探索</span>
+        <span class="count">1 / 5</span>
+        <span class="track"><i style="width:20%"></i></span>
+        <span class="pct">20%</span>
+      </div>
+      <div class="dir-tags"><span>写作</span><span>变现</span></div>
+    </button>
+  </div>
+
+  <div class="group">
+    <div class="group-head"><h3>支线</h3><span class="bar"></span>
+      <button class="newdir">＋ 新建支线</button></div>
+    <button class="dir" onclick="show('b')">
+      <div class="dir-top">
+        <span class="mark todo"></span>
+        <span class="dir-name">换个活法</span>
+        <span class="count">0 / 3</span>
+        <span class="track"><i style="width:0%"></i></span>
+        <span class="pct">0%</span>
+      </div>
+      <div class="dir-tags"><span>间隔年</span></div>
+    </button>
+  </div>
+</section>
+
+<section class="view" id="view-b">
+  <div class="crumb">
+    <button class="back" onclick="show('a')">← 返回规划总览</button>
+    <span class="crumb-title">学习与生活 <small>主线 · 8 项</small></span>
+  </div>
+
+  <div class="summary">
+    <span class="chip"><b style="color:#4a8f5e">3</b>已完成</span>
+    <span class="chip"><b>4</b>进行中</span>
+    <span class="chip"><b style="color:#a48a4a">1</b>未开始</span>
+  </div>
+
+  <div class="callout">
+    <b>完成标记：</b>行首是可点击的大圆圈，点一下切换。完成后整行变淡、标题划线、末尾显示 <b style="color:#4a8f5e">✓</b>。
+    未完成的显示 <b style="color:#b08a5a">✗</b>（如果你觉得叉太扎眼，可以只留勾——勾本身就是"已完成"的信号）。
+  </div>
+
+  <div class="list" id="list"></div>
+</section>
+
+<script>
+const DATA=[
+ {id:1,t:'读完《置身事内》',d:'2026-10-20',s:'doing',p:'P1',kids:[]},
+ {id:2,t:'每周跑步三次',d:'',s:'doing',p:'P2',kids:[]},
+ {id:3,t:'学会基础财务',d:'',s:'todo',p:'P1',kids:[
+   {id:31,t:'读完《小狗钱钱》',d:'',s:'done',p:'P2',kids:[]},
+   {id:32,t:'记账三个月',d:'',s:'doing',p:'P3',kids:[]}
+ ]},
+ {id:4,t:'整理书桌',d:'',s:'done',p:'P3',kids:[]},
+ {id:5,t:'考取 PMP 证书',d:'2026-12-01',s:'doing',p:'P0',kids:[]}
+];
+let showX=true;
+const LABEL={done:'已完成',doing:'进行中',todo:'未开始'};
+
+function row(n,isKid){
+  const done=n.s==='done';
+  return `<div class="row ${done?'on':''}">
+    <button class="tick ${done?'on':''}" onclick="tog(${n.id},this)" aria-label="切换完成状态">${done?'✓':''}</button>
+    <div class="row-body">
+      <div class="row-title">
+        <span class="name">${n.t}</span>
+        <span class="tag">${n.p}</span>
+        <span class="tag ${n.s==='todo'?'wait':''}">${LABEL[n.s]}</span>
+        ${done?'<span class="mark2 yes">✓</span>':'<span class="mark2 no show">✗</span>'}
+      </div>
+      <div class="row-meta">
+        ${n.d?`<span class="due">${n.d}</span>`:''}
+      </div>
+    </div>
+    <div class="opts">
+      <button class="opt" title="添加下一步">＋</button>
+      <button class="opt" title="编辑">✎</button>
+      <button class="opt" title="删除">×</button>
+    </div>
+  </div>`+(n.kids&&n.kids.length?`<div class="kids">${n.kids.map(k=>row(k,true)).join('')}</div>`:'');
+}
+
+function render(){
+  document.getElementById('list').innerHTML=DATA.map(n=>row(n)).join('');
+  if(!showX) document.querySelectorAll('.mark2.no').forEach(e=>e.classList.remove('show'));
+}
+function tog(id,btn){
+  const flat=()=>DATA.flatMap(n=>[n,...(n.kids||[])]);
+  const n=flat().find(x=>x.id===id);
+  n.s=n.s==='done'?'todo':'done';
+  render();
+}
+function show(k){
+  document.getElementById('view-a').classList.toggle('on',k==='a');
+  document.getElementById('view-b').classList.toggle('on',k==='b');
+  document.getElementById('btnA').setAttribute('aria-pressed',String(k==='a'));
+  document.getElementById('btnB').setAttribute('aria-pressed',String(k==='b'));
+  if(k==='b')render();
+}
+function togX(){
+  showX=!showX;
+  document.querySelectorAll('.mark2.no').forEach(e=>e.classList.toggle('show',showX));
+  const b=document.getElementById('btnX');
+  b.textContent='✗ 显示：'+(showX?'开':'关');
+  b.setAttribute('aria-pressed',String(!showX));
+}
+render();
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 /* 自动化纯视图：配置、实际运行与人工确认各自呈现。 */
-import {state} from './data.js?v=26';
+import {state} from './data.js?v=34';
 export const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const flow=()=>state.workflows.find(w=>w.id===state.selectedFlow)||state.workflows[0];
 const labels={running:'执行中',completed:'已完成',fallback:'已降级',failed:'执行失败',skipped:'已跳过',awaiting_confirmation:'待确认入库',confirmed:'已入库'};

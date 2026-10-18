@@ -1,9 +1,9 @@
-import {bindBackup} from './backup.js?v=26';
-import {bindModelConnection} from './model-connection.js?v=26';
-import {bindTree} from './tree-actions.js?v=26';
-import {bindAutomation} from './automation-actions.js?v=26';
-import {api,state,load,write,read,modules,groups,currentNote} from './data.js?v=26';
-import {render,sidebar,dialogs} from './views.js?v=26';
+import {bindBackup} from './backup.js?v=34';
+import {bindModelConnection} from './model-connection.js?v=34';
+import {bindTree} from './tree-actions.js?v=34';
+import {bindAutomation} from './automation-actions.js?v=34';
+import {api,state,load,write,read,modules,groups,currentNote} from './data.js?v=34';
+import {render,sidebar,dialogs} from './views.js?v=34';
 const $=s=>document.querySelector(s),navigationStrip=$('#navigation-strip'),content=$('#content'),stack=[location.hash||'#home'],scrolls=new Map(Object.entries(state.visits).filter(([,value])=>Number.isFinite(value)&&value>=0)),toastBox=$('#toast');
 toastBox.id='toast';toastBox.className='toast';toastBox.hidden=true;toastBox.setAttribute('role','status');
 let modelConnectionController,backupController;
