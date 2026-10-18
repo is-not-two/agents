@@ -11,7 +11,7 @@ export const groups=[
   {id:'workspace',title:'个人工作台',caption:'知识、计划与复盘'},
   {id:'automation',title:'自动化中心',caption:'检索与助手'},
   {id:'settings',title:'系统设置',caption:'连接、数据与界面'},
-  {id:'private',title:'私密管理',caption:'愿望清单与私密日记'}
+  {id:'private',title:'私密空间',caption:'愿望清单与私密日记'}
 ];
 export const modules=[
   ['knowledge','个人知识库','workspace','knowledge'],['documents','技术文档检索','workspace','search'],['planning','人生规划','workspace','planning'],['stages','阶段记录','workspace','stages'],

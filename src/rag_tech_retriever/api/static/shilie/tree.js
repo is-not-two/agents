@@ -1,8 +1,8 @@
-import {branchNotice,branchDialog} from './branch-actions.js?v=51';
+import {branchNotice,branchDialog} from './branch-actions.js?v=53';
 /* 人生规划：同页展开的纵向列表。点方向或节点即在下方展开，不跳页；
    行首圆圈切换完成，方向行常驻进度条，收起时也能一眼看到做到哪了。
    数据接口与后端契约不变——本文件只负责把 acts[].nodes 渲染成层级列表。 */
-import {state,read,write} from './data.js?v=51';
+import {state,read,write} from './data.js?v=53';
 export const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const treeState={kind:read('tree-kind','main'),planId:'',selected:'',folded:read('tree-folded',[]),busy:false};
 if(!['main','side'].includes(treeState.kind))treeState.kind='main';

@@ -1,5 +1,5 @@
 /* 模型连接表单：密钥仅随请求发送，不写浏览器偏好。 */
-import {api,state} from './data.js?v=51';
+import {api,state} from './data.js?v=53';
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const connection={info:null,error:'',loading:false,busy:false,loaded:false};
 export function modelConnectionView(){const info=connection.info;if(!info)return `<section class="module-surface"><p role="status">${connection.loading?'正在读取模型连接…':'尚未读取模型连接'}</p>${connection.error?`<p role="alert" class="error-text">${escape(connection.error)}</p><button class="small-button" data-action="model-reload">重新加载</button>`:''}</section>`;
