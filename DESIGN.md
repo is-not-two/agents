@@ -287,3 +287,22 @@ Docker 可用后完成真实Chrome 验证（1440×900）。启动方式：`docke
 新发现的遗留问题：节点工具按钮（`+` / `−`）溢出卡片右缘 17px（实测右缘 358 vs 卡片右缘 341）。源于 `.tree-node-tools{right:-17px}` 的悬空按钮设计，卡片由 320px 收窄至 260px 后贴边感增强。是否改为内嵌需用户确认观感，本轮未改动。
 
 验证方法备忘：本机可用 Chrome 可执行文件为 `C:/Program Files/Google/Chrome/Application/chrome.exe`，Playwright 需通过 `executablePath` 指定，`npx playwright install` 未执行。playwright-cli 的浏览器会话无法跨命令存活，单次`run-code` 也不可用，故改用独立脚本一次性完成断言。
+
+#### 验证工具固化（2026-10-18晚）
+
+按用户要求，浏览器验证统一改用本机 Microsoft Edge（`C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe`），不再使用 Chrome。
+
+新增 `scripts/verify-ui.mjs`，把此前一次性使用的验证脚本固化，避免每次重写路径与拦截逻辑。四个场景：
+- `home` — 标题、入口卡片、顶栏底色、返回按钮数量
+- `tree` — 节点实测坐标、父子缩进、连线路径（拦截 plans API 注入示例数据，不写数据库）
+- `interact` — 点击 `＋` 弹窗、父节点字段隐藏、必填数量、详情面板、缩放
+- `responsive` — 1440/1024/390 三宽度横向溢出检查
+
+运行方式（Playwright 装在 WorkBuddy 隔离目录，ESM 不认 `NODE_PATH`，需在依赖目录执行）：
+```
+copy scripts\verify-ui.mjs C:/Users/lzm/.workbuddy/binaries/node/workspace/
+cd C:/Users/lzm/.workbuddy/binaries/node/workspace
+node verify-ui.mjs all
+```
+
+Edge 实测结果：四个场景全部通过。树布局缩进48px、连线清晰、交互符合要求、1440/1024/390 三宽度均无横向溢出、全程零控制台错误。与 Chrome 结果一致，说明修复不依赖特定浏览器内核。
