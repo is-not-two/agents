@@ -1,0 +1,88 @@
+import {bindBackup} from './backup.js?v=24';
+import {bindModelConnection} from './model-connection.js?v=23';
+import {bindTree} from './tree-actions.js?v=22';
+import {bindAutomation} from './automation-actions.js?v=23';
+import {api,state,load,write,read,modules,groups,currentNote} from './data.js?v=15';
+import {render,sidebar,dialogs} from './views.js?v=24';
+const $=s=>document.querySelector(s),navigationStrip=$('#navigation-strip'),content=$('#content'),stack=[location.hash||'#home'],scrolls=new Map(Object.entries(state.visits).filter(([,value])=>Number.isFinite(value)&&value>=0)),toastBox=$('#toast');
+toastBox.id='toast';toastBox.className='toast';toastBox.hidden=true;toastBox.setAttribute('role','status');
+let modelConnectionController,backupController;
+let toastTimer,detailTrigger=null,editingId='',working=false,pendingBack=false;
+document.body.insertAdjacentHTML('beforeend',dialogs());
+function toast(message,error=false){toastBox.textContent=message;toastBox.classList.toggle('error-text',error);toastBox.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastBox.hidden=true,4200);}
+function persistRoute(){write('note',state.selectedNote);write('plan',state.selectedPlan);write('priority',state.priority);write('taskStatus',state.taskStatus);write('filter',state.filter);write('query',state.query);write('view',state.view);write('recent',state.recent);write('visits',state.visits);}
+function updatePosition(){const [kind,id]=location.hash.slice(1).split('/'),module=modules.find(m=>m.id===id),group=groups.find(g=>g.id===(module?.group||id)),nav=$('#position');nav.replaceChildren();const link=(label,href)=>{const a=document.createElement('a');a.href=href;a.textContent=label;nav.append(a);};if(module){link('工作区','#home');nav.append('›');link(group.title,'#category/'+group.id);nav.append('›',module.title);}else if(group){link('工作区','#home');nav.append('›',group.title);}}
+function renderPage({restore=false}={}){document.documentElement.dataset.layout=state.mode;document.documentElement.dataset.density=['compact','standard','comfortable'][state.density]||'standard';document.documentElement.dataset.hero=state.compactHero?'compact':'full';document.body.dataset.layout=state.mode;const moduleId=location.hash.split('/')[1];if(location.hash.startsWith('#module/')&&modules.some(m=>m.id===moduleId))state.recent=[moduleId,...state.recent.filter(id=>id!==moduleId)].slice(0,4);content.innerHTML=render();content.prepend(navigationStrip);modelConnectionController?.ensure();backupController?.ensure();navigationStrip.hidden=!location.hash||location.hash==='#home';$('#sidebar').innerHTML=sidebar();document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===state.mode)));document.title=(modules.find(m=>m.id===moduleId)?.title||'工作区')+' · 时列';if(!restore)window.scrollTo(0,0);const route=location.hash||'#home';persistRoute();}
+function go(route){if(!route.startsWith('#'))route='#'+route;location.hash=route;}
+function back(){const [kind,id,sub]=location.hash.slice(1).split('/');if(kind==='module'&&id==='planning'){go('#category/workspace');return;}if(kind==='module'&&sub){go(`#module/${id}`);return;}if(kind==='module'){const m=modules.find(x=>x.id===id);go(m?`#category/${m.group}`:'#home');return;}if(kind==='category'){go('#home');return;}go('#home');}
+function currentPlan(){return plan();}
+function showDialog(kind,values={},id=''){const d=document.querySelector(`.form-dialog[data-form="${kind}"]`);if(!d){toast('找不到对应表单',true);return;}const form=d.querySelector('form');form.reset();editingId=id;d.dataset.recordId=id;for(const [key,value] of Object.entries(values)){const field=form.elements.namedItem(key);if(!field)continue;if(field instanceof HTMLSelectElement&&field.multiple){[...field.options].forEach(o=>o.selected=(value||[]).includes(o.value));}else field.value=value??'';}d.showModal();d.querySelector('input,textarea,select')?.focus();}
+function closeDialogs(){document.querySelectorAll('dialog[open]').forEach(d=>d.close());}
+function showDetail(title,contentHtml,trigger=null){const d=$('#detail-dialog');detailTrigger=trigger||document.activeElement;$('#detail-title').textContent=title;$('#detail-content').innerHTML=contentHtml;d.showModal();$('#detail-close').focus();}
+function escapeHtml(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function refresh(keepScroll=true){const y=window.scrollY;try{await load();renderPage({restore:true});if(keepScroll)window.scrollTo(0,y);}catch(e){state.loading=false;state.error=e.message;renderPage();}}
+function restoreNote(){const row=currentNote();if(row)showDialog('knowledge',{title:row.data.title,content:row.data.content,tags:(row.data.tags||[]).join(', '),source:row.data.source||''},row.id);}
+function openHistory(){const row=currentNote();if(!row)return;api(`records/${row.id}/history`).then(rows=>{const html=rows.map(r=>`<details class="history-entry"><summary>版本 ${r.version} · ${escapeHtml(r.action)} · ${escapeHtml(r.created_at)}</summary><h3>${escapeHtml(r.data.title)}</h3><p>${escapeHtml(r.data.content)}</p>${r.version!==row.version?`<button class="small-button" data-action="restore-note" data-version="${r.version}">恢复此版本</button>`:''}</details>`).join('');showDetail('笔记历史',html);}).catch(e=>toast(e.message,true));}
+function openStageFinish(id){const rec=state.stages.find(s=>s.id===id);if(!rec)return;const d=$('#detail-dialog');detailTrigger=document.activeElement;$('#detail-title').textContent='完成阶段记录';$('#detail-content').innerHTML=`<form id="finish-stage-form"><label class="form-field">完成内容<textarea name="completed" rows="5" placeholder="每行一项"></textarea></label><label class="form-field">问题与遗留<textarea name="issues" rows="4" placeholder="每行一项"></textarea></label><label class="form-field">验证记录<textarea name="verification" rows="4" placeholder="填写检查方式和结果；选择通过时必须填写"></textarea></label><label class="form-field">状态<select name="status"><option value="passed">验证通过</option><option value="attention">仍需处理</option></select></label><div class="form-actions"><button class="primary-button">保存阶段结果</button></div></form>`;d.dataset.finishId=id;d.showModal();}
+function listText(form,name){return String(form.elements.namedItem(name).value||'').split(/\n/).map(x=>x.trim()).filter(Boolean);}
+async function saveForm(form){if(working)return;working=true;const submit=form.querySelector('[type=submit]');if(submit){submit.disabled=true;submit.textContent='保存中…';}try{const d=form.closest('dialog'),kind=d.dataset.form,fd=new FormData(form);if(kind==='knowledge'){const data={title:fd.get('title'),content:fd.get('content'),tags:String(fd.get('tags')).split(',').map(x=>x.trim()).filter(Boolean),source:fd.get('source')};const row=editingId?state.knowledge.find(n=>n.id===editingId):null;const saved=await api(editingId?`knowledge/${editingId}`:'knowledge',{data,...(row?{version:row.version}:{})},editingId?'PUT':'POST');state.selectedNote=saved.id;state.filter='all';state.query='';toast('笔记已保存');}
+
+
+
+ else if(kind==='stage'){const created=await api('stages',{title:fd.get('title'),objective:fd.get('objective')});toast('阶段已创建，可以继续记录');}
+ await refresh();closeDialogs();}catch(e){toast(e.message,true);}finally{working=false;if(submit){submit.disabled=false;submit.textContent='保存';}}}
+async function submitSearch(form){
+ if(state.searchBusy)return;
+ const fd=new FormData(form),query=String(fd.get('query')),scope=String(fd.get('scope')),generate=fd.has('generate');
+ Object.assign(state,{searchInput:query,scope,generate,searchBusy:true,searchError:''});renderPage({restore:true});
+ try{state.searchResult=await api('query',{query,scope,mode:'text',generate});state.searchResultQuery=query;state.runs=[query,...state.runs].slice(0,10);}
+ catch(error){state.searchError=error.message;}
+ finally{state.searchBusy=false;if(location.hash.startsWith('#module/documents'))renderPage({restore:true});}
+}
+async function finishStage(form){
+ if(form.dataset.saving==='true')return;
+ const id=$('#detail-dialog').dataset.finishId,button=form.querySelector('button');
+ const data={completed:listText(form,'completed'),issues:listText(form,'issues'),verification:listText(form,'verification'),status:form.elements.status.value};
+ form.dataset.saving='true';form.setAttribute('aria-busy','true');button.disabled=true;button.textContent='保存中…';
+ try{await api(`stages/${id}/finish`,data);$('#detail-dialog').close();await refresh();toast('阶段结果已保存');}
+ catch(error){toast(error.message,true);}
+ finally{form.dataset.saving='false';form.setAttribute('aria-busy','false');button.disabled=false;button.textContent='保存阶段结果';}
+}
+async function restoreNoteVersion(version){const row=currentNote();if(!row)return;try{await api(`records/${row.id}/restore`,{target_version:Number(version),current_version:row.version});$('#detail-dialog').close();await refresh();toast('已恢复此版本，旧历史已保留');}catch(e){toast(e.message,true);}}
+function handleAction(button){const owner=button.closest('[data-plan-id]');if(owner)state.selectedPlan=owner.dataset.planId;const {action,id,value}=button.dataset;switch(action){case'back':back();break;case'new-note':{document.querySelector('.form-dialog[data-form="knowledge"] h2').textContent='新建笔记';editingId='';showDialog('knowledge');break;}case'edit-note':document.querySelector('.form-dialog[data-form="knowledge"] h2').textContent='编辑笔记';restoreNote();break;case'select-note':state.selectedNote=id;renderPage({restore:true});break;case'clear-search':state.query='';renderPage({restore:true});break;case'history-note':openHistory();break;case'delete-note':{const row=currentNote();if(row&&confirm(`将“${row.data.title}”移入回收站？`))api(`records/${row.id}?version=${row.version}`,undefined,'DELETE').then(async()=>{state.selectedNote='';await refresh();toast('已移入回收站');}).catch(e=>toast(e.message,true));break;}case'filter':state.filter=value;renderPage({restore:true});break;case'refresh':refresh();break;case'new-stage':document.querySelector('.form-dialog[data-form="stage"] h2').textContent='记录新阶段';showDialog('stage');break;case'finish-stage':openStageFinish(id);break;case'close-dialog':button.closest('dialog').close();break;case'retry':refresh(false);break;case'quick':openQuick();break;case'trash-notes':openTrash();break;case'restore-trash':restoreTrash(id);break;case'stage-check':inspectStage(id);break;case'restore-stage-data':restoreStageData(id);break;case'restore-note':restoreNoteVersion(button.dataset.version);break;}}
+document.addEventListener('click',e=>{const mode=e.target.closest('[data-mode]');if(mode){state.mode=mode.dataset.mode;write('mode',state.mode);mode.closest('details').open=false;renderPage({restore:true});return;}if(e.target.closest('#quick-results a'))$('#quick-dialog').close();const b=e.target.closest('[data-action]');if(b){e.preventDefault();handleAction(b);}});
+document.addEventListener('input',e=>{if(e.target.id==='density-range'){state.density=Number(e.target.value);write('density',state.density);document.documentElement.dataset.density=['compact','standard','comfortable'][state.density];$('#density-output').textContent=['紧凑','标准','宽松'][state.density];}if(e.target.id==='knowledge-search'){state.query=e.target.value;const y=window.scrollY;renderPage({restore:true});const input=$('#knowledge-search');input?.focus();input?.setSelectionRange(state.query.length,state.query.length);window.scrollTo(0,y);}if(e.target.name==='query')state.searchInput=e.target.value;});
+document.addEventListener('change',e=>{if(e.target.closest('#search-form')){if(e.target.name==='scope')state.scope=e.target.value;if(e.target.name==='generate')state.generate=e.target.checked;}if(e.target.matches('[data-mode]')||e.target.id==='mode-select'){state.mode=e.target.dataset.mode||e.target.value;write('mode',state.mode);renderPage({restore:true});}if(e.target.id==='density-select'){state.density=Number(e.target.value);write('density',state.density);renderPage({restore:true});}if(e.target.id==='hero-size'){state.compactHero=e.target.value==='compact';write('hero',state.compactHero);renderPage({restore:true});}});
+window.addEventListener('hashchange',()=>{const route=location.hash||'#home',previous=stack.at(-1);scrolls.set(previous,window.scrollY);state.visits[previous]=window.scrollY;if(pendingBack){if(stack.length>1)stack.pop();pendingBack=false;}else if(stack.at(-1)!==route)stack.push(route);updatePosition();renderPage({restore:scrolls.has(route)});if(scrolls.has(route))requestAnimationFrame(()=>window.scrollTo(0,scrolls.get(route)));});
+window.addEventListener('popstate',()=>{pendingBack=true;});
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#quick-dialog')?.open)$('#quick-dialog').close();if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openQuick();}});
+$('#quick-open').addEventListener('click',openQuick);$('#quick-close').addEventListener('click',()=>$('#quick-dialog').close());
+$('#quick-query').addEventListener('input',populateQuick);
+
+document.addEventListener('submit',async e=>{if(e.target.id==='login-form'){e.preventDefault();const form=e.target,button=form.querySelector('button'),error=$('#login-error');button.disabled=true;error.hidden=true;try{await api('session',{token:new FormData(form).get('token')});await refresh(false);}catch(err){error.textContent=err.message;error.hidden=false;}finally{button.disabled=false;}return;}if(e.target.matches('.edit-form')){e.preventDefault();await saveForm(e.target);}if(e.target.id==='finish-stage-form'){e.preventDefault();await finishStage(e.target);}if(e.target.id==='search-form'){e.preventDefault();await submitSearch(e.target);}});
+$('#detail-close').addEventListener('click',()=>$('#detail-dialog').close());$('#detail-dialog').addEventListener('close',()=>{if(detailTrigger?.isConnected)detailTrigger.focus({preventScroll:true});});
+window.addEventListener('storage',e=>{if(e.key==='shilie-mode'){state.mode=read('mode','portal');renderPage({restore:true});}});
+
+load().then(()=>{if(!state.selectedPlan&&state.plans.length)state.selectedPlan=state.plans[0].id;const route=location.hash.slice(1);if(!route)history.replaceState(null,'','#home');updatePosition();renderPage({restore:scrolls.has(location.hash)});if(scrolls.has(location.hash))requestAnimationFrame(()=>window.scrollTo(0,scrolls.get(location.hash)));}).catch(e=>{state.loading=false;state.error=e.message;renderPage();});
+
+
+
+
+
+function populateQuick(){const query=$('#quick-query').value.toLowerCase();$('#quick-results').innerHTML=modules.filter(m=>`${m.title} ${m.group}`.toLowerCase().includes(query)).map(m=>`<a class="module-option" href="#module/${m.id}">${escapeHtml(m.title)}</a>`).join('')||'<p>没有匹配模块</p>';}
+function openQuick(){$('#quick-query').value='';populateQuick();if(!$('#quick-dialog').open)$('#quick-dialog').showModal();$('#quick-query').focus();}
+$('#quick-dialog').addEventListener('keydown',event=>{const links=[...$('#quick-results').querySelectorAll('a')],index=links.indexOf(document.activeElement);if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();links[event.key==='ArrowDown'?Math.min(index+1,links.length-1):Math.max(index-1,0)]?.focus();}if(event.key==='Enter'&&event.target.id==='quick-query'){event.preventDefault();links[0]?.click();}});
+let scrollTimer;
+window.addEventListener('scroll',()=>{clearTimeout(scrollTimer);scrollTimer=setTimeout(()=>{const route=location.hash||'#home';state.visits[route]=window.scrollY;scrolls.set(route,window.scrollY);write('visits',state.visits);},150);},{passive:true});
+let trashRows=[];
+async function openTrash(){try{trashRows=await api('knowledge?trash=true');showDetail('知识回收站',trashRows.length?trashRows.map(row=>`<section class="trash-entry"><h3>${escapeHtml(row.data.title)}</h3><p>${escapeHtml(row.data.content.slice(0,120))}</p><button class="small-button" data-action="restore-trash" data-id="${escapeHtml(row.id)}">恢复笔记</button></section>`).join(''):'<p>回收站为空。</p>');}catch(error){toast(error.message,true);}}
+async function restoreTrash(id){const row=trashRows.find(item=>item.id===id);if(!row)return;try{const history=await api(`records/${id}/history`),target=history.find(version=>!version.deleted);if(!target)throw Error('没有可恢复的历史版本');await api(`records/${id}/restore`,{target_version:target.version,current_version:row.version});state.selectedNote=id;closeDialogs();await refresh();toast('笔记已恢复，历史仍保留');}catch(error){toast(error.message,true);}}
+async function inspectStage(id){try{const result=await api(`stages/${id}/rollback-check`);showDetail('源码回滚预检',`<p>${result.can_apply?'当前源码与阶段结束时一致，可以在停止应用后执行回滚。':'检测到后续改动或备份问题，当前不能覆盖恢复。'}</p><p>${result.changes.length} 项文件改动</p>${result.conflicts.length?`<ul>${result.conflicts.map(item=>`<li>${escapeHtml(item)}</li>`).join('')}</ul>`:''}<p>在项目目录执行：</p><pre><code>${escapeHtml('python scripts/stage_checkpoint.py rollback --id '+id)}</code></pre><p>检查通过后，再使用 --apply。数据库恢复另行处理。</p>`);}catch(error){toast(error.message,true);}}
+async function restoreStageData(id){if(prompt('恢复该阶段开始时的知识和规划。当前内容会先保存保护快照。请输入“恢复数据”：')!=='恢复数据')return;try{const result=await api(`stages/${id}/restore-data`,{confirmation:'恢复数据'});closeDialogs();await refresh();toast(`已恢复 ${result.restored_records} 条记录，保护快照已保存`);}catch(error){toast(error.message,true);}}
+
+
+bindAutomation({renderPage,refresh,toast});
+bindTree({renderPage,refresh,toast});
+modelConnectionController=bindModelConnection({renderPage,toast});
+
+backupController=bindBackup({renderPage,refresh,toast});

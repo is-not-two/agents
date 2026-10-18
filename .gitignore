@@ -1,0 +1,30 @@
+# 环境与密钥（禁止入库）
+.env
+
+# 虚拟环境
+.venv/
+
+# Python 构建与缓存产物
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# IDE
+.idea/
+.vscode/
+
+# 个人内容导出、阶段用户数据快照、模型/浏览器缓存
+data/local/
+output/stages/*/data_snapshot.json
+output/stages/*/vector_before*.json
+.playwright-cli/
+output/web/*.dump
+output/web/browser-sandbox/
+
+# 说明：output/ 不忽略——阶段产物与量化成果账本需要留档
+
+# 完整数据库备份可能包含个人内容
+output/backups/

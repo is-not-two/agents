@@ -1,0 +1,44 @@
+{
+  "generated_at": "2026-10-10T15:27:44",
+  "max_chunk_chars": 1500,
+  "status_scope": [
+    "RPA微信命令与事件协议v0.md"
+  ],
+  "total_chunks": 237,
+  "total_files": 14,
+  "per_file": {
+    "api-ai-employee-task-flow-templates.md": 26,
+    "api-ai员工-P1-P3接口契约.md": 35,
+    "ark-adapter-configuration.md": 1,
+    "RPA微信命令与事件协议v0.md": 42,
+    "SERVER_CHECKLIST.md": 17,
+    "temporary-hidden-features-checklist.md": 6,
+    "小程序语音识别chatSTT接口协议.md": 8,
+    "微信接管AI回复兜底排查.md": 19,
+    "微信设备指令通道划分与现状.md": 23,
+    "智能会话-小程序附件联调协议.md": 6,
+    "视频号发布-设备侧联调问题清单.md": 13,
+    "视频号发布_后端侧答复.md": 16,
+    "设备命令下发修复-现网清理操作单.md": 14,
+    "设备端V2命令下发与回传协议.md": 11
+  },
+  "per_status": {
+    "UNKNOWN": 206,
+    "DISABLED": 10,
+    "CONFIRMED": 10,
+    "PENDING": 8,
+    "EXCEPTION": 3
+  },
+  "sample_chunk_ids": [
+    "微信设备指令通道划分与现状::010",
+    "api-ai员工-P1-P3接口契约::003",
+    "api-ai-employee-task-flow-templates::007",
+    "视频号发布-设备侧联调问题清单::007",
+    "RPA微信命令与事件协议v0::009",
+    "RPA微信命令与事件协议v0::001",
+    "api-ai员工-P1-P3接口契约::032",
+    "api-ai员工-P1-P3接口契约::010",
+    "视频号发布-设备侧联调问题清单::006",
+    "api-ai员工-P1-P3接口契约::001"
+  ]
+}

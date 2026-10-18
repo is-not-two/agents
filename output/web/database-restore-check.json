@@ -1,0 +1,6 @@
+{
+  "full_database_backup_restore": "passed",
+  "restored_vector_rows": 237,
+  "isolated_database": "qa_restore_20261012",
+  "production_database_unchanged": true
+}

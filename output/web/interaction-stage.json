@@ -1,0 +1,91 @@
+{
+  "id": "20261012-152409-6f2ff198",
+  "status": "passed",
+  "changes": 13,
+  "rollback_check": {
+    "stage_id": "20261012-152409-6f2ff198",
+    "apply": false,
+    "changes": [
+      {
+        "path": "AGENTS.md",
+        "kind": "modified",
+        "before_sha256": "3ef7ed98e08bb8a1a1f35fe3181cc30fe01a2c9d2abfa500c1ba5efeb5902321",
+        "after_sha256": "ee8ad897196160abd7e1e37d057a0f386a4a9d8299503f3d6b272d9711ef210b"
+      },
+      {
+        "path": "DESIGN.md",
+        "kind": "modified",
+        "before_sha256": "8de5b20775d4855b41f4bec8c40cecf96a327d53789eb138fe91c622a899114b",
+        "after_sha256": "4f7017243d18eceffacd33b8703d30d3c1e64fed2748f7a2ae3b896faaa171b5"
+      },
+      {
+        "path": "README.md",
+        "kind": "modified",
+        "before_sha256": "c2ca6d1e7850da3ea213da09f7c299e2fbcf2caf14cc684475e2951f365f2dcf",
+        "after_sha256": "6ee58b8d69f3d22e9dd3feafcbaf3f32aaa4de2ecdf6452712f835abc6a6daaf"
+      },
+      {
+        "path": "src/rag_tech_retriever/api/static/actions.js",
+        "kind": "modified",
+        "before_sha256": "74fd91b3a587cf0a06c3a0c4ea41897d425e9cf5cb0225a1b7f599602b6b25c0",
+        "after_sha256": "b1db082a8fab388ddc67f4502ec113923af490ab9de6992fd6a63d6380e480d5"
+      },
+      {
+        "path": "src/rag_tech_retriever/api/static/app.js",
+        "kind": "modified",
+        "before_sha256": "e5268710f8f1f12dc42d0ced8a5feb6b45c3bddc0480fbd05c2a09e3e25013a1",
+        "after_sha256": "be05bb336ffb02af84e96d12ed249c517b4c3a5917a848e7cbc6273a06e8d0bf"
+      },
+      {
+        "path": "src/rag_tech_retriever/api/static/dialogs/planning.js",
+        "kind": "modified",
+        "before_sha256": "c3d2957ae4a51ff2d09d0e853fe164a32ac60603784340efedf857a61712c3fc",
+        "after_sha256": "b4b04e85d7c8f8d10dc29312ce20d4d55f127be0b572a0ef777125b93d8d8da2"
+      },
+      {
+        "path": "src/rag_tech_retriever/api/static/dialogs/shared.js",
+        "kind": "modified",
+        "before_sha256": "094cb4a5a49a9247684f041c3e3851caf568cb6dd5142fa2ecfcd1bdd65aa675",
+        "after_sha256": "2bb9366e0911725a606ea439cd1947f1d6eee07e46a6eac82a7be28e68bc3186"
+      },
+      {
+        "path": "src/rag_tech_retriever/api/static/index.html",
+        "kind": "modified",
+        "before_sha256": "94c7914fdeaf76813507bebda0067c7eeba191bad061c41fbb78e30a0fb853da",
+        "after_sha256": "8e92be00306430e7eca3526e26aa672c489ed0a95489e2b149506a1b6429ff62"
+      },
+      {
+        "path": "src/rag_tech_retriever/api/static/preferences.js",
+        "kind": "added",
+        "before_sha256": null,
+        "after_sha256": "5d519427d6137b719e9ccbce471503e931160ea347d7b421c1345a5362dd6666"
+      },
+      {
+        "path": "src/rag_tech_retriever/api/static/style.css",
+        "kind": "modified",
+        "before_sha256": "d52a905ec714ce10bfe043cebfa3222fdbbc60cb5f266c2cff9a94989939835c",
+        "after_sha256": "e7d4bf0dc424b94feb5a449189a27e61217561c147310a689480f9f3c448ff9d"
+      },
+      {
+        "path": "src/rag_tech_retriever/api/static/ui.js",
+        "kind": "modified",
+        "before_sha256": "5a9ec39a79bf69e27a34ff0310e911dd4b976296b66e90bd8b202a36a735b0fd",
+        "after_sha256": "d85c0a4f3bbb347228f65b5839a51691e6f1a8b2610fd7325d5fc96a83dbd2de"
+      },
+      {
+        "path": "src/rag_tech_retriever/api/static/views/overview.js",
+        "kind": "modified",
+        "before_sha256": "1d436eed4c68fd17970774f0a6c7e71da64f1aff3f98270b157a93489cdd8bec",
+        "after_sha256": "a967babbbf46b8be97b5311432fd5471d4e7d55b087a951265c5843bc8411ea5"
+      },
+      {
+        "path": "src/rag_tech_retriever/api/static/workspace.js",
+        "kind": "modified",
+        "before_sha256": "ea1dc53bb6e30626c2de71c6b29fd1ef33592660c2dd2f7dd886f486472bfd3f",
+        "after_sha256": "d0550d973061a267416066f5cdac0d93b68c193a5e72fe976a3b815ba176d159"
+      }
+    ],
+    "conflicts": [],
+    "can_apply": true
+  }
+}

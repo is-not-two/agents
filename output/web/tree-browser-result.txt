@@ -1,0 +1,6 @@
+### Result
+"{\"basic\":{\"nodes\":6,\"fold\":true,\"persist\":true,\"zoom\":80,\"complete\":true,\"errors\":[]},\"extra\":{\"navigation\":[\"knowledge\",\"documents\",\"planning\",\"stages\",\"workflows\",\"agents\",\"runs\",\"connections\",\"backup\",\"appearance\"],\"layouts\":[{\"mode\":\"portal\",\"width\":1440,\"overflow\":false},{\"mode\":\"portal\",\"width\":1024,\"overflow\":false},{\"mode\":\"portal\",\"width\":390,\"overflow\":false},{\"mode\":\"sidebar\",\"width\":1440,\"overflow\":false},{\"mode\":\"sidebar\",\"width\":1024,\"overflow\":false},{\"mode\":\"sidebar\",\"width\":390,\"overflow\":false}],\"side\":true,\"errorFeedback\":true,\"images\":true}}"
+### Ran Playwright code
+```js
+await page.evaluate('() => (JSON.stringify({basic:JSON.parse(localStorage.getItem(\'tree-qa-result\')),extra:JSON.parse(localStorage.getItem(\'tree-qa-extra\'))}))');
+```

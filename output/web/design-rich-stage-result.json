@@ -1,0 +1,19 @@
+{
+  "id": "20261012-172538-8998bea2",
+  "status": "passed",
+  "source_changes": [
+    {
+      "path": "DESIGN.md",
+      "kind": "modified",
+      "before_sha256": "f4a6efd2d1a105d62d1805012cce6b1382c1ca91eee15d5c668ec652c6d1e938",
+      "after_sha256": "77d225b05976beae63f913b546b8604c18115ab91a5f7e025800cbd3470a7dda"
+    }
+  ],
+  "source_rollback_can_apply": true,
+  "prototype_recovery": {
+    "preview_can_apply": true,
+    "later_edit_refused": true,
+    "isolated_restore_matches_before": true,
+    "live_preview_restored": false
+  }
+}

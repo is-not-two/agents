@@ -1,0 +1,224 @@
+INFO:     127.0.0.1:60853 - "GET /?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60853 - "GET /static/shilie/base.css?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50677 - "GET /static/shilie/demo.css?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63523 - "GET /static/shilie/chapters.css?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64928 - "GET /static/shilie/app.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56689 - "GET /static/shilie/automation.css?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61554 - "GET /static/shilie/tree.css?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63523 - "GET /static/shilie/planning-mist.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56689 - "GET /static/shilie/automation-actions.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50677 - "GET /static/shilie/data.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64928 - "GET /static/shilie/tree-actions.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61554 - "GET /static/shilie/views.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63523 - "GET /static/shilie/tree.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61554 - "GET /static/shilie/automation-views.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64928 - "GET /static/shilie/planning.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50677 - "GET /static/shilie/icons.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61554 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50677 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56689 - "GET /static/shilie/favicon.svg?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64928 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61554 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63523 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61554 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64928 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63523 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "POST /api/plans HTTP/1.1" 201 Created
+INFO:     127.0.0.1:49326 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64207 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "POST /api/plans/d065f601b660486dbec4ac21c316e73c/nodes HTTP/1.1" 201 Created
+INFO:     127.0.0.1:49326 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64207 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "POST /api/plans/d065f601b660486dbec4ac21c316e73c/nodes HTTP/1.1" 201 Created
+INFO:     127.0.0.1:49326 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64207 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "POST /api/plans/d065f601b660486dbec4ac21c316e73c/nodes HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59842 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64207 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "POST /api/plans/d065f601b660486dbec4ac21c316e73c/nodes HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59842 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64207 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "POST /api/plans/d065f601b660486dbec4ac21c316e73c/nodes HTTP/1.1" 201 Created
+INFO:     127.0.0.1:58433 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64207 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /static/shilie/app.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:59842 - "GET /static/shilie/tree.css?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:58433 - "GET /static/shilie/automation-actions.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64207 - "GET /static/shilie/views.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:59842 - "GET /static/shilie/tree-actions.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:49326 - "GET /static/shilie/data.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64207 - "GET /static/shilie/tree.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:59842 - "GET /static/shilie/automation-views.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:49326 - "GET /static/shilie/icons.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:58433 - "GET /static/shilie/planning.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:58433 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64207 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "PUT /api/plans/d065f601b660486dbec4ac21c316e73c/nodes/f1a850818a1e423dabd60328588c603d HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64207 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49326 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59842 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58433 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50637 - "GET /?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50637 - "GET /static/shilie/app.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52282 - "GET /static/shilie/tree.css?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52282 - "GET /static/shilie/planning-mist.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:50637 - "GET /static/shilie/tree-actions.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52282 - "GET /static/shilie/automation-actions.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64698 - "GET /static/shilie/data.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:61197 - "GET /static/shilie/views.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64698 - "GET /static/shilie/automation-views.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:61197 - "GET /static/shilie/tree.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:52282 - "GET /static/shilie/planning.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:53427 - "GET /static/shilie/icons.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:50637 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61197 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53427 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50637 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52282 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53427 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50637 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52282 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62484 - "POST /api/plans HTTP/1.1" 201 Created
+INFO:     127.0.0.1:62484 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62484 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54742 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54742 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62484 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54742 - "GET /static/shilie/tree.css?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62484 - "GET /static/shilie/automation.css?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:65502 - "GET /static/shilie/app.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:59579 - "GET /static/shilie/views.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54742 - "GET /static/shilie/data.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:65502 - "GET /static/shilie/tree-actions.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:62484 - "GET /static/shilie/automation-actions.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:54742 - "GET /static/shilie/tree.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:59579 - "GET /static/shilie/planning.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:55770 - "GET /static/shilie/icons.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:65502 - "GET /static/shilie/automation-views.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:65502 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54742 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "PUT /api/plans/d065f601b660486dbec4ac21c316e73c/nodes/ea9afc2a04774321b1182e3f6e3b8b7a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54742 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /static/shilie/planning-mist.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:65502 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54742 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54742 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54742 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59579 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65502 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55808 - "GET /static/shilie/planning-mist.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57703 - "GET /?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57703 - "GET /static/shilie/app.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64252 - "GET /static/shilie/chapters.css?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:51408 - "GET /static/shilie/tree.css?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57703 - "GET /static/shilie/tree-actions.js?v=13 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56809 - "GET /static/shilie/data.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64252 - "GET /static/shilie/automation-actions.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60051 - "GET /static/shilie/views.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60051 - "GET /static/shilie/automation-views.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:57703 - "GET /static/shilie/planning-mist.png HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:57703 - "GET /static/shilie/planning.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:64252 - "GET /static/shilie/icons.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60051 - "GET /static/shilie/tree.js?v=13 HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:60051 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56809 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60051 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64252 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57703 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64252 - "GET /api/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57703 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60051 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60051 - "POST /api/plans HTTP/1.1" 201 Created
+INFO:     127.0.0.1:60051 - "GET /api/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56809 - "GET /api/stage-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57703 - "GET /api/plans HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60051 - "GET /api/knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64252 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64252 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57703 - "GET /api/workflow-runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60051 - "GET /api/workflows HTTP/1.1" 200 OK

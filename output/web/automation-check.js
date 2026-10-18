@@ -1,0 +1,19 @@
+async (page) => {
+ const errors=[],badResponses=[];page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.url().includes('/api/')&&r.status()>=500)badResponses.push(r.status());});
+ await page.goto('http://127.0.0.1:8773/#module/workflows');await page.reload();
+ await page.getByRole('button',{name:'启用基础流程',exact:true}).click();await page.waitForSelector('.workflow-list');
+ await page.locator('.workflow-list button').filter({hasText:'资料整理与入库'}).click();
+ let form=page.locator('#workflow-execute-form');await form.locator('[name=title]').fill('知识处理验收');await form.locator('[name=source]').fill('本机笔记');await form.locator('[name=content]').fill('# API 集成\n先配置 API 再处理引用\n# 人生任务\n阶段任务完成后解锁下一个目标');
+ await form.getByRole('button',{name:'解析并预览',exact:true}).click();await page.waitForSelector('.ingest-chunk');
+ if((await (await page.request.get('http://127.0.0.1:8773/api/knowledge')).json()).length)throw Error('preview wrote knowledge');
+ await page.locator('.ingest-chunk').first().locator('input').uncheck();await page.getByRole('button',{name:'确认选中片段入库',exact:true}).click();await page.waitForSelector('.run-badge.confirmed');
+ const notes=await (await page.request.get('http://127.0.0.1:8773/api/knowledge')).json();if(notes.length!==1||notes[0].data.title!=='人生任务')throw Error('manual selection wrong');
+ await page.goto('http://127.0.0.1:8773/#module/agents');await page.locator('[data-action=auto-edit-agent]').click();let d=page.locator('.auto-dialog[open]');await d.locator('[name=system_prompt]').fill('先概括，再用编号引用，不补造事实。');await d.locator('[name=scopes][value=docs]').uncheck();await d.locator('[name=scopes][value=planning]').uncheck();await d.locator('[name=generate]').check();await d.locator('[name=result_limit]').fill('2');await d.getByRole('button',{name:'保存配置',exact:true}).click();await d.waitFor({state:'hidden'});
+ await page.goto('http://127.0.0.1:8773/#module/workflows');await page.locator('.workflow-list button').filter({hasText:'知识检索与回答'}).click();form=page.locator('#workflow-execute-form');await form.locator('[name=query]').fill('人生任务');await form.getByRole('button',{name:'执行检索流程',exact:true}).click();await page.waitForSelector('.run-citations');
+ if(!await page.locator('.run-badge.fallback').count())throw Error('unconfigured model did not degrade');if(!await page.locator('.run-citations').innerText().then(t=>t.includes('人生任务')))throw Error('missing citation');
+ await page.reload();await page.goto('http://127.0.0.1:8773/#module/runs');await page.waitForSelector('.run-list button');if(await page.locator('.run-list button').count()!==2)throw Error('runs not durable');await page.locator('.run-list button').first().click();await page.waitForSelector('.run-result');
+ await page.locator('.run-context>summary').click();if(!await page.locator('.run-context').innerText().then(t=>t.includes('流程 v1')))throw Error('missing frozen version');
+ const checks=[];for(const route of ['workflows','agents','runs','planning/story'])for(const width of [1440,390,320]){await page.setViewportSize({width,height:1000});await page.goto('http://127.0.0.1:8773/#module/'+route);await page.waitForTimeout(60);const ok=await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth);if(!ok)throw Error('overflow '+route+' '+width);checks.push({route,width});}
+ await page.setViewportSize({width:1440,height:1000});await page.goto('http://127.0.0.1:8773/#module/workflows');await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:'output/web/automation-desktop.png',fullPage:true});
+ await page.evaluate(value=>localStorage.setItem('qa-automation-report',JSON.stringify(value)),{setup:true,previewWithoutWrites:true,manualSelection:true,agentEdit:true,realRetrieval:true,modelFallback:true,durableRuns:true,frozenVersion:true,layouts:checks,errors,badResponses});if(errors.length||badResponses.length)throw Error('errors');
+}

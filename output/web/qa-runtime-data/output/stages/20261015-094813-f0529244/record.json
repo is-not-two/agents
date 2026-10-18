@@ -1,0 +1,19 @@
+{
+  "id": "20261015-094813-f0529244",
+  "title": "隔离功能验收",
+  "objective": "",
+  "status": "passed",
+  "created_at": "2026-10-15T09:48:13+08:00",
+  "completed_at": "2026-10-15T09:48:13+08:00",
+  "completed": [
+    "完成交互验收"
+  ],
+  "issues": [],
+  "verification": [
+    "真实Chrome点击保存并读取"
+  ],
+  "before": {},
+  "after": {},
+  "changes": [],
+  "data_snapshot_available": true
+}

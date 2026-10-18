@@ -1,0 +1,151 @@
+﻿========================================================================
+V0 语料切片完成
+========================================================================
+源文件 14 份（data/raw/aihuoke_docs/*.md）
+
+=== 1. corpus.jsonl 总条数 ===
+237 条
+
+=== 2. 每份文档切片条数 ===
+    26  api-ai-employee-task-flow-templates.md
+    35  api-ai员工-P1-P3接口契约.md
+     1  ark-adapter-configuration.md
+    42  RPA微信命令与事件协议v0.md
+    17  SERVER_CHECKLIST.md
+     6  temporary-hidden-features-checklist.md
+     8  小程序语音识别chatSTT接口协议.md
+    19  微信接管AI回复兜底排查.md
+    23  微信设备指令通道划分与现状.md
+     6  智能会话-小程序附件联调协议.md
+    13  视频号发布-设备侧联调问题清单.md
+    16  视频号发布_后端侧答复.md
+    14  设备命令下发修复-现网清理操作单.md
+    11  设备端V2命令下发与回传协议.md
+
+=== 3. 随机抽 10 条（seed=42）===
+
+[微信设备指令通道划分与现状::010] 微信设备指令通道划分与现状.md | UNKNOWN | 205 字符
+  heading_path: 微信设备指令：通道划分与实际落点现状 > 5. 三处与政策/可用性不符的地方 > 5.4 `wechatCirclePublishTask` 的 WeChatPad 分支 —— 已确认为预期行为
+  content:
+    `DeviceTaskTrait.php:463-474`：设备是 WeChatPad 时，**自动发布任务**也走
+    `CircleLogic::sendCircleCron()`（WeChatPad 通道）。
+    
+    ✅ **2026-09-16 用户决策：WeChatPadPro 承接自动化任务**，因此这里的路由是预期行为，不是缺陷。
+    WeChatPad 设备本身没有 RPA 通道，自动任务只能由网关承接。
+
+[api-ai员工-P1-P3接口契约::003] api-ai员工-P1-P3接口契约.md | UNKNOWN | 75 字符
+  heading_path: AI员工后续接口契约（B6、B7、B11、B14） > B6 人设素材分组 > `POST /aiPersona.MaterialGroup/add`
+  content:
+    参数：`persona_id:int` 必填，`name:string` 必填（最多100字符），`sort:int` 可选（默认0）。返回分组对象。
+
+[api-ai-employee-task-flow-templates::007] api-ai-employee-task-flow-templates.md | UNKNOWN | 77 字符
+  heading_path: AI员工 24h 自动任务流模板接口 > 1. 模板列表 > 备注
+  content:
+    模板元数据来自后端目录 `TaskFlowTemplateCatalog`，不依赖前端本地枚举。`source_note` 仅作核对说明，前端可以不展示。
+
+[视频号发布-设备侧联调问题清单::007] 视频号发布-设备侧联调问题清单.md | UNKNOWN | 309 字符
+  heading_path: 视频号图文 / 视频发布：设备侧联调问题清单 > 2. 设备 → 后端：回执契约（后端强制校验，不满足即丢弃/判失败） > 2.3 `status` 的后端副作用
+  content:
+    | 回执 status | 明细 | 设备任务 | 出处 |
+    |---|---|---|---|
+    | 1 成功 | `status=1` | 完成 | `:88-96`、`:122-128` |
+    | 2 失败 | `status=2` | 失败 | 同上 |
+    | 3 执行中 | `status=3` + `exec_time` | 执行中 | 同上 |
+    
+    账号/发布设置只在「该账号再无 `status∈[0,3]` 的明细」时才推进为完成（`:345-375`）；**视频号目前没有回执超时兜底**（`DeviceEnum.php:62` 白名单只有快手），因此明细卡在 `3` 时 PC 端会长期显示「进行中」。
+
+[RPA微信命令与事件协议v0::009] RPA微信命令与事件协议v0.md | UNKNOWN | 385 字符
+  heading_path: RPA 微信命令与事件协议 v0（交接契约） > 6. 命令族（服务器 → 设备，JSON 下发） > 6.0 下发信封（固定，与 V2 第 2 节一致）
+  content:
+    ```jsonc
+    {
+      "type": 723,
+      "requestId": "32位hex",       // 后端唯一动作 ID，所有回执原样回带
+      "deviceId": "wx_xxx",          // 必须等于已认证连接绑定的 deviceId
+      "appType": 1,                  // 微信个微=1
+      "account": "wxid_main",
+      "sequence": 18,                // 当前设备执行线序号
+      "status": "dispatch_attempted",
+      "errorCode": "",
+      "errorMessage": "",
+      "content": "{\"...\"" }         // JSON 字符串，具体字段见下
+    }
+    ```
+
+[RPA微信命令与事件协议v0::001] RPA微信命令与事件协议v0.md | DISABLED | 606 字符
+  heading_path: RPA 微信命令与事件协议 v0（交接契约）
+  content:
+    > 状态：**v0 交接契约（后端侧已落地 A：事件 52/54/58；主动加好友命令 739 待接入；自动通过好友 56/740 为占位、保留现用 Jubo 通道；B：微信命令 4 条号段 + 回执映射）**。本文定义"取消 / 替代 Jubo 通道"后，微信侧自研协议下的**命令族**（服务器 → 设备）与**事件族**（设备 → 服务器 主动上报）。
+    > 文内 JSON 格式与字段均为**固定契约**（类型、必填、取值约束一次定死，不含"建议 / 待复核 / 可为空"类模糊判断）。标注 **CONFIRMED（已落地）** 表示代码已注册并通过语法校验；标注 **CONFIRMED（号段需客户端确认）** 表示后端已注册命令/回执号段，但号段与动作字段口径由微信团队确认为准后方作为线上契约；标注 **占位（暂不落地）** 表示号段/事件仅作保留登记、**不实现、不 dispatch、不接入业务**，并保留现用 Jubo 通道；标注 **约定（待注册）** 表示字段已按代码既有口径定死为契约，但对应 `WorkerEnum` / `DeviceCommandEnum` 类型号尚未注册、handler 未实现，需按 §12 落地。
+    > 交付约定：本文为后端（服务器）侧当前画面，设备端由微信团队按 §6/§7 契约实现；凡标注"需客户端确认"的号段与字段，以微信团队书面确认结果为最终线上口径。
+
+[api-ai员工-P1-P3接口契约::032] api-ai员工-P1-P3接口契约.md | UNKNOWN | 1349 字符
+  heading_path: AI员工后续接口契约（B6、B7、B11、B14） > AI员工详情完善度聚合 > `GET /aiPersona.aiPersona/setupProgress`
+  content:
+    请求参数：`persona_id:int` 必填且大于0。仅允许读取当前用户拥有且未删除的 AI员工。
+    
+    返回字段：
+    
+    | 字段 | 类型 | 口径 |
+    | --- | --- | --- |
+    | keyword_count | int | 该员工获客词与截流词数组中的非空词条数之和；不统计评论/私信话术 |
+    | material_count | int | 该员工启用且未删除、发布模式1、素材类型1/2的素材数 |
+    | direct_material_count | int | 该员工启用且未删除、发布模式2、素材类型1/2的素材数 |
+    | avatar_count | int | 员工已关联且未删除，公共形象状态为2、对应闪剪形象状态为6的形象数 |
+    | voice_count | int | 员工已关联且未删除，并且当前用户的 `human_voice` 记录为闪剪版本8、状态1的音色数 |
+    | music_count | int | 该员工启用且未删除、`ai_persona_material.material_type=3` 的音乐数 |
+    | copywriting_count | int | 该员工文案库中未删除的记录数 |
+    | device_count | int | 当前用户绑定到该员工的设备数 |
+    | account_count | int | 当前用户的平台账号中，设备编号属于该员工已绑定设备的账号数 |
+    | run_mode | int | 1手机模式；2云端无手机模式。老数据通过 v2.9.53 默认迁移为1 |
+    | publish_mode | int | 1普通素材自动生成；2指定素材内容 |
+    | publish_plan_done | int | 至少存在一条当前用户、该员工关联且未删除的发布计划明细时为1，否则为0 |
+    
+    示例：`{"code":1,"msg":"","data":{"keyword_count":6,"material_count":8,"direct_material_count":1,"avatar_count":1,"voice_count":2,"music_count":1,"copywriting_count":20,"device_count":1,"account_count":2,"run_mode":1,"publish_mode":1,"publish_plan_done":1}}`
+    
+    错误与边界：`persona_id` 无效时返回参数错误；员工不存在、已删除或不属于当前用户时返回无权/不存在错误。所有计数均由关联表全量聚合，不使用分页列表的 `count`，也不把话术、音乐或其他员工数据混入素材和关键词计数。
+    
+    必做项由前端按五类合并计算：关键词不少于3；普通模式素材不少于5或指定素材模式不少于1；形象与音色各不少于1；手机模式要求至少绑定设备，云端模式只在普通素材模式下满足运行模式项；发布计划已确认（`publish_plan_done=1`）。七项补充建议由前端按关键词8、形象2、音乐1、账号2、文案20、音色2、素材20计数。服务端只返回原始计数与模式值，不返回百分比。
+
+[api-ai员工-P1-P3接口契约::010] api-ai员工-P1-P3接口契约.md | UNKNOWN | 840 字符
+  heading_path: AI员工后续接口契约（B6、B7、B11、B14） > B7 AI员工发布文案生成 > `POST /aiPersona.AiPersona/generatePublishCopywriting`
+  content:
+    | 参数 | 类型 | 必填 | 说明 |
+    | --- | --- | --- | --- |
+    | persona_id | int | 是 | 当前用户 AI员工 ID；用于员工身份与文风 |
+    | groups | object[] | 是 | 图片组，1–20 组 |
+    | groups[].image_urls | string[] | 是 | 每组 1–9 个 HTTP/HTTPS 图片地址 |
+    | publish_scene | string | 否 | 发布场景，默认“发布图文” |
+    | platform | string | 否 | 发布平台提示 |
+    
+    返回 `persona_id` 及 `items[]`；每项含 `title:string`、`content:string`、`topic:string[]`。标题最多20字，正文最多800字，话题最多5个。
+    
+    示例：`{"code":1,"msg":"操作成功","data":{"persona_id":7,"items":[{"title":"周末轻松出发","content":"按图片内容生成的文案","topic":["周末","日常"]}]}}`。
+    
+    错误与边界：员工需属于当前用户；图片组数量、每组图片数量或 URL 不符合上述范围时报错；外部 AI 失败或返回格式/长度无效时报错且不扣算力；成功后按生成条数扣费，scene 为 `ai_persona_publish_copywriting`，默认 1 算力/条。请求将员工名称、简介、行业、人设描述及已生成报告作为文案上下文发送至当前配置的 AI 文案服务。
+    
+    自检：1) 方法路径已列；2) 参数类型/必填/数量限制列出；3) 返回字段及长度列出；4) JSON 示例完整；5) 员工权限、图片及模型错误列出；6) 扣费 scene 和时机列出；7) AI员工数据用途与外发字段列出；8) 输出限制、算力单价及外部服务配置边界列出。
+
+[视频号发布-设备侧联调问题清单::006] 视频号发布-设备侧联调问题清单.md | UNKNOWN | 572 字符
+  heading_path: 视频号图文 / 视频发布：设备侧联调问题清单 > 2. 设备 → 后端：回执契约（后端强制校验，不满足即丢弃/判失败） > 2.2 `status=1`（成功）额外的**数量强校验**（最容易造成「实发成功却记失败」）
+  content:
+    - 请求侧 = `PublishMediaUrlService::forPublishDetail()`：优先取 `sv_publish_setting_detail_media` 子表（按 `sort_order`），否则回退旧字段 `material_url`（`PublishMediaUrlService.php:20-45`）。**不排序、不去重**。
+    - 回执侧 = `forReceipt()`：必须是数组、≤12 项、每项为合法 http(s) URL（`:122-141`）。**不排序、不去重、不允许空项**。
+    - 判定：`MediaStatusHandler.php:283-287` 用严格 `!==` 比较两者**条数**：不等（少报或多报）即抛 `发布成功回执素材数量与下发任务不一致`。
+    - 后果：`:83-86` 捕获 → `markInvalidPublishReceipt()` `:295-332` 把明细写成 `status=2`、remark = `发布回执无效：发布成功回执素材数量与下发任务不一致`，并把设备任务置为失败；原始 `published_media` 会存进 `extra.publish_receipt.reported_media`，`published_content` 被丢弃。
+
+[api-ai员工-P1-P3接口契约::001] api-ai员工-P1-P3接口契约.md | UNKNOWN | 88 字符
+  heading_path: AI员工后续接口契约（B6、B7、B11、B14）
+  content:
+    说明：仓库未找到需求指定的 `docs/api-doc-template.md`，本契约按 P0 接口契约现有结构编写。通用分页字段沿用 `BaseApiDataLists`。
+
+=== 4. 5 类状态分布 ===
+  CONFIRMED    10 条 (4.2%)
+  PENDING       8 条 (3.4%)
+  DISABLED     10 条 (4.2%)
+  EXCEPTION     3 条 (1.3%)
+  UNKNOWN     206 条 (86.9%)
+
+  提取范围：RPA微信命令与事件协议v0.md；其余文档默认 UNKNOWN
+  输出：E:\project\agents\rag-tech-doc-retriever\data\processed\corpus.jsonl
+  统计：E:\project\agents\rag-tech-doc-retriever\output\v0\v0_ingest_stats.json

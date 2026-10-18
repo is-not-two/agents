@@ -1,0 +1,10 @@
+{
+  "direct_recall": 0.9,
+  "instruction_recall": 0.8,
+  "reranked_recall": 1,
+  "q08_vector_rank": 7,
+  "q08_rerank_rank": 1,
+  "per_question_diff": [],
+  "corpus_sha256": "46fa67658fdc9fb3c174482af7f4f963569a4b0a41cc3a6a613dcae2e9066364",
+  "eval_sha256": "4469bd95a52c5703ab7ab83154739ab6a00f611ab493713d92c7a42678c8969f"
+}

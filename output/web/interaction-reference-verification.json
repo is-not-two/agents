@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-13",
+  "candidates": {
+    "A": {
+      "id": "A",
+      "url": "https://ant.design/components/button-cn",
+      "clicked": "Icon Start",
+      "loading": true,
+      "during": "Icon Start"
+    },
+    "B": {
+      "id": "B",
+      "url": "https://mantine.dev/core/segmented-control/",
+      "selected": "Angular",
+      "checked": true,
+      "labelClicked": true
+    },
+    "C": {
+      "id": "C",
+      "url": "https://examples.motion.dev/react/app-store",
+      "status": 200,
+      "title": "iOS App Store — Motion for React Example",
+      "cardBefore": {
+        "x": 225,
+        "y": 214,
+        "width": 574,
+        "height": 420
+      },
+      "expanded": {
+        "classes": [
+          "overlay",
+          "card-content-container open undefined"
+        ],
+        "text": "\nTravel\n5 Inspiring Apps for Your Next Trip\n\nLove to travel? So do the makers of these five subscription apps. For a small monthly fee, they'll help you find the best deals on flights, hotels, and some other stuff we turn a blind eye to.\n\nPlan your perfect itinerary with intelligent recommendations based on your interests, time, and credit history."
+      }
+    },
+    "D": {
+      "id": "D",
+      "url": "https://www.radix-ui.com/primitives/docs/components/accordion",
+      "status": 200,
+      "title": "Accordion – Radix Primitives",
+      "before": "false",
+      "after": "true",
+      "collapsed": "false"
+    },
+    "E": {
+      "id": "E",
+      "url": "https://mantine.dev/core/drawer/",
+      "rightOptionOpensDirectly": true,
+      "box": {
+        "x": 1000,
+        "y": 0,
+        "width": 440,
+        "height": 1000
+      },
+      "escapeCloses": true
+    },
+    "F": {
+      "id": "F",
+      "url": "https://www.radix-ui.com/primitives/docs/components/toast",
+      "status": 200,
+      "title": "Toast – Radix Primitives",
+      "buttons": [
+        "",
+        "Search/",
+        "Add to calendar",
+        "",
+        "",
+        "Expand code",
+        "",
+        "Prop description",
+        "Prop description",
+        "Prop description"
+      ],
+      "clicked": true,
+      "toast": "Scheduled: Catch up\nTuesday, October 20, 2026 at 9:45 AM\nUndo"
+    }
+  },
+  "decision": "awaiting user selection",
+  "google_search": "captcha, no bypass",
+  "material_stories": "preview did not stably load; supplemental only",
+  "applied_new_candidates": false
+}

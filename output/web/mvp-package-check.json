@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "wheel": "output\\web\\mvp-wheel\\rag_tech_doc_retriever-0.1.0-py3-none-any.whl",
+  "static_files": [
+    "rag_tech_retriever/api/static/shilie/app.js",
+    "rag_tech_retriever/api/static/shilie/base.css",
+    "rag_tech_retriever/api/static/shilie/data.js",
+    "rag_tech_retriever/api/static/shilie/demo.css",
+    "rag_tech_retriever/api/static/shilie/favicon.svg",
+    "rag_tech_retriever/api/static/shilie/icons.js",
+    "rag_tech_retriever/api/static/shilie/index.html",
+    "rag_tech_retriever/api/static/shilie/landscape-1600.webp",
+    "rag_tech_retriever/api/static/shilie/landscape-800.webp",
+    "rag_tech_retriever/api/static/shilie/views.js"
+  ],
+  "secrets": "no .env packaged"
+}

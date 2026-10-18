@@ -1,0 +1,13 @@
+{
+  "engine_launch": "Explorer",
+  "engine": "29.7.2",
+  "health": {
+    "status": "ok",
+    "storage": "PostgreSQL",
+    "pid": 39440
+  },
+  "tech_chunks": 237,
+  "knowledge_count": 0,
+  "plan_count": 0,
+  "docker_files_modified": false
+}

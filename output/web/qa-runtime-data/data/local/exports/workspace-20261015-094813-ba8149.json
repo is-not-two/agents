@@ -1,0 +1,1204 @@
+{
+  "format_version": 1,
+  "records": [
+    {
+      "id": "17bce5134a06405bb90808b25c621d92",
+      "kind": "workflow",
+      "version": 1,
+      "data": {
+        "kind": "answer",
+        "title": "知识检索与回答",
+        "agent_id": "ebefd2d1eb8749b1818ce3db86a5401e",
+        "chunk_size": 1500
+      },
+      "deleted": false,
+      "created_at": "2026-10-15T01:46:00.336861+00:00",
+      "updated_at": "2026-10-15T01:46:00.336861+00:00"
+    },
+    {
+      "id": "33bbfffe9af44de29045d984bc449499",
+      "kind": "knowledge",
+      "version": 4,
+      "data": {
+        "tags": [],
+        "title": "接口验收笔记",
+        "source": "",
+        "content": "蔚蓝项目第二版使用 PostgreSQL。"
+      },
+      "deleted": false,
+      "created_at": "2026-10-15T01:45:59.204826+00:00",
+      "updated_at": "2026-10-15T01:46:00.036420+00:00"
+    },
+    {
+      "id": "3eb4fc96bc1c42f0bbb0d8686ac262cd",
+      "kind": "workflow_run",
+      "version": 5,
+      "data": {
+        "kind": "ingest",
+        "agent": null,
+        "input": {
+          "title": "导入验收",
+          "source": "",
+          "content": "# 蔚蓝部署\n\n蔚蓝服务部署流程：先备份数据库，再启动服务。"
+        },
+        "steps": [
+          {
+            "key": "input",
+            "title": "接收输入",
+            "detail": "输入已校验，执行配置版本已保存",
+            "status": "completed",
+            "duration_ms": 0
+          },
+          {
+            "key": "parse",
+            "title": "解析与切片",
+            "detail": "生成 1 个待确认片段，尚未写入知识库",
+            "status": "completed",
+            "duration_ms": 0
+          },
+          {
+            "key": "confirm",
+            "title": "人工确认入库",
+            "detail": "已保存 1 条知识",
+            "status": "completed",
+            "duration_ms": 0
+          }
+        ],
+        "title": "资料整理与入库",
+        "result": {
+          "chunks": [
+            {
+              "tags": [],
+              "title": "蔚蓝部署",
+              "source": "",
+              "content": "蔚蓝服务部署流程：先备份数据库，再启动服务。"
+            }
+          ],
+          "selected": [
+            0
+          ],
+          "created_ids": [
+            "aa2ad7f8665a4b61a58752fe7f481629"
+          ]
+        },
+        "status": "confirmed",
+        "workflow": {
+          "id": "4160b0792d1544f88f8f791924f78dbd",
+          "data": {
+            "kind": "ingest",
+            "title": "资料整理与入库",
+            "agent_id": "",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:00.797228+00:00",
+        "finished_at": "2026-10-15T01:46:00.876140+00:00",
+        "workflow_id": "4160b0792d1544f88f8f791924f78dbd"
+      },
+      "deleted": false,
+      "created_at": "2026-10-15T01:46:00.826558+00:00",
+      "updated_at": "2026-10-15T01:46:01.115871+00:00"
+    },
+    {
+      "id": "4160b0792d1544f88f8f791924f78dbd",
+      "kind": "workflow",
+      "version": 1,
+      "data": {
+        "kind": "ingest",
+        "title": "资料整理与入库",
+        "agent_id": "",
+        "chunk_size": 1500
+      },
+      "deleted": false,
+      "created_at": "2026-10-15T01:46:00.336861+00:00",
+      "updated_at": "2026-10-15T01:46:00.336861+00:00"
+    },
+    {
+      "id": "72935d2e4e8c4ae6a90606e2a64acc44",
+      "kind": "plan",
+      "version": 3,
+      "data": {
+        "acts": [
+          {
+            "id": "03468bc8f8ae45c78b08011fe6bdb29b",
+            "nodes": [
+              {
+                "id": "8541137ab5dc461c86d5e80a863f225f",
+                "done": true,
+                "title": "学会排障",
+                "due_date": "",
+                "priority": "p2",
+                "requires": [],
+                "parent_id": "",
+                "description": ""
+              }
+            ],
+            "title": "任务树",
+            "description": ""
+          }
+        ],
+        "kind": "main",
+        "title": "学习规划",
+        "description": ""
+      },
+      "deleted": false,
+      "created_at": "2026-10-15T01:48:12.489383+00:00",
+      "updated_at": "2026-10-15T01:48:12.988232+00:00"
+    },
+    {
+      "id": "aa2ad7f8665a4b61a58752fe7f481629",
+      "kind": "knowledge",
+      "version": 1,
+      "data": {
+        "tags": [],
+        "title": "蔚蓝部署",
+        "source": "",
+        "content": "蔚蓝服务部署流程：先备份数据库，再启动服务。"
+      },
+      "deleted": false,
+      "created_at": "2026-10-15T01:46:01.115871+00:00",
+      "updated_at": "2026-10-15T01:46:01.115871+00:00"
+    },
+    {
+      "id": "bd9606868496458989e633fd0e874acb",
+      "kind": "workflow_run",
+      "version": 5,
+      "data": {
+        "kind": "answer",
+        "agent": {
+          "id": "ebefd2d1eb8749b1818ce3db86a5401e",
+          "data": {
+            "mode": "text",
+            "title": "知识检索助手",
+            "scopes": [
+              "personal",
+              "docs",
+              "planning"
+            ],
+            "generate": false,
+            "result_limit": 5,
+            "system_prompt": "简洁回答并引用知识"
+          },
+          "kind": "agent_profile",
+          "deleted": false,
+          "version": 2,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.528842+00:00"
+        },
+        "input": {
+          "query": "蔚蓝"
+        },
+        "steps": [
+          {
+            "key": "input",
+            "title": "接收输入",
+            "detail": "输入已校验，执行配置版本已保存",
+            "status": "completed",
+            "duration_ms": 0
+          },
+          {
+            "key": "retrieve",
+            "title": "检索依据",
+            "detail": "找到 2 条引用",
+            "status": "completed",
+            "duration_ms": 58
+          },
+          {
+            "key": "generate",
+            "title": "AI 回答",
+            "detail": "Agent 未开启生成，保留检索引用",
+            "status": "skipped",
+            "duration_ms": 0
+          }
+        ],
+        "title": "知识检索与回答",
+        "result": {
+          "hits": [
+            {
+              "id": "aa2ad7f8665a4b61a58752fe7f481629",
+              "score": 13,
+              "title": "蔚蓝部署",
+              "domain": "tech_doc",
+              "source": "个人知识库",
+              "content": "蔚蓝服务部署流程：先备份数据库，再启动服务。",
+              "category": "personal",
+              "status_marker": "PERSONAL"
+            },
+            {
+              "id": "33bbfffe9af44de29045d984bc449499",
+              "score": 4,
+              "title": "接口验收笔记",
+              "domain": "tech_doc",
+              "source": "个人知识库",
+              "content": "蔚蓝项目第二版使用 PostgreSQL。",
+              "category": "personal",
+              "status_marker": "PERSONAL"
+            }
+          ],
+          "notes": [],
+          "answer": "",
+          "engine": "全文匹配"
+        },
+        "status": "completed",
+        "workflow": {
+          "id": "17bce5134a06405bb90808b25c621d92",
+          "data": {
+            "kind": "answer",
+            "title": "知识检索与回答",
+            "agent_id": "ebefd2d1eb8749b1818ce3db86a5401e",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:01.385761+00:00",
+        "finished_at": "2026-10-15T01:46:01.542945+00:00",
+        "workflow_id": "17bce5134a06405bb90808b25c621d92"
+      },
+      "deleted": false,
+      "created_at": "2026-10-15T01:46:01.392171+00:00",
+      "updated_at": "2026-10-15T01:46:01.547986+00:00"
+    },
+    {
+      "id": "ebefd2d1eb8749b1818ce3db86a5401e",
+      "kind": "agent_profile",
+      "version": 2,
+      "data": {
+        "mode": "text",
+        "title": "知识检索助手",
+        "scopes": [
+          "personal",
+          "docs",
+          "planning"
+        ],
+        "generate": false,
+        "result_limit": 5,
+        "system_prompt": "简洁回答并引用知识"
+      },
+      "deleted": false,
+      "created_at": "2026-10-15T01:46:00.336861+00:00",
+      "updated_at": "2026-10-15T01:46:00.528842+00:00"
+    }
+  ],
+  "versions": [
+    {
+      "record_id": "17bce5134a06405bb90808b25c621d92",
+      "version": 1,
+      "data": {
+        "kind": "answer",
+        "title": "知识检索与回答",
+        "agent_id": "ebefd2d1eb8749b1818ce3db86a5401e",
+        "chunk_size": 1500
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:00.336861+00:00"
+    },
+    {
+      "record_id": "33bbfffe9af44de29045d984bc449499",
+      "version": 1,
+      "data": {
+        "tags": [],
+        "title": "接口验收笔记",
+        "source": "",
+        "content": "蔚蓝项目使用 FastAPI 与 PostgreSQL 保存知识。"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:45:59.204826+00:00"
+    },
+    {
+      "record_id": "33bbfffe9af44de29045d984bc449499",
+      "version": 2,
+      "data": {
+        "tags": [],
+        "title": "接口验收笔记",
+        "source": "",
+        "content": "蔚蓝项目第二版使用 PostgreSQL。"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:45:59.372567+00:00"
+    },
+    {
+      "record_id": "33bbfffe9af44de29045d984bc449499",
+      "version": 3,
+      "data": {
+        "tags": [],
+        "title": "接口验收笔记",
+        "source": "",
+        "content": "蔚蓝项目第二版使用 PostgreSQL。"
+      },
+      "deleted": true,
+      "action": "delete",
+      "created_at": "2026-10-15T01:45:59.699963+00:00"
+    },
+    {
+      "record_id": "33bbfffe9af44de29045d984bc449499",
+      "version": 4,
+      "data": {
+        "tags": [],
+        "title": "接口验收笔记",
+        "source": "",
+        "content": "蔚蓝项目第二版使用 PostgreSQL。"
+      },
+      "deleted": false,
+      "action": "restore:v2",
+      "created_at": "2026-10-15T01:46:00.036420+00:00"
+    },
+    {
+      "record_id": "3eb4fc96bc1c42f0bbb0d8686ac262cd",
+      "version": 1,
+      "data": {
+        "kind": "ingest",
+        "agent": null,
+        "input": {
+          "title": "导入验收",
+          "source": "",
+          "content": "# 蔚蓝部署\n\n蔚蓝服务部署流程：先备份数据库，再启动服务。"
+        },
+        "steps": [],
+        "title": "资料整理与入库",
+        "result": {},
+        "status": "running",
+        "workflow": {
+          "id": "4160b0792d1544f88f8f791924f78dbd",
+          "data": {
+            "kind": "ingest",
+            "title": "资料整理与入库",
+            "agent_id": "",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:00.797228+00:00",
+        "workflow_id": "4160b0792d1544f88f8f791924f78dbd"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:00.826558+00:00"
+    },
+    {
+      "record_id": "3eb4fc96bc1c42f0bbb0d8686ac262cd",
+      "version": 2,
+      "data": {
+        "kind": "ingest",
+        "agent": null,
+        "input": {
+          "title": "导入验收",
+          "source": "",
+          "content": "# 蔚蓝部署\n\n蔚蓝服务部署流程：先备份数据库，再启动服务。"
+        },
+        "steps": [
+          {
+            "key": "input",
+            "title": "接收输入",
+            "detail": "输入已校验，执行配置版本已保存",
+            "status": "completed",
+            "duration_ms": 0
+          }
+        ],
+        "title": "资料整理与入库",
+        "result": {},
+        "status": "running",
+        "workflow": {
+          "id": "4160b0792d1544f88f8f791924f78dbd",
+          "data": {
+            "kind": "ingest",
+            "title": "资料整理与入库",
+            "agent_id": "",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:00.797228+00:00",
+        "workflow_id": "4160b0792d1544f88f8f791924f78dbd"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:00.841265+00:00"
+    },
+    {
+      "record_id": "3eb4fc96bc1c42f0bbb0d8686ac262cd",
+      "version": 3,
+      "data": {
+        "kind": "ingest",
+        "agent": null,
+        "input": {
+          "title": "导入验收",
+          "source": "",
+          "content": "# 蔚蓝部署\n\n蔚蓝服务部署流程：先备份数据库，再启动服务。"
+        },
+        "steps": [
+          {
+            "key": "input",
+            "title": "接收输入",
+            "detail": "输入已校验，执行配置版本已保存",
+            "status": "completed",
+            "duration_ms": 0
+          },
+          {
+            "key": "parse",
+            "title": "解析与切片",
+            "detail": "生成 1 个待确认片段，尚未写入知识库",
+            "status": "completed",
+            "duration_ms": 0
+          }
+        ],
+        "title": "资料整理与入库",
+        "result": {
+          "chunks": [
+            {
+              "tags": [],
+              "title": "蔚蓝部署",
+              "source": "",
+              "content": "蔚蓝服务部署流程：先备份数据库，再启动服务。"
+            }
+          ]
+        },
+        "status": "running",
+        "workflow": {
+          "id": "4160b0792d1544f88f8f791924f78dbd",
+          "data": {
+            "kind": "ingest",
+            "title": "资料整理与入库",
+            "agent_id": "",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:00.797228+00:00",
+        "workflow_id": "4160b0792d1544f88f8f791924f78dbd"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:00.872640+00:00"
+    },
+    {
+      "record_id": "3eb4fc96bc1c42f0bbb0d8686ac262cd",
+      "version": 4,
+      "data": {
+        "kind": "ingest",
+        "agent": null,
+        "input": {
+          "title": "导入验收",
+          "source": "",
+          "content": "# 蔚蓝部署\n\n蔚蓝服务部署流程：先备份数据库，再启动服务。"
+        },
+        "steps": [
+          {
+            "key": "input",
+            "title": "接收输入",
+            "detail": "输入已校验，执行配置版本已保存",
+            "status": "completed",
+            "duration_ms": 0
+          },
+          {
+            "key": "parse",
+            "title": "解析与切片",
+            "detail": "生成 1 个待确认片段，尚未写入知识库",
+            "status": "completed",
+            "duration_ms": 0
+          }
+        ],
+        "title": "资料整理与入库",
+        "result": {
+          "chunks": [
+            {
+              "tags": [],
+              "title": "蔚蓝部署",
+              "source": "",
+              "content": "蔚蓝服务部署流程：先备份数据库，再启动服务。"
+            }
+          ]
+        },
+        "status": "awaiting_confirmation",
+        "workflow": {
+          "id": "4160b0792d1544f88f8f791924f78dbd",
+          "data": {
+            "kind": "ingest",
+            "title": "资料整理与入库",
+            "agent_id": "",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:00.797228+00:00",
+        "finished_at": "2026-10-15T01:46:00.876140+00:00",
+        "workflow_id": "4160b0792d1544f88f8f791924f78dbd"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:00.903420+00:00"
+    },
+    {
+      "record_id": "3eb4fc96bc1c42f0bbb0d8686ac262cd",
+      "version": 5,
+      "data": {
+        "kind": "ingest",
+        "agent": null,
+        "input": {
+          "title": "导入验收",
+          "source": "",
+          "content": "# 蔚蓝部署\n\n蔚蓝服务部署流程：先备份数据库，再启动服务。"
+        },
+        "steps": [
+          {
+            "key": "input",
+            "title": "接收输入",
+            "detail": "输入已校验，执行配置版本已保存",
+            "status": "completed",
+            "duration_ms": 0
+          },
+          {
+            "key": "parse",
+            "title": "解析与切片",
+            "detail": "生成 1 个待确认片段，尚未写入知识库",
+            "status": "completed",
+            "duration_ms": 0
+          },
+          {
+            "key": "confirm",
+            "title": "人工确认入库",
+            "detail": "已保存 1 条知识",
+            "status": "completed",
+            "duration_ms": 0
+          }
+        ],
+        "title": "资料整理与入库",
+        "result": {
+          "chunks": [
+            {
+              "tags": [],
+              "title": "蔚蓝部署",
+              "source": "",
+              "content": "蔚蓝服务部署流程：先备份数据库，再启动服务。"
+            }
+          ],
+          "selected": [
+            0
+          ],
+          "created_ids": [
+            "aa2ad7f8665a4b61a58752fe7f481629"
+          ]
+        },
+        "status": "confirmed",
+        "workflow": {
+          "id": "4160b0792d1544f88f8f791924f78dbd",
+          "data": {
+            "kind": "ingest",
+            "title": "资料整理与入库",
+            "agent_id": "",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:00.797228+00:00",
+        "finished_at": "2026-10-15T01:46:00.876140+00:00",
+        "workflow_id": "4160b0792d1544f88f8f791924f78dbd"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:01.115871+00:00"
+    },
+    {
+      "record_id": "4160b0792d1544f88f8f791924f78dbd",
+      "version": 1,
+      "data": {
+        "kind": "ingest",
+        "title": "资料整理与入库",
+        "agent_id": "",
+        "chunk_size": 1500
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:00.336861+00:00"
+    },
+    {
+      "record_id": "72935d2e4e8c4ae6a90606e2a64acc44",
+      "version": 1,
+      "data": {
+        "acts": [],
+        "kind": "main",
+        "title": "学习规划",
+        "description": ""
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:48:12.489383+00:00"
+    },
+    {
+      "record_id": "72935d2e4e8c4ae6a90606e2a64acc44",
+      "version": 2,
+      "data": {
+        "acts": [
+          {
+            "id": "03468bc8f8ae45c78b08011fe6bdb29b",
+            "nodes": [
+              {
+                "id": "8541137ab5dc461c86d5e80a863f225f",
+                "done": false,
+                "title": "学会排障",
+                "due_date": "",
+                "priority": "p2",
+                "requires": [],
+                "parent_id": "",
+                "description": ""
+              }
+            ],
+            "title": "任务树",
+            "description": ""
+          }
+        ],
+        "kind": "main",
+        "title": "学习规划",
+        "description": ""
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:48:12.738496+00:00"
+    },
+    {
+      "record_id": "72935d2e4e8c4ae6a90606e2a64acc44",
+      "version": 3,
+      "data": {
+        "acts": [
+          {
+            "id": "03468bc8f8ae45c78b08011fe6bdb29b",
+            "nodes": [
+              {
+                "id": "8541137ab5dc461c86d5e80a863f225f",
+                "done": true,
+                "title": "学会排障",
+                "due_date": "",
+                "priority": "p2",
+                "requires": [],
+                "parent_id": "",
+                "description": ""
+              }
+            ],
+            "title": "任务树",
+            "description": ""
+          }
+        ],
+        "kind": "main",
+        "title": "学习规划",
+        "description": ""
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:48:12.988232+00:00"
+    },
+    {
+      "record_id": "aa2ad7f8665a4b61a58752fe7f481629",
+      "version": 1,
+      "data": {
+        "tags": [],
+        "title": "蔚蓝部署",
+        "source": "",
+        "content": "蔚蓝服务部署流程：先备份数据库，再启动服务。"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:01.115871+00:00"
+    },
+    {
+      "record_id": "bd9606868496458989e633fd0e874acb",
+      "version": 1,
+      "data": {
+        "kind": "answer",
+        "agent": {
+          "id": "ebefd2d1eb8749b1818ce3db86a5401e",
+          "data": {
+            "mode": "text",
+            "title": "知识检索助手",
+            "scopes": [
+              "personal",
+              "docs",
+              "planning"
+            ],
+            "generate": false,
+            "result_limit": 5,
+            "system_prompt": "简洁回答并引用知识"
+          },
+          "kind": "agent_profile",
+          "deleted": false,
+          "version": 2,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.528842+00:00"
+        },
+        "input": {
+          "query": "蔚蓝"
+        },
+        "steps": [],
+        "title": "知识检索与回答",
+        "result": {},
+        "status": "running",
+        "workflow": {
+          "id": "17bce5134a06405bb90808b25c621d92",
+          "data": {
+            "kind": "answer",
+            "title": "知识检索与回答",
+            "agent_id": "ebefd2d1eb8749b1818ce3db86a5401e",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:01.385761+00:00",
+        "workflow_id": "17bce5134a06405bb90808b25c621d92"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:01.392171+00:00"
+    },
+    {
+      "record_id": "bd9606868496458989e633fd0e874acb",
+      "version": 2,
+      "data": {
+        "kind": "answer",
+        "agent": {
+          "id": "ebefd2d1eb8749b1818ce3db86a5401e",
+          "data": {
+            "mode": "text",
+            "title": "知识检索助手",
+            "scopes": [
+              "personal",
+              "docs",
+              "planning"
+            ],
+            "generate": false,
+            "result_limit": 5,
+            "system_prompt": "简洁回答并引用知识"
+          },
+          "kind": "agent_profile",
+          "deleted": false,
+          "version": 2,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.528842+00:00"
+        },
+        "input": {
+          "query": "蔚蓝"
+        },
+        "steps": [
+          {
+            "key": "input",
+            "title": "接收输入",
+            "detail": "输入已校验，执行配置版本已保存",
+            "status": "completed",
+            "duration_ms": 0
+          }
+        ],
+        "title": "知识检索与回答",
+        "result": {},
+        "status": "running",
+        "workflow": {
+          "id": "17bce5134a06405bb90808b25c621d92",
+          "data": {
+            "kind": "answer",
+            "title": "知识检索与回答",
+            "agent_id": "ebefd2d1eb8749b1818ce3db86a5401e",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:01.385761+00:00",
+        "workflow_id": "17bce5134a06405bb90808b25c621d92"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:01.415968+00:00"
+    },
+    {
+      "record_id": "bd9606868496458989e633fd0e874acb",
+      "version": 3,
+      "data": {
+        "kind": "answer",
+        "agent": {
+          "id": "ebefd2d1eb8749b1818ce3db86a5401e",
+          "data": {
+            "mode": "text",
+            "title": "知识检索助手",
+            "scopes": [
+              "personal",
+              "docs",
+              "planning"
+            ],
+            "generate": false,
+            "result_limit": 5,
+            "system_prompt": "简洁回答并引用知识"
+          },
+          "kind": "agent_profile",
+          "deleted": false,
+          "version": 2,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.528842+00:00"
+        },
+        "input": {
+          "query": "蔚蓝"
+        },
+        "steps": [
+          {
+            "key": "input",
+            "title": "接收输入",
+            "detail": "输入已校验，执行配置版本已保存",
+            "status": "completed",
+            "duration_ms": 0
+          },
+          {
+            "key": "retrieve",
+            "title": "检索依据",
+            "detail": "找到 2 条引用",
+            "status": "completed",
+            "duration_ms": 58
+          }
+        ],
+        "title": "知识检索与回答",
+        "result": {
+          "hits": [
+            {
+              "id": "aa2ad7f8665a4b61a58752fe7f481629",
+              "score": 13,
+              "title": "蔚蓝部署",
+              "domain": "tech_doc",
+              "source": "个人知识库",
+              "content": "蔚蓝服务部署流程：先备份数据库，再启动服务。",
+              "category": "personal",
+              "status_marker": "PERSONAL"
+            },
+            {
+              "id": "33bbfffe9af44de29045d984bc449499",
+              "score": 4,
+              "title": "接口验收笔记",
+              "domain": "tech_doc",
+              "source": "个人知识库",
+              "content": "蔚蓝项目第二版使用 PostgreSQL。",
+              "category": "personal",
+              "status_marker": "PERSONAL"
+            }
+          ],
+          "notes": [],
+          "answer": "",
+          "engine": "全文匹配"
+        },
+        "status": "running",
+        "workflow": {
+          "id": "17bce5134a06405bb90808b25c621d92",
+          "data": {
+            "kind": "answer",
+            "title": "知识检索与回答",
+            "agent_id": "ebefd2d1eb8749b1818ce3db86a5401e",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:01.385761+00:00",
+        "workflow_id": "17bce5134a06405bb90808b25c621d92"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:01.507729+00:00"
+    },
+    {
+      "record_id": "bd9606868496458989e633fd0e874acb",
+      "version": 4,
+      "data": {
+        "kind": "answer",
+        "agent": {
+          "id": "ebefd2d1eb8749b1818ce3db86a5401e",
+          "data": {
+            "mode": "text",
+            "title": "知识检索助手",
+            "scopes": [
+              "personal",
+              "docs",
+              "planning"
+            ],
+            "generate": false,
+            "result_limit": 5,
+            "system_prompt": "简洁回答并引用知识"
+          },
+          "kind": "agent_profile",
+          "deleted": false,
+          "version": 2,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.528842+00:00"
+        },
+        "input": {
+          "query": "蔚蓝"
+        },
+        "steps": [
+          {
+            "key": "input",
+            "title": "接收输入",
+            "detail": "输入已校验，执行配置版本已保存",
+            "status": "completed",
+            "duration_ms": 0
+          },
+          {
+            "key": "retrieve",
+            "title": "检索依据",
+            "detail": "找到 2 条引用",
+            "status": "completed",
+            "duration_ms": 58
+          },
+          {
+            "key": "generate",
+            "title": "AI 回答",
+            "detail": "Agent 未开启生成，保留检索引用",
+            "status": "skipped",
+            "duration_ms": 0
+          }
+        ],
+        "title": "知识检索与回答",
+        "result": {
+          "hits": [
+            {
+              "id": "aa2ad7f8665a4b61a58752fe7f481629",
+              "score": 13,
+              "title": "蔚蓝部署",
+              "domain": "tech_doc",
+              "source": "个人知识库",
+              "content": "蔚蓝服务部署流程：先备份数据库，再启动服务。",
+              "category": "personal",
+              "status_marker": "PERSONAL"
+            },
+            {
+              "id": "33bbfffe9af44de29045d984bc449499",
+              "score": 4,
+              "title": "接口验收笔记",
+              "domain": "tech_doc",
+              "source": "个人知识库",
+              "content": "蔚蓝项目第二版使用 PostgreSQL。",
+              "category": "personal",
+              "status_marker": "PERSONAL"
+            }
+          ],
+          "notes": [],
+          "answer": "",
+          "engine": "全文匹配"
+        },
+        "status": "running",
+        "workflow": {
+          "id": "17bce5134a06405bb90808b25c621d92",
+          "data": {
+            "kind": "answer",
+            "title": "知识检索与回答",
+            "agent_id": "ebefd2d1eb8749b1818ce3db86a5401e",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:01.385761+00:00",
+        "workflow_id": "17bce5134a06405bb90808b25c621d92"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:01.538918+00:00"
+    },
+    {
+      "record_id": "bd9606868496458989e633fd0e874acb",
+      "version": 5,
+      "data": {
+        "kind": "answer",
+        "agent": {
+          "id": "ebefd2d1eb8749b1818ce3db86a5401e",
+          "data": {
+            "mode": "text",
+            "title": "知识检索助手",
+            "scopes": [
+              "personal",
+              "docs",
+              "planning"
+            ],
+            "generate": false,
+            "result_limit": 5,
+            "system_prompt": "简洁回答并引用知识"
+          },
+          "kind": "agent_profile",
+          "deleted": false,
+          "version": 2,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.528842+00:00"
+        },
+        "input": {
+          "query": "蔚蓝"
+        },
+        "steps": [
+          {
+            "key": "input",
+            "title": "接收输入",
+            "detail": "输入已校验，执行配置版本已保存",
+            "status": "completed",
+            "duration_ms": 0
+          },
+          {
+            "key": "retrieve",
+            "title": "检索依据",
+            "detail": "找到 2 条引用",
+            "status": "completed",
+            "duration_ms": 58
+          },
+          {
+            "key": "generate",
+            "title": "AI 回答",
+            "detail": "Agent 未开启生成，保留检索引用",
+            "status": "skipped",
+            "duration_ms": 0
+          }
+        ],
+        "title": "知识检索与回答",
+        "result": {
+          "hits": [
+            {
+              "id": "aa2ad7f8665a4b61a58752fe7f481629",
+              "score": 13,
+              "title": "蔚蓝部署",
+              "domain": "tech_doc",
+              "source": "个人知识库",
+              "content": "蔚蓝服务部署流程：先备份数据库，再启动服务。",
+              "category": "personal",
+              "status_marker": "PERSONAL"
+            },
+            {
+              "id": "33bbfffe9af44de29045d984bc449499",
+              "score": 4,
+              "title": "接口验收笔记",
+              "domain": "tech_doc",
+              "source": "个人知识库",
+              "content": "蔚蓝项目第二版使用 PostgreSQL。",
+              "category": "personal",
+              "status_marker": "PERSONAL"
+            }
+          ],
+          "notes": [],
+          "answer": "",
+          "engine": "全文匹配"
+        },
+        "status": "completed",
+        "workflow": {
+          "id": "17bce5134a06405bb90808b25c621d92",
+          "data": {
+            "kind": "answer",
+            "title": "知识检索与回答",
+            "agent_id": "ebefd2d1eb8749b1818ce3db86a5401e",
+            "chunk_size": 1500
+          },
+          "kind": "workflow",
+          "deleted": false,
+          "version": 1,
+          "created_at": "2026-10-15T01:46:00.336861+00:00",
+          "updated_at": "2026-10-15T01:46:00.336861+00:00"
+        },
+        "started_at": "2026-10-15T01:46:01.385761+00:00",
+        "finished_at": "2026-10-15T01:46:01.542945+00:00",
+        "workflow_id": "17bce5134a06405bb90808b25c621d92"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:01.547986+00:00"
+    },
+    {
+      "record_id": "ebefd2d1eb8749b1818ce3db86a5401e",
+      "version": 1,
+      "data": {
+        "mode": "text",
+        "title": "知识检索助手",
+        "scopes": [
+          "personal",
+          "docs",
+          "planning"
+        ],
+        "generate": false,
+        "result_limit": 5,
+        "system_prompt": "先回答核心问题，再用 [1] 等编号引用依据；没有依据时说明缺口。"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:00.336861+00:00"
+    },
+    {
+      "record_id": "ebefd2d1eb8749b1818ce3db86a5401e",
+      "version": 2,
+      "data": {
+        "mode": "text",
+        "title": "知识检索助手",
+        "scopes": [
+          "personal",
+          "docs",
+          "planning"
+        ],
+        "generate": false,
+        "result_limit": 5,
+        "system_prompt": "简洁回答并引用知识"
+      },
+      "deleted": false,
+      "action": "save",
+      "created_at": "2026-10-15T01:46:00.528842+00:00"
+    }
+  ],
+  "stages": [
+    {
+      "id": "20261015-094813-f0529244",
+      "title": "隔离功能验收",
+      "objective": "",
+      "status": "passed",
+      "created_at": "2026-10-15T09:48:13+08:00",
+      "completed_at": "2026-10-15T09:48:13+08:00",
+      "completed": [
+        "完成交互验收"
+      ],
+      "issues": [],
+      "verification": [
+        "真实Chrome点击保存并读取"
+      ],
+      "before": {},
+      "after": {},
+      "changes": [],
+      "data_snapshot_available": true
+    }
+  ]
+}

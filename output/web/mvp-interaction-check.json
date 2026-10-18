@@ -1,0 +1,237 @@
+{
+  "status": "passed",
+  "checks": [
+    "导航点击与刷新",
+    "快速打开初次列表/筛选/Enter/关闭",
+    "最近访问与正文高亮",
+    {
+      "density": {
+        "compact": 58,
+        "spacious": 78
+      }
+    },
+    "插画紧凑与刷新",
+    "删除/回收站/恢复",
+    "阶段服务故障不阻断知识与重试",
+    "回滚预检入口"
+  ],
+  "layouts": [
+    {
+      "mode": "portal",
+      "width": 1440,
+      "hash": "#home",
+      "scroll": 1440
+    },
+    {
+      "mode": "portal",
+      "width": 1440,
+      "hash": "#module/knowledge",
+      "scroll": 1440
+    },
+    {
+      "mode": "portal",
+      "width": 1440,
+      "hash": "#module/planning/tasks",
+      "scroll": 1440
+    },
+    {
+      "mode": "portal",
+      "width": 1440,
+      "hash": "#module/planning/relations",
+      "scroll": 1440
+    },
+    {
+      "mode": "portal",
+      "width": 1440,
+      "hash": "#module/stages",
+      "scroll": 1440
+    },
+    {
+      "mode": "portal",
+      "width": 1440,
+      "hash": "#module/workflows",
+      "scroll": 1440
+    },
+    {
+      "mode": "portal",
+      "width": 390,
+      "hash": "#home",
+      "scroll": 390
+    },
+    {
+      "mode": "portal",
+      "width": 390,
+      "hash": "#module/knowledge",
+      "scroll": 390
+    },
+    {
+      "mode": "portal",
+      "width": 390,
+      "hash": "#module/planning/tasks",
+      "scroll": 390
+    },
+    {
+      "mode": "portal",
+      "width": 390,
+      "hash": "#module/planning/relations",
+      "scroll": 390
+    },
+    {
+      "mode": "portal",
+      "width": 390,
+      "hash": "#module/stages",
+      "scroll": 390
+    },
+    {
+      "mode": "portal",
+      "width": 390,
+      "hash": "#module/workflows",
+      "scroll": 390
+    },
+    {
+      "mode": "portal",
+      "width": 320,
+      "hash": "#home",
+      "scroll": 320
+    },
+    {
+      "mode": "portal",
+      "width": 320,
+      "hash": "#module/knowledge",
+      "scroll": 320
+    },
+    {
+      "mode": "portal",
+      "width": 320,
+      "hash": "#module/planning/tasks",
+      "scroll": 320
+    },
+    {
+      "mode": "portal",
+      "width": 320,
+      "hash": "#module/planning/relations",
+      "scroll": 320
+    },
+    {
+      "mode": "portal",
+      "width": 320,
+      "hash": "#module/stages",
+      "scroll": 320
+    },
+    {
+      "mode": "portal",
+      "width": 320,
+      "hash": "#module/workflows",
+      "scroll": 320
+    },
+    {
+      "mode": "sidebar",
+      "width": 1440,
+      "hash": "#home",
+      "scroll": 1440
+    },
+    {
+      "mode": "sidebar",
+      "width": 1440,
+      "hash": "#module/knowledge",
+      "scroll": 1440
+    },
+    {
+      "mode": "sidebar",
+      "width": 1440,
+      "hash": "#module/planning/tasks",
+      "scroll": 1440
+    },
+    {
+      "mode": "sidebar",
+      "width": 1440,
+      "hash": "#module/planning/relations",
+      "scroll": 1440
+    },
+    {
+      "mode": "sidebar",
+      "width": 1440,
+      "hash": "#module/stages",
+      "scroll": 1440
+    },
+    {
+      "mode": "sidebar",
+      "width": 1440,
+      "hash": "#module/workflows",
+      "scroll": 1440
+    },
+    {
+      "mode": "sidebar",
+      "width": 390,
+      "hash": "#home",
+      "scroll": 390
+    },
+    {
+      "mode": "sidebar",
+      "width": 390,
+      "hash": "#module/knowledge",
+      "scroll": 390
+    },
+    {
+      "mode": "sidebar",
+      "width": 390,
+      "hash": "#module/planning/tasks",
+      "scroll": 390
+    },
+    {
+      "mode": "sidebar",
+      "width": 390,
+      "hash": "#module/planning/relations",
+      "scroll": 390
+    },
+    {
+      "mode": "sidebar",
+      "width": 390,
+      "hash": "#module/stages",
+      "scroll": 390
+    },
+    {
+      "mode": "sidebar",
+      "width": 390,
+      "hash": "#module/workflows",
+      "scroll": 390
+    },
+    {
+      "mode": "sidebar",
+      "width": 320,
+      "hash": "#home",
+      "scroll": 320
+    },
+    {
+      "mode": "sidebar",
+      "width": 320,
+      "hash": "#module/knowledge",
+      "scroll": 320
+    },
+    {
+      "mode": "sidebar",
+      "width": 320,
+      "hash": "#module/planning/tasks",
+      "scroll": 320
+    },
+    {
+      "mode": "sidebar",
+      "width": 320,
+      "hash": "#module/planning/relations",
+      "scroll": 320
+    },
+    {
+      "mode": "sidebar",
+      "width": 320,
+      "hash": "#module/stages",
+      "scroll": 320
+    },
+    {
+      "mode": "sidebar",
+      "width": 320,
+      "hash": "#module/workflows",
+      "scroll": 320
+    }
+  ],
+  "errors": []
+}

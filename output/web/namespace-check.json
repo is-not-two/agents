@@ -1,0 +1,7 @@
+{
+  "same_id_cross_namespace": "passed",
+  "count_isolation": "passed",
+  "search_isolation": "passed",
+  "unknown_namespace": "empty",
+  "production_chunks": 237
+}

@@ -1,0 +1,21 @@
+# 依赖清单：按阶段按需安装（与 pyproject.toml 的 optional-dependencies 对齐）
+# 使用项目虚拟环境解释器：
+#   .venv\Scripts\python.exe -m pip install -r requirements.txt
+
+# ---- V0 数据预处理：仅标准库，无第三方依赖 ----
+
+# ---- V1 向量化与检索（首次安装会下载 torch，体积较大，按需取消注释）----
+# pyyaml>=6.0
+# sentence-transformers>=2.7.0
+# psycopg2-binary>=2.9.9
+
+# ---- V2-d Agent 编排 ----
+# langgraph>=0.1.0
+
+# ---- V2-e 接口与工程化 ----
+# fastapi>=0.110.0
+# uvicorn>=0.29.0
+
+# ---- 开发工具（当前已随 pip install -e ".[dev]" 安装）----
+pytest>=8.0.0
+ruff>=0.4.0

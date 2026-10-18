@@ -1,0 +1,15 @@
+{
+  "scope": "主要文字和状态标签配色，非完整无障碍认证",
+  "ratios": {
+    "body": 15.01,
+    "secondary": 5.04,
+    "primary": 5.79,
+    "main": 5.75,
+    "side": 5.86,
+    "locked": 5.16,
+    "done": 5.6,
+    "available": 5.35,
+    "attention": 5.38,
+    "rolled_back": 5.44
+  }
+}

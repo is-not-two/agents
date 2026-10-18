@@ -1,0 +1,19 @@
+{
+  "id": "20261015-152658-e441c374",
+  "title": "数据恢复前保护快照",
+  "objective": "保留恢复前所有内容",
+  "status": "passed",
+  "created_at": "2026-10-15T15:26:58+08:00",
+  "completed_at": "2026-10-15T15:26:58+08:00",
+  "completed": [
+    "恢复阶段 20261015-152658-05a488cd 开始时内容"
+  ],
+  "issues": [],
+  "verification": [
+    "事务恢复 2 条；原历史保留"
+  ],
+  "before": {},
+  "after": {},
+  "changes": [],
+  "data_snapshot_available": true
+}

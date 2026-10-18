@@ -1,0 +1,65 @@
+{
+  "basic": {
+    "nodes": 6,
+    "fold": true,
+    "persist": true,
+    "zoom": 80,
+    "complete": true,
+    "errors": []
+  },
+  "extra": {
+    "navigation": [
+      "knowledge",
+      "documents",
+      "planning",
+      "stages",
+      "workflows",
+      "agents",
+      "runs",
+      "connections",
+      "backup",
+      "appearance"
+    ],
+    "layouts": [
+      {
+        "mode": "portal",
+        "width": 1440,
+        "overflow": false
+      },
+      {
+        "mode": "portal",
+        "width": 1024,
+        "overflow": false
+      },
+      {
+        "mode": "portal",
+        "width": 390,
+        "overflow": false
+      },
+      {
+        "mode": "sidebar",
+        "width": 1440,
+        "overflow": false
+      },
+      {
+        "mode": "sidebar",
+        "width": 1024,
+        "overflow": false
+      },
+      {
+        "mode": "sidebar",
+        "width": 390,
+        "overflow": false
+      }
+    ],
+    "side": true,
+    "errorFeedback": true,
+    "images": true
+  },
+  "wheel_assets": {
+    "tree.js": true,
+    "tree-actions.js": true,
+    "tree.css": true,
+    "planning-mist.png": true
+  }
+}

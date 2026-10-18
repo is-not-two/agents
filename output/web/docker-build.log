@@ -1,0 +1,34 @@
+ Image rag-tech-doc-retriever-app Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 610B 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 801B 0.0s done
+#2 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim
+#3 ERROR: failed to authorize: failed to fetch anonymous token: Get "https://auth.docker.io/token?scope=repository%3Alibrary%2Fpython%3Apull&service=registry.docker.io": dial tcp 31.13.73.9:443: connectex: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+------
+ > [internal] load metadata for docker.io/library/python:3.12-slim:
+------
+Dockerfile:2
+
+--------------------
+
+   1 |     # 本地/服务器工作台；WITH_RAG=true 加装 CPU 语义模型依赖。
+
+   2 | >>> FROM python:3.12-slim
+
+   3 |     
+
+   4 |     WORKDIR /app
+
+--------------------
+
+failed to solve: failed to fetch anonymous token: Get "https://auth.docker.io/token?scope=repository%3Alibrary%2Fpython%3Apull&service=registry.docker.io": dial tcp 31.13.73.9:443: connectex: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+
+
+
+View build details: docker-desktop://dashboard/build/default/default/n1be39ex75z7ktagolqpa7a85
+

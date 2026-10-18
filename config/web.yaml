@@ -1,0 +1,17 @@
+# Web 工作台：服务器与本机均使用 PostgreSQL，连接信息取环境变量。
+web:
+  host: 127.0.0.1
+  port: 8766
+  title: 时列 · 个人工作台
+  table_prefix: workspace
+  export_dir: data/local/exports
+  stages_dir: output/stages
+  max_body_bytes: 2097152
+  max_import_bytes: 33554432
+  search_limit: 10
+  session_hours: 12
+llm:
+  timeout_seconds: 25
+  max_tokens: 800
+  test_timeout_seconds: 12
+  connection_file: data/local/llm-connection.json

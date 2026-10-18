@@ -1,0 +1,194 @@
+{
+  "generated_at": "2026-10-12T11:38:31",
+  "top_k": 5,
+  "candidate_k": 20,
+  "fetch_k": 50,
+  "corpus_chunks": 237,
+  "reranker": {
+    "model_name": "BAAI/bge-reranker-base",
+    "device": "cpu"
+  },
+  "baseline": {
+    "hit_count": 9,
+    "total": 10,
+    "recall": 0.9
+  },
+  "reranked": {
+    "hit_count": 10,
+    "total": 10,
+    "recall": 1.0
+  },
+  "results": [
+    {
+      "qid": "Q01",
+      "type": "事实查询",
+      "question": "微信 RPA 协议里主动加好友命令 wechat.add_friend 的命令号和回执号分别是多少？它的幂等键怎么计算？",
+      "must_retrieve": [
+        "RPA微信命令与事件协议v0::011"
+      ],
+      "baseline_rank": 5,
+      "baseline_hit": true,
+      "pool_available": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "change": "保持命中",
+      "top1_before": "RPA微信命令与事件协议v0::012",
+      "top1_after": "RPA微信命令与事件协议v0::011",
+      "top1_after_score": 0.9974
+    },
+    {
+      "qid": "Q02",
+      "type": "状态判断",
+      "question": "自动通过好友（wechat.accept_friend=740）目前可以通过 RPA 命令下发吗？现在实际由谁承接？",
+      "must_retrieve": [
+        "RPA微信命令与事件协议v0::012"
+      ],
+      "baseline_rank": 4,
+      "baseline_hit": true,
+      "pool_available": true,
+      "rerank_rank": 2,
+      "rerank_hit": true,
+      "change": "保持命中",
+      "top1_before": "微信设备指令通道划分与现状::011",
+      "top1_after": "微信设备指令通道划分与现状::007",
+      "top1_after_score": 0.9989
+    },
+    {
+      "qid": "Q03",
+      "type": "通道机制",
+      "question": "设备端上报 type=55（收到好友消息/私信）时，后端会登记独立的 RPA 事件吗？个微 AI 实时回复走哪条通道？",
+      "must_retrieve": [
+        "RPA微信命令与事件协议v0::021"
+      ],
+      "baseline_rank": 1,
+      "baseline_hit": true,
+      "pool_available": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "change": "保持命中",
+      "top1_before": "RPA微信命令与事件协议v0::021",
+      "top1_after": "RPA微信命令与事件协议v0::021",
+      "top1_after_score": 0.9997
+    },
+    {
+      "qid": "Q04",
+      "type": "实现细节",
+      "question": "设备端收到 wechat.add_friend 下发命令时，命令号放在信封的哪个字段？业务参数（如 targetWechat）在哪个字段里、怎么取出来？",
+      "must_retrieve": [
+        "RPA微信命令与事件协议v0::037"
+      ],
+      "baseline_rank": 1,
+      "baseline_hit": true,
+      "pool_available": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "change": "保持命中",
+      "top1_before": "RPA微信命令与事件协议v0::037",
+      "top1_after": "RPA微信命令与事件协议v0::037",
+      "top1_after_score": 0.9997
+    },
+    {
+      "qid": "Q05",
+      "type": "易混淆",
+      "question": "WeChatPadPro 的 POST /User/FriendVerification 是「通过好友申请」的接口吗？它实际是做什么的？",
+      "must_retrieve": [
+        "微信设备指令通道划分与现状::018"
+      ],
+      "baseline_rank": 5,
+      "baseline_hit": true,
+      "pool_available": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "change": "保持命中",
+      "top1_before": "RPA微信命令与事件协议v0::012",
+      "top1_after": "微信设备指令通道划分与现状::018",
+      "top1_after_score": 0.963
+    },
+    {
+      "qid": "Q06",
+      "type": "决策记录",
+      "question": "视频号图文下发张数上限（R2 问题）目前最终的决策是什么？是否已经把上限从 12 改成 9？",
+      "must_retrieve": [
+        "视频号发布_后端侧答复::011"
+      ],
+      "baseline_rank": 2,
+      "baseline_hit": true,
+      "pool_available": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "change": "保持命中",
+      "top1_before": "视频号发布_后端侧答复::006",
+      "top1_after": "视频号发布_后端侧答复::011",
+      "top1_after_score": 0.9976
+    },
+    {
+      "qid": "Q07",
+      "type": "排障根因",
+      "question": "个微「AI 接管」为什么会对所有提问固定回复同一句「转接」兜底文案？",
+      "must_retrieve": [
+        "微信接管AI回复兜底排查::002",
+        "微信接管AI回复兜底排查::004"
+      ],
+      "baseline_rank": 1,
+      "baseline_hit": true,
+      "pool_available": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "change": "保持命中",
+      "top1_before": "微信接管AI回复兜底排查::002",
+      "top1_after": "微信接管AI回复兜底排查::002",
+      "top1_after_score": 0.9902
+    },
+    {
+      "qid": "Q08",
+      "type": "字段口径",
+      "question": "AI 员工详情完善度接口（setupProgress）里 keyword_count 的统计口径是什么？",
+      "must_retrieve": [
+        "api-ai员工-P1-P3接口契约::032"
+      ],
+      "baseline_rank": 7,
+      "baseline_hit": false,
+      "pool_available": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "change": "救回",
+      "top1_before": "api-ai员工-P1-P3接口契约::013",
+      "top1_after": "api-ai员工-P1-P3接口契约::032",
+      "top1_after_score": 0.9146
+    },
+    {
+      "qid": "Q09",
+      "type": "环境事实",
+      "question": "服务器环境对齐要求中，composer.lock 锁定的 topthink/framework 版本是多少？",
+      "must_retrieve": [
+        "SERVER_CHECKLIST::010"
+      ],
+      "baseline_rank": 3,
+      "baseline_hit": true,
+      "pool_available": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "change": "保持命中",
+      "top1_before": "SERVER_CHECKLIST::008",
+      "top1_after": "SERVER_CHECKLIST::010",
+      "top1_after_score": 0.9671
+    },
+    {
+      "qid": "Q10",
+      "type": "行为误解",
+      "question": "智能会话发送附件时，附件内容会通过 SSE 帧重复回传吗？客户端怎么拿到附件服务端确认后的数据？",
+      "must_retrieve": [
+        "智能会话-小程序附件联调协议::004"
+      ],
+      "baseline_rank": 1,
+      "baseline_hit": true,
+      "pool_available": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "change": "保持命中",
+      "top1_before": "智能会话-小程序附件联调协议::004",
+      "top1_after": "智能会话-小程序附件联调协议::004",
+      "top1_after_score": 0.9999
+    }
+  ]
+}

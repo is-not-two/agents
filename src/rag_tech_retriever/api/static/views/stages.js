@@ -1,0 +1,7 @@
+import {state} from '../state.js';
+import {$,esc,date,button,heading,empty,badge,icon} from '../ui.js';
+export function stagesPage() {
+  return heading('阶段记录','记录阶段目标、完成项、问题、验证与文件改动。',button('导出备份','export')+button('开始阶段','stage-new','','','primary')) +
+    `<div class="stage-list">${state.stages.length ? state.stages.map(row=>`<article class="stage-card"><div class="stage-header"><h2>${esc(row.title)}</h2>${badge(row.status)}</div><p class="stage-objective">${esc(row.objective)}</p><div class="stage-date">开始 ${date(row.created_at)}${row.completed_at?' · 结束 '+date(row.completed_at):''}</div><div class="stage-columns"><div><h3>完成了什么</h3>${stageItems(row.completed)}</div><div><h3>问题与处理</h3>${stageItems(row.issues)}</div><div><h3>怎么验证</h3>${stageItems(row.verification)}</div></div><div class="stage-actions">${row.status==='running'?button('记录阶段结果','stage-finish',row.id):button('查看改动','stage-details',row.id)+button('源码回滚预检','stage-check',row.id)}${row.data_snapshot_available ? button('恢复阶段数据','stage-restore',row.id,'','text-button'):''}<small>${row.changes.length} 个文件改动 · ${Object.keys(row.before).length} 个文件快照</small></div></article>`).join('') : empty('stages','为下一个大阶段留一份记录','开始时保存快照，结束时记录成果、问题与验证。',button('开始一个阶段','stage-new'))}</div>`;
+}
+export function stageItems(items) { return items.length ? `<ul>${items.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>` : '<p class="muted" style="font-size:11px">暂无记录</p>'; }

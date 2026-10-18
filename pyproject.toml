@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rag-tech-doc-retriever"
+version = "0.1.0"
+description = "技术文档 RAG 检索助手：数据预处理 → 向量检索 → Agent 工具调用 → MCP 适配 → 工程化封装"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+# 按阶段按需安装：.venv\Scripts\python.exe -m pip install -e ".[rag]"
+rag = ["pyyaml>=6.0", "sentence-transformers>=2.7.0", "psycopg2-binary>=2.9.9"]
+agent = ["langgraph==1.2.15"]
+api = ["fastapi>=0.110.0", "uvicorn>=0.29.0"]
+web = ["pyyaml>=6.0", "psycopg2-binary>=2.9.9", "fastapi==0.143.0", "uvicorn==0.54.0", "langgraph==1.2.15"]
+dev = ["pytest>=8.0.0", "ruff>=0.4.0", "httpx>=0.27.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+rag_tech_retriever = ["api/static/*.html", "api/static/*.css", "api/static/*.js", "api/static/*.svg", "api/static/views/*.js", "api/static/dialogs/*.js", "api/static/shilie/*"]
+
+[tool.setuptools.exclude-package-data]
+# 保留本地原素材及阶段快照；页面使用 WebP，发布包不重复携带 PNG。
+rag_tech_retriever = ["api/static/shilie/planning-mist.png"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["output/stages", "output/playwright", "output/web"]

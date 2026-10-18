@@ -1,0 +1,73 @@
+INFO:     Started server process [31784]
+INFO:     Waiting for application startup.
+ERROR:    Traceback (most recent call last):
+  File "E:\project\agents\rag-tech-doc-retriever\src\rag_tech_retriever\platform\record_store.py", line 57, in transaction
+    conn = psycopg2.connect(
+           ^^^^^^^^^^^^^^^^^
+  File "E:\project\agents\rag-tech-doc-retriever\.venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.OperationalError: connection to server at "127.0.0.1", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\project\agents\rag-tech-doc-retriever\.venv\Lib\site-packages\starlette\routing.py", line 654, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+  File "D:\python\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\project\agents\rag-tech-doc-retriever\.venv\Lib\site-packages\fastapi\routing.py", line 247, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "D:\python\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\project\agents\rag-tech-doc-retriever\.venv\Lib\site-packages\fastapi\routing.py", line 247, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "D:\python\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\project\agents\rag-tech-doc-retriever\.venv\Lib\site-packages\fastapi\routing.py", line 247, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "D:\python\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\project\agents\rag-tech-doc-retriever\.venv\Lib\site-packages\fastapi\routing.py", line 247, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "D:\python\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\project\agents\rag-tech-doc-retriever\.venv\Lib\site-packages\fastapi\routing.py", line 247, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "D:\python\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\project\agents\rag-tech-doc-retriever\.venv\Lib\site-packages\fastapi\routing.py", line 247, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "D:\python\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\project\agents\rag-tech-doc-retriever\.venv\Lib\site-packages\fastapi\routing.py", line 247, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "D:\python\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\project\agents\rag-tech-doc-retriever\.venv\Lib\site-packages\fastapi\routing.py", line 247, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+  File "D:\python\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\project\agents\rag-tech-doc-retriever\src\rag_tech_retriever\api\main.py", line 64, in lifespan
+    store.ensure_schema()
+  File "E:\project\agents\rag-tech-doc-retriever\src\rag_tech_retriever\platform\record_store.py", line 75, in ensure_schema
+    with self.transaction() as cur:
+  File "D:\python\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "E:\project\agents\rag-tech-doc-retriever\src\rag_tech_retriever\platform\record_store.py", line 68, in transaction
+    raise StorageError("数据库暂不可用，请检查 PostgreSQL 服务") from exc
+rag_tech_retriever.platform.record_store.StorageError: 数据库暂不可用，请检查 PostgreSQL 服务
+
+ERROR:    Application startup failed. Exiting.

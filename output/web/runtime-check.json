@@ -1,0 +1,11 @@
+{
+  "health": {
+    "status": "ok",
+    "storage": "PostgreSQL",
+    "pid": 39440
+  },
+  "production_empty_personal_records": true,
+  "production_stages": 5,
+  "background_start_stop_restart": "passed",
+  "llm_configured": false
+}

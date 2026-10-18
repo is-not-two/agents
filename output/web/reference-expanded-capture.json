@@ -1,0 +1,28 @@
+### Error
+TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: 'Open Drawer', exact: true }).nth(1)[22m
+[2m    - locator resolved to <button type="button" data-variant="default" class="mantine-focus-auto mantine-active m_77c9d27d mantine-Button-root m_87cf2631 mantine-UnstyledButton-root">…</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div data-fixed="true" class="mantine-Drawer-overlay m_9814e45f mantine-Overlay-root"></div> from <div data-portal="true" data-mantine-shared-portal-node="true">…</div> subtree intercepts pointer events[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div data-fixed="true" class="mantine-Drawer-overlay m_9814e45f mantine-Overlay-root"></div> from <div data-portal="true" data-mantine-shared-portal-node="true">…</div> subtree intercepts pointer events[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    57 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - <div data-fixed="true" class="mantine-Drawer-overlay m_9814e45f mantine-Overlay-root"></div> from <div data-portal="true" data-mantine-shared-portal-node="true">…</div> subtree intercepts pointer events[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+

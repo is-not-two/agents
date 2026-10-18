@@ -1,0 +1,9 @@
+Processing .\.
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: rag-tech-doc-retriever
+  Building wheel for rag-tech-doc-retriever (pyproject.toml): started
+  Building wheel for rag-tech-doc-retriever (pyproject.toml): finished with status 'done'
+  Created wheel for rag-tech-doc-retriever: filename=rag_tech_doc_retriever-0.1.0-py3-none-any.whl size=93589 sha256=3a9753f0a8ec4b33d2f9a2a0b5eccbcb09dbb7e0d030c187a5627181ca7b6b04
+  Stored in directory: C:\Users\lzm\AppData\Local\Temp\pip-ephem-wheel-cache-fxmawhg4\wheels\81\96\3e\23185d2d080082e1f3c42ac19a33363510585722d64bcbabd3
+Successfully built rag-tech-doc-retriever

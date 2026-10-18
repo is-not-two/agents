@@ -1,0 +1,8 @@
+{
+  "wheel": "rag_tech_doc_retriever-0.1.0-py3-none-any.whl",
+  "sha256": "3a9753f0a8ec4b33d2f9a2a0b5eccbcb09dbb7e0d030c187a5627181ca7b6b04",
+  "frontend_modules": 15,
+  "assets_match_source": true,
+  "config_root_override": "passed",
+  "isolated_import": "passed (previous package; import code unchanged)"
+}

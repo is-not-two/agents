@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ffffff"><title>知行工作台</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/style.css?v=20261012.2"><script type="module" src="/static/app.js"></script>
+</head>
+<body>
+<aside class="sidebar">
+<a class="brand" href="#overview"><span class="brand-symbol">知</span><strong>知行</strong><small>工作台</small></a>
+<div class="workspace-label"><span class="workspace-avatar">我</span><span>个人工作区<small>知识与计划</small></span></div>
+<nav aria-label="主导航">
+<button data-route="overview" class="nav-item active"><span data-icon="overview"></span>概览</button>
+<button data-route="knowledge" class="nav-item"><span data-icon="knowledge"></span>知识库</button>
+<button data-route="planning" class="nav-item"><span data-icon="planning"></span>人生规划</button>
+<button data-route="stages" class="nav-item"><span data-icon="stages"></span>阶段记录</button>
+</nav>
+<div class="nav-note">技术文档可以通过全局搜索检索。个人内容在知识库中管理。</div>
+<div class="sidebar-bottom"><span class="status-dot"></span><span id="connection">正在连接</span></div>
+</aside>
+<div class="workspace">
+<header class="topbar"><div class="breadcrumb">个人工作区<span>/</span><strong id="crumb">概览</strong></div><div class="topbar-right"><span id="today"></span><details id="appearance-menu" class="appearance-menu"><summary class="display-trigger" aria-label="页面设置"><svg class="icon" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 4h12M3 9h12M3 14h12"/><circle cx="6" cy="4" r="1.8"/><circle cx="12" cy="9" r="1.8"/><circle cx="7" cy="14" r="1.8"/></svg><span>页面设置</span></summary><div class="appearance-panel"><div class="appearance-heading"><strong>页面密度</strong><output id="density-value" for="density" aria-live="polite">标准</output></div><p>调节列表和任务之间的间距</p><input id="density" type="range" min="0" max="2" step="1" value="1" aria-label="页面密度" aria-valuetext="标准"><div class="density-labels" aria-hidden="true"><span>紧凑</span><span>标准</span><span>宽松</span></div><button type="button" id="density-reset" class="text-button">恢复标准</button></div></details><span class="avatar" aria-label="个人工作区">我</span></div></header>
+<main>
+<section class="search-panel" aria-label="全局搜索"><form id="search-form"><span data-icon="search"></span><input id="query" name="query" type="search" placeholder="搜索知识、技术文档和规划" aria-label="搜索知识、技术文档或人生规划" required maxlength="1000"><select id="scope" aria-label="检索范围"><option value="all">全部内容</option><option value="personal">个人知识</option><option value="docs">技术文档</option><option value="planning">人生规划</option></select><button class="primary" type="submit">搜索</button></form><details class="search-settings"><summary>搜索设置 <span class="keyboard">Ctrl K</span></summary><div class="search-options"><label><input type="checkbox" id="semantic">技术文档使用语义检索与重排</label><label><input type="checkbox" id="generate">使用已配置的模型生成回答</label></div></details></section>
+<div id="search-results" hidden></div><div id="page"><div class="loading">正在加载工作区…</div></div>
+</main><footer><span>知行工作台</span><span>数据持久保存，可导出备份</span></footer>
+</div><dialog id="modal" aria-labelledby="modal-title"></dialog><div id="toast" role="status" aria-live="polite" hidden></div>
+</body></html>

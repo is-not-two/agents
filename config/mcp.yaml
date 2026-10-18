@@ -1,0 +1,25 @@
+# MCP 协议配置：工具暴露、权限、资源映射（V2-d 起启用）
+
+server:
+  name: rag-tech-doc-retriever
+  port: 8765
+
+tools:                             # 原子工具 → MCP 标准工具暴露开关
+  protocol_query:
+    enabled: true
+    permission: readonly
+  stacktrace_parser:
+    enabled: true
+    permission: readonly
+  debug_retriever:
+    enabled: true
+    permission: readonly
+
+resources:                         # 文档片段、检索结果作为标准 MCP 资源暴露
+  corpus:
+    uri: "rag://corpus/chunks"
+    enabled: true
+
+permissions:
+  readonly: true                   # 只读工具默认开放
+  admin: false                     # 管理类工具默认关闭

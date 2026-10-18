@@ -1,0 +1,49 @@
+# 主配置：模型参数、向量库、切片、检索、Agent 阈值
+# 优先级：环境变量 > .env 文件 > 本文件；修改后重启生效
+
+project:
+  name: rag-tech-doc-retriever
+  stage: v1.5                      # 当前阶段标记
+
+paths:
+  corpus_jsonl: data/processed/corpus.jsonl
+  eval_questions: data/processed/eval_questions.json
+  output_dir: output
+
+chunking:
+  max_chunk_chars: 1500            # 单 chunk 字符上限，超出二次切分（V0 已定）
+  group_level: 2                   # ## 作为分组
+  chunk_level: 3                   # ### 作为 chunk 边界
+
+embedding:                         # V1 起启用
+  model_name: BAAI/bge-base-zh-v1.5  # HF 仓库 id（官方 bge-base-zh-v1.5 归属 BAAI 组织）
+  dim: 768                         # 维度抽离为配置项：更换模型必须重建表重灌数据
+  normalize: true
+  batch_size: 32
+  device: cpu
+  # query 侧 instruction 前缀见 prompts.yaml（V1 对照实验的唯一变量）
+
+vector_store:                      # V1 起启用
+  table_name: rag_chunks
+  metric: cosine                   # bge 归一化后使用 cosine
+  index:
+    type: exact
+    lists: 10                      # 小数据集（千级 chunk）取小值
+  # 连接信息从环境变量读取：POSTGRES_HOST/PORT/DB/USER/PASSWORD
+
+retrieval:                         # V1 起启用
+  top_k: 5                         # V1 基线口径：top-5 召回率
+  candidate_k: 20                  # V1.5 重排候选池
+
+reranker:                          # V1.5 起启用（候选池 → CrossEncoder 精排）
+  model_name: BAAI/bge-reranker-base
+  device: cpu
+
+leveling:                          # V1.5 三层降级阈值（待 V1 基线后校准）
+  high_confidence: 0.60
+  mid_confidence: 0.45
+
+agent:                             # V2-d 起启用
+  intent_confidence: 0.55
+  max_turns: 6
+  fallback_to_retrieval: true      # 工具调用失败自动降级回退纯检索

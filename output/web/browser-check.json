@@ -1,0 +1,9 @@
+{
+  "browser_knowledge_create_edit_restore": true,
+  "browser_planning_acts_nodes_dependencies": true,
+  "browser_stage_create_finish_restore": true,
+  "browser_json_download": true,
+  "restored_plan_version": 7,
+  "history_versions_exported": 10,
+  "restart_persistence": true
+}

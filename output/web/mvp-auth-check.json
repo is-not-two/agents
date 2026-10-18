@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "unauthorized": 401,
+  "invalidToken": "inline error, retained input",
+  "login": "session persists on refresh",
+  "cookie": {
+    "httpOnly": true,
+    "sameSite": "Strict"
+  },
+  "workflow": "specific fallback shown in node and drawer",
+  "press": {
+    "normal": "matrix(1, 0, 0, 1, 0, 1)",
+    "reduced": "none"
+  },
+  "errors": []
+}
