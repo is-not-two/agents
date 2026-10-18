@@ -1,5 +1,5 @@
 /* 数据恢复：文件只在内存中暂存，预览后明确确认，后端事务再次校验版本。 */
-import {api,state} from './data.js?v=25';
+import {api,state} from './data.js?v=26';
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labels={knowledge:'知识',plan:'规划',agent_profile:'Agent',workflow:'工作流',workflow_run:'运行记录'};
 const actions={added:'新增',updated:'修改',removed:'移入回收站'};

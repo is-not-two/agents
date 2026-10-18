@@ -1,5 +1,5 @@
 /* 分支删除预检与撤销：服务端版本是唯一提交依据。 */
-import {api} from './data.js?v=25';
+import {api} from './data.js?v=26';
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let undo=null,undoError='',pending=false;
 export function branchNotice(plan){return undo&&plan&&undo.planId===plan.id?`<div class="branch-notice" role="status"><span>已删除 ${undo.count} 个节点。${undoError?`<strong class="error-text">${escape(undoError)}</strong>`:''}</span><button data-branch-action="undo" ${pending?'disabled':''}>${pending?'恢复中…':'撤销删除'}</button><button data-branch-action="dismiss" aria-label="关闭撤销提示" ${pending?'disabled':''}>×</button></div>`:'';}

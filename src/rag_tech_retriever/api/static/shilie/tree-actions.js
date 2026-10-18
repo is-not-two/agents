@@ -1,7 +1,7 @@
-import {bindBranch} from './branch-actions.js?v=25';
+import {bindBranch} from './branch-actions.js?v=26';
 /* 规划树操作：表单版本固定、保存后刷新，画布状态独立于领域数据。 */
-import {api,state,write} from './data.js?v=25';
-import {treeState as s,treePlan,treeNodes,rootId,esc} from './tree.js?v=25';
+import {api,state,write} from './data.js?v=26';
+import {treeState as s,treePlan,treeNodes,rootId,esc} from './tree.js?v=26';
 export function bindTree({renderPage,refresh,toast}){
  const $=q=>document.querySelector(q),dialog=$('#tree-editor'),form=$('#tree-edit-form');let editing=null,saving=false;
  const redraw=()=>{const v=$('.tree-viewport'),x=v?.scrollLeft||0,y=v?.scrollTop||0;renderPage({restore:true});const next=$('.tree-viewport');if(next){next.scrollLeft=x;next.scrollTop=y;}};

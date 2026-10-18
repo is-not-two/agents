@@ -1,6 +1,6 @@
 /* 配置与执行控制器；请求锁、输入草稿和运行状态独立于视图。 */
-import {api,state,write} from './data.js?v=25';
-import {flow} from './automation-views.js?v=25';
+import {api,state,write} from './data.js?v=26';
+import {flow} from './automation-views.js?v=26';
 export function bindAutomation({renderPage,refresh,toast}){
  const dialog=kind=>document.querySelector(`[data-auto-form="${kind}"]`);
  function openEditor(kind,row=null){const d=dialog(kind),f=d.querySelector('form');f.reset();d.dataset.recordId=row?.id||'';d.dataset.version=row?.version||'';f.querySelector('.auto-form-error').hidden=true;

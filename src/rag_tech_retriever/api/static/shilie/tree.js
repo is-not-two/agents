@@ -1,6 +1,6 @@
-import {branchNotice,branchDialog} from './branch-actions.js?v=25';
+import {branchNotice,branchDialog} from './branch-actions.js?v=26';
 /* 树形规划的布局与纯视图。父子连线是组织结构，需要先完成独立显示。 */
-import {state,read} from './data.js?v=25';
+import {state,read} from './data.js?v=26';
 export const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const treeState={kind:read('tree-kind','main'),planId:'',selected:'',zoom:read('tree-zoom',100),folded:read('tree-folded',[]),busy:false};
 if(!['main','side'].includes(treeState.kind))treeState.kind='main';

@@ -26,7 +26,11 @@ rag_tech_retriever = ["api/static/*.html", "api/static/*.css", "api/static/*.js"
 
 [tool.setuptools.exclude-package-data]
 # 保留本地原素材及阶段快照；页面使用 WebP，发布包不重复携带 PNG。
-rag_tech_retriever = ["api/static/shilie/planning-mist.png"]
+# _archived/ 为样式表合并前的旧文件，已被 app.css 取代，仅留本地追溯用。
+rag_tech_retriever = [
+  "api/static/shilie/planning-mist.png",
+  "api/static/shilie/_archived/*",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
