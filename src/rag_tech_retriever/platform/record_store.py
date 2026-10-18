@@ -15,7 +15,17 @@ from psycopg2.extras import Json, RealDictCursor
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
 
-RECORD_KINDS = {"knowledge", "plan", "agent_profile", "workflow", "workflow_run"}
+RECORD_KINDS = {
+    "knowledge",
+    "plan",
+    "agent_profile",
+    "workflow",
+    "workflow_run",
+    # 私密管理：愿望清单与日记。加密在应用层完成，这里只存密文，
+    # 因此不与普通内容混用同一字段语义。
+    "wish",
+    "diary",
+}
 
 
 def records_revision(records: list[dict]) -> str:
@@ -92,9 +102,12 @@ class RecordStore:
                 (self.records, constraint),
             )
             row = cur.fetchone()
-            if row and "workflow_run" not in row["definition"]:
+            # 约束需要覆盖当前全部 kind；任一缺失即重建
+            definition = row["definition"] if row else ""
+            missing = [kind for kind in sorted(RECORD_KINDS) if f"'{kind}'" not in definition]
+            if row and missing:
                 cur.execute(f"ALTER TABLE {self.records} DROP CONSTRAINT {constraint}")
-            if not row or "workflow_run" not in row["definition"]:
+            if not row or missing:
                 allowed = ",".join("'" + kind + "'" for kind in sorted(RECORD_KINDS))
                 cur.execute(
                     f"ALTER TABLE {self.records} ADD CONSTRAINT {constraint} "
