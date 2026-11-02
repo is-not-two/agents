@@ -297,10 +297,18 @@ def deploy(pkg: Path, release: str) -> None:
     ok(f"已上传 {pkg.name}")
 
     step("解包与接线")
-    # 关键：systemd 设了 ProtectSystem=strict + ReadWritePaths=/var/lib/shilie，
-    # 因此 /opt/shilie 整体只读。而 config 里 stages_dir/output_dir 是相对路径，
-    # 会解析到 RAG_PROJECT_ROOT 下——启动时写 output/stages 会 EROFS 崩溃。
-    # 解法：把可写产物目录软链到 /var/lib/shilie 下，代码保持只读。
+    # 两个约束必须同时满足：
+    # 1) systemd 设 ProtectSystem=strict + ReadWritePaths=/var/lib/shilie，
+    #    /opt/shilie 整体只读，运行期写 output/stages 会 EROFS 崩溃。
+    # 2) 代码里多处做 `(root / sub).resolve().is_relative_to(root.resolve())`
+    #    校验（技能目录、语料路径等）。一旦软链整个 data/，resolve 后跑到
+    #    /var/lib/shilie 下，校验即失败。
+    #
+    # 折中方案：只把「确实要写、且不做 is_relative_to 校验」的目录软链，
+    # 其余保持实体目录并预建好、给足权限。
+    #   - output/stages：StageJournal 只做读写，不校验路径归属 → 软链
+    #   - data/local/skills、skill-imports、exports：需要可写 → 软链到可写区
+    #   - data/processed、data/raw：只读语料，保持实体，打包时已带入
     script = f"""
 set -e
 DEST={REMOTE_ROOT}/releases/{release}
@@ -309,14 +317,27 @@ tar -xzf {remote_pkg} -C "$DEST"
 PREV=$(readlink -f {REMOTE_APP})
 cp -a "$PREV/.venv" "$DEST/.venv"
 
-# 可写数据目录链接到 /var/lib/shilie（唯一允许写的位置）
-mkdir -p /var/lib/shilie/output/stages /var/lib/shilie/data/local /var/lib/shilie/data/processed
-rm -rf "$DEST/output" "$DEST/data"
-mkdir -p "$DEST/output" "$DEST/data"
+# 可写运行目录统一落在 /var/lib/shilie
+mkdir -p /var/lib/shilie/output/stages \
+         /var/lib/shilie/data/local/skills \
+         /var/lib/shilie/data/local/skill-imports \
+         /var/lib/shilie/data/local/exports
+
+# output/stages 软链（无条件可写）
+rm -rf "$DEST/output/stages"
+mkdir -p "$DEST/output"
 ln -sfn /var/lib/shilie/output/stages "$DEST/output/stages"
-ln -sfn /var/lib/shilie/data/local "$DEST/data/local"
-ln -sfn /var/lib/shilie/data/processed "$DEST/data/processed"
-if [ -d {REMOTE_ROOT}/releases/{release}/../.stage_raw ]; then rm -rf "$DEST/../.stage_raw"; fi
+
+# data/local 保持实体目录，只把必须可写的子目录软链进去，
+# 这样 (root/"data/local").resolve() 仍在项目内，is_relative_to 通过。
+rm -rf "$DEST/data/local"
+mkdir -p "$DEST/data/local"
+ln -sfn /var/lib/shilie/data/local/skills "$DEST/data/local/skills"
+ln -sfn /var/lib/shilie/data/local/skill-imports "$DEST/data/local/skill-imports"
+ln -sfn /var/lib/shilie/data/local/exports "$DEST/data/local/exports"
+
+# 用户数据文件放回实体 data/local（只读挂载下不会被写，但初值要在）
+cp -a /var/lib/shilie/data/local/private-vault.json "$DEST/data/local/" 2>/dev/null || true
 
 cp -a /var/lib/shilie/config/. "$DEST/config/" 2>/dev/null || true
 chown -R root:shilie "$DEST"
