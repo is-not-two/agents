@@ -8,13 +8,30 @@
 | 项 | 实际情况 |
 |---|---|
 | 主机 | `8.156.81.128`，`root`，密钥 `~/.ssh/selfstock_8_156_81_128_rsa` |
-| 服务 | systemd `shilie.service`，`User=shilie`，`Type=simple` |
-| 端口 | 8770 HTTPS（自签证书 `/etc/shilie/server.key|crt`） |
+| 服务 | systemd `shilie.service`（正式），`User=shilie`，`Type=simple` |
+| 端口 | 8770 HTTPS（自签证书 `/etc/shilie/server.key\|crt`） |
 | **代码实际来源** | **`/opt/shilie/current`（软链）→ `RAG_PROJECT_ROOT`** |
 | **包实际来源** | **`.venv/lib/python3.10/site-packages/rag_tech_retriever`（非 editable）** |
 | 数据与配置 | `/var/lib/shilie/data`、`/var/lib/shilie/config`（曾是独立副本，已迁入 release） |
 | 模型缓存 | `/var/cache/shilie/huggingface`（1.5G，含 bge-base-zh-v1.5 与 bge-reranker-base） |
 | 数据库 | `shilie_native_20261027`，用户 `shilie_app` |
+
+### 双环境拓扑（2026-11-02 起）
+
+| | 正式环境 | 测试环境（preview） |
+|---|---|---|
+| 服务 | `shilie.service` | `shilie-preview.service` |
+| 端口 | **8770 HTTPS** | **8771 HTTPS**（同证书；HTTP 已拒绝） |
+| 代码软链 | `/opt/shilie/current` | `/opt/shilie/preview` |
+| 代码目录 | `releases/native-<stamp>-<sha>` | `releases/native-<stamp>-<sha>`（独立） |
+| drop-in | `shilie.service.d/runtime-writable.conf` | `shilie-preview.service.d/runtime-writable.conf` |
+| 数据库 | `shilie_native_20261027`（**共用**） | 同左——预览写操作会进真实数据表 |
+| 防火墙 | ufw: 8770 ← 125.70.13.156 | ufw: 8771 ← 125.70.13.156 + 云安全组 |
+| 备份 | 每次部署前 pg_dump | 不备份（不碰库，回滚切软链） |
+
+- 两环境**共用一个数据库与模型缓存**，只隔离代码与进程；预览环境的增删改会写真实数据（单人使用按只读验证使用）。
+- 部署命令统一走 `deploy_release.py --target production|preview`，各自写自己的 drop-in（曾有硬编码污染生产的 bug，已修）。
+- 工作流：改代码 → `--target preview --apply --confirm HEAD` → 浏览器验证 → 确认后 `--target production --apply --confirm HEAD`。
 
 ### 关键纠正：历史上所有 `current` 切换都未真正生效
 
@@ -142,3 +159,32 @@ sudo -u postgres pg_restore -d shilie_native_20261027 -c /var/backups/shilie/pre
 | `/var/backups/shilie/site-pkg2-20261102-112650/` | 覆盖前的 site-packages 包 |
 | `/var/backups/shilie/dropin-<stamp>/` | 删除前的 systemd drop-in |
 | `/var/backups/shilie/codeswap-20261102-112117/` | 中途回滚用的 src 备份 |
+| `C:\Users\lzm\.ssh\backup-before-cleanup-20261102-163005\` | 本地 SSH config/known_hosts（旧服务器清理前） |
+
+## 7. 账号密码登录（2026-11-02 实现）
+
+**配置**（两个环境的 env 文件都要，密钥类走环境变量不进仓库）：
+
+```bash
+WORKSPACE_USER=luojiee
+WORKSPACE_PASSWORD_HASH=scrypt$16384$8$1$<salt>$<hash>   # 由脚本生成
+```
+
+- 生成：`python scripts/set_login_password.py`——交互输入密码（不回显、不落盘），
+  输出上面两行。密码明文只存在于你的终端，仓库与日志里永远只有 scrypt 哈希。
+- 正式环境：写 `/etc/shilie/workspace.env` 后 `systemctl restart shilie`
+- 测试环境：写同一份 env 后 `systemctl restart shilie-preview`
+- **未配置时自动回退**：`GET /api/session` 返回 `account_login:false`，
+  登录页显示令牌表单，行为与旧版一致（不影响可用性）。
+
+**行为**：
+
+| 项 | 值 |
+|---|---|
+| 登录页 | 账号 + 密码 + 「记住此账号 30 天」勾选；可切换回令牌登录（备用通道） |
+| 记住 30 天 | cookie `Max-Age=2592000`（`web.remember_days` 可配） |
+| 不勾选 | `Max-Age=43200`（`web.session_hours=12`） |
+| 错误文案 | 账号错与密码错同为「账号或密码不正确」（防枚举）；未配置回「账号登录未配置」 |
+| 令牌登录 | 仍可用（`POST /api/session {token}`），MCP/脚本不受影响 |
+
+**部署状态**：v101 已部署测试环境（8771）；正式环境（8770）待测试环境验证后推送。
