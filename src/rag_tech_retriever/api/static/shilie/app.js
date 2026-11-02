@@ -1,24 +1,24 @@
-import { bindCollaboration } from "./collaboration.js?v=100";
-import { bindAgentStudio } from "./agent-studio.js?v=100";
-import { bindBackup } from "./backup.js?v=100";
+import { bindCollaboration } from "./collaboration.js?v=101";
+import { bindAgentStudio } from "./agent-studio.js?v=101";
+import { bindBackup } from "./backup.js?v=101";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=100";
-import { bindModelConnection } from "./model-connection.js?v=100";
-import { bindTree } from "./tree-actions.js?v=100";
-import { bindAutomation } from "./automation-actions.js?v=100";
-import { bindLessons } from "./lessons.js?v=100";
-import { bindJobs } from "./jobs.js?v=100";
-import { bindLearning } from "./learning.js?v=100";
-import { bindJobInsights } from "./job-insights.js?v=100";
-import { bindServerStatus } from "./server-status.js?v=100";
-import { bindEvaluation } from "./evaluation.js?v=100";
-import { startTour } from "./tour.js?v=100";
-import { toggleDirector, directorActive } from "./director.js?v=100";
-import { initMotion } from "./motion.js?v=100";
-import { initOrbit } from "./orbit.js?v=100";
+} from "./private-view.js?v=101";
+import { bindModelConnection } from "./model-connection.js?v=101";
+import { bindTree } from "./tree-actions.js?v=101";
+import { bindAutomation } from "./automation-actions.js?v=101";
+import { bindLessons } from "./lessons.js?v=101";
+import { bindJobs } from "./jobs.js?v=101";
+import { bindLearning } from "./learning.js?v=101";
+import { bindJobInsights } from "./job-insights.js?v=101";
+import { bindServerStatus } from "./server-status.js?v=101";
+import { bindEvaluation } from "./evaluation.js?v=101";
+import { startTour } from "./tour.js?v=101";
+import { toggleDirector, directorActive } from "./director.js?v=101";
+import { initMotion } from "./motion.js?v=101";
+import { initOrbit } from "./orbit.js?v=101";
 import {
   api,
   state,
@@ -29,8 +29,8 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=100";
-import { render, sidebar, dialogs } from "./views.js?v=100";
+} from "./data.js?v=101";
+import { render, sidebar, dialogs } from "./views.js?v=101";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -505,6 +505,13 @@ function handleAction(button) {
     case "eval-run":
       evaluationController?.run();
       break;
+    case "login-mode": {
+      /* 账号/令牌登录方式切换，偏好持久化到 localStorage */
+      state.loginMode = state.loginMode === "token" ? "account" : "token";
+      write("loginMode", state.loginMode);
+      renderPage({ restore: true });
+      break;
+    }
     case "search-example": {
       state.searchInput = value || "";
       const input = $("#search-form input[name=query]");
@@ -626,12 +633,21 @@ document.addEventListener("submit", async (e) => {
   if (e.target.id === "login-form") {
     e.preventDefault();
     const form = e.target,
-      button = form.querySelector("button"),
+      button = form.querySelector("button[type=submit]"),
       error = $("#login-error");
     button.disabled = true;
     error.hidden = true;
     try {
-      await api("session", { token: new FormData(form).get("token") });
+      const fd = new FormData(form);
+      const body =
+        state.accountLogin && state.loginMode !== "token"
+          ? {
+              username: String(fd.get("username") || ""),
+              password: String(fd.get("password") || ""),
+              remember: fd.get("remember") === "on",
+            }
+          : { token: fd.get("token") };
+      await api("session", body);
       await refresh(false);
     } catch (err) {
       error.textContent = err.message;

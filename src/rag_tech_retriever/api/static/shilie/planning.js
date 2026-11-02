@@ -1,5 +1,5 @@
 /* 剧情层级视图；阶段和任务状态来自 API，折叠只是显示偏好。 */
-import { state, priorities, priorityNames } from "./data.js?v=100";
+import { state, priorities, priorityNames } from "./data.js?v=101";
 const esc = (x) =>
   String(x ?? "").replace(
     /[&<>"']/g,

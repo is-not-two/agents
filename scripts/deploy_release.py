@@ -37,10 +37,46 @@ USER = "root"
 KEY = Path(os.path.expanduser("~")) / ".ssh" / "selfstock_8_156_81_128_rsa"
 KNOWN_HOSTS = PROJECT / "output/playwright/review-001-gpt/fix-v84/enterprise-ops-v85/native-server-access/known_hosts"
 REMOTE_ROOT = "/opt/shilie"
-REMOTE_APP = f"{REMOTE_ROOT}/current"
 SITE_PKG = "lib/python3.10/site-packages/rag_tech_retriever"
 DB = "shilie_native_20261027"
-WEB_PORT = 8770
+
+#: 部署目标：两套环境共用一个数据库与模型缓存，仅代码目录/服务/端口不同。
+#: preview 默认不备份（部署不碰数据库，回滚靠 releases 目录切回）。
+TARGETS: dict[str, dict] = {
+    "production": {
+        "app": f"{REMOTE_ROOT}/current", "port": 8770, "service": "shilie",
+        "scheme": "https", "dropin": "/etc/systemd/system/shilie.service.d",
+        "backup": True, "label": "正式环境",
+    },
+    "preview": {
+        "app": f"{REMOTE_ROOT}/preview", "port": 8771, "service": "shilie-preview",
+        "scheme": "http", "dropin": "/etc/systemd/system/shilie-preview.service.d",
+        "backup": False, "label": "测试环境",
+    },
+}
+
+# 当前目标（set_target 切换；函数在调用时读取模块全局，f-string 求值即生效）
+REMOTE_APP = TARGETS["production"]["app"]
+WEB_PORT = TARGETS["production"]["port"]
+SERVICE = TARGETS["production"]["service"]
+SCHEME = TARGETS["production"]["scheme"]
+DROPIN_DIR = TARGETS["production"]["dropin"]
+TARGET_NAME = "production"
+
+
+def set_target(name: str) -> dict:
+    """切换部署目标，返回其配置。"""
+    global REMOTE_APP, WEB_PORT, SERVICE, SCHEME, DROPIN_DIR, TARGET_NAME
+    if name not in TARGETS:
+        raise DeployError(f"未知部署目标：{name}")
+    target = TARGETS[name]
+    REMOTE_APP = target["app"]
+    WEB_PORT = target["port"]
+    SERVICE = target["service"]
+    SCHEME = target["scheme"]
+    DROPIN_DIR = target["dropin"]
+    TARGET_NAME = name
+    return target
 
 
 class DeployError(Exception):
@@ -104,9 +140,9 @@ def local_version() -> str:
 
 
 def remote_version() -> str | None:
-    """服务器当前对外提供的静态版本号。"""
+    """目标环境当前对外提供的静态版本号。"""
     code, out = run_remote(
-        f"curl -sk -m 10 https://127.0.0.1:{WEB_PORT}/ | grep -o '?v=[0-9]*' | head -1",
+        f"curl -sk -m 10 {SCHEME}://127.0.0.1:{WEB_PORT}/ | grep -o '?v=[0-9]*' | head -1",
         timeout=40,
     )
     found = re.findall(r"v=(\d+)", out)
@@ -126,7 +162,7 @@ def preflight() -> dict:
 set -e
 echo "PROBE_START"
 readlink -f {REMOTE_APP}
-systemctl is-active shilie
+systemctl is-active {SERVICE} || true
 df -P / | awk 'NR==2 {{print "DISK_FREE_KB=" $4}}'
 sudo -u postgres psql -d {DB} -tAc "select count(*) from workspace_records" | sed 's/^/RECORDS=/'
 sudo -u postgres psql -d {DB} -tAc "select count(*) from rag_chunks" | sed 's/^/VECTORS=/'
@@ -331,11 +367,12 @@ chmod 750 "$DEST"
 chown -R shilie:shilie "$DEST/data/local" "$DEST/output" 2>/dev/null || true
 chmod -R u+rwX,g+rwX "$DEST/data/local" "$DEST/output" 2>/dev/null || true
 
-# 让 systemd 放行本 release 的可写子目录（drop-in，可随软链一起回退）
-mkdir -p /etc/systemd/system/shilie.service.d
-cat > /etc/systemd/system/shilie.service.d/runtime-writable.conf <<EOF
+# 让 systemd 放行本 release 的可写子目录（drop-in，可随软链一起回退）。
+# 注意必须写到目标服务自己的 drop-in 目录，否则 preview 部署会改掉生产的放行路径。
+mkdir -p {DROPIN_DIR}
+cat > {DROPIN_DIR}/runtime-writable.conf <<EOF
 [Service]
-ReadWritePaths=$DEST/output/stages $DEST/data/local/skills $DEST/data/local/skill-imports $DEST/data/local/exports
+ReadWritePaths=$DEST/output/stages $DEST/data/local/skills $DEST/data/local/skill-imports $DEST/data/local/exports /var/lib/shilie
 EOF
 systemctl daemon-reload
 
@@ -365,14 +402,14 @@ rm -rf "$SITE"
 cp -a {REMOTE_APP}/src/rag_tech_retriever "$SITE"
 chown -R root:shilie "$SITE"
 chmod -R u+rwX,g+rX,o-rwx "$SITE"
-systemctl restart shilie
+systemctl restart {SERVICE}
 i=0
 while [ $i -lt 40 ]; do
-  STATE=$(systemctl is-active shilie)
+  STATE=$(systemctl is-active {SERVICE})
   if [ "$STATE" = "active" ]; then echo "SERVICE=active"; exit 0; fi
   if [ "$STATE" = "failed" ]; then
     echo "SERVICE=failed"
-    journalctl -u shilie -n 12 --no-pager 2>/dev/null | tail -12
+    journalctl -u {SERVICE} -n 12 --no-pager 2>/dev/null | tail -12
     exit 1
   fi
   i=$((i+1)); sleep 2
@@ -394,13 +431,13 @@ def verify(expected: dict) -> None:
     last_journal = ""
     while time.time() < deadline:
         code, out = run_remote(
-            f"curl -sk -m 8 https://127.0.0.1:{WEB_PORT}/health", timeout=40)
+            f"curl -sk -m 8 {SCHEME}://127.0.0.1:{WEB_PORT}/health", timeout=40)
         if code == 0 and '"status":"ok"' in out:
             health = out.strip()
             break
         # 服务起不来时把最近日志带出来，否则只报「超时」等于没诊断
         jcode, jout = run_remote(
-            "journalctl -u shilie -n 25 --no-pager 2>/dev/null | "
+            f"journalctl -u {SERVICE} -n 25 --no-pager 2>/dev/null | "
             "grep -iE 'error|exception|traceback|OSError|failed' | tail -8",
             timeout=40)
         if jcode == 0 and jout.strip():
@@ -419,7 +456,7 @@ def verify(expected: dict) -> None:
     script = f"""
 sudo -u postgres psql -d {DB} -tAc "select count(*) from workspace_records" | sed 's/^/R=/'
 sudo -u postgres psql -d {DB} -tAc "select count(*) from rag_chunks" | sed 's/^/V=/'
-curl -sk -m 8 -o /dev/null -w "STATIC=%{{http_code}}\\n" https://127.0.0.1:{WEB_PORT}/static/shilie/evaluation.js
+curl -sk -m 8 -o /dev/null -w "STATIC=%{{http_code}}\\n" {SCHEME}://127.0.0.1:{WEB_PORT}/static/shilie/evaluation.js
 """
     code, out = run_remote(script, timeout=90)
     records = next((int(l.split("=", 1)[1]) for l in out.splitlines() if l.startswith("R=")), -1)
@@ -452,13 +489,18 @@ if [ -d "{backup_dir}/src" ]; then
   cp -a "{backup_dir}/src/rag_tech_retriever" "$SITE"
   chown -R root:shilie "$SITE"
 fi
-# 回滚的同时撤掉本次为可写目录加的 drop-in，避免旧版本被多放行路径
-rm -f /etc/systemd/system/shilie.service.d/runtime-writable.conf
+# 回滚必须把 drop-in 重写为指向旧 release：旧版本同样需要可写目录放行，
+# 直接删除 drop-in 会让旧版本启动时因 EROFS 崩溃。
+mkdir -p {DROPIN_DIR}
+cat > {DROPIN_DIR}/runtime-writable.conf <<EOF
+[Service]
+ReadWritePaths={prev_release}/output/stages {prev_release}/data/local/skills {prev_release}/data/local/skill-imports {prev_release}/data/local/exports /var/lib/shilie
+EOF
 systemctl daemon-reload
-systemctl restart shilie
+systemctl restart {SERVICE}
 i=0
 while [ $i -lt 40 ]; do
-  STATE=$(systemctl is-active shilie)
+  STATE=$(systemctl is-active {SERVICE})
   if [ "$STATE" = "active" ]; then echo "SERVICE=active"; exit 0; fi
   if [ "$STATE" = "failed" ]; then echo "SERVICE=failed"; exit 1; fi
   i=$((i+1)); sleep 2
@@ -477,15 +519,25 @@ exit 1
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--target", choices=sorted(TARGETS), default="production",
+                        help="部署目标：preview=测试环境(8771)，production=正式环境(8770)")
     parser.add_argument("--apply", action="store_true", help="真正执行（默认只做 dry-run）")
     parser.add_argument("--confirm", metavar="RELEASE",
                         help="确认部署的 release 名，必须与生成的名称一致")
     parser.add_argument("--skip-backup", action="store_true",
-                        help="跳过备份（危险，仅用于演练环境）")
+                        help="跳过备份（preview 默认跳过；正式环境慎用）")
     args = parser.parse_args()
 
+    try:
+        target = set_target(args.target)
+    except DeployError as exc:
+        fail(str(exc))
+        return 1
+    # 测试环境部署不碰数据库（共用生产库），备份无意义且慢，默认跳过
+    skip_backup = args.skip_backup or not target["backup"]
+
     print("=" * 60)
-    print("正式环境部署" + ("" if args.apply else "（DRY-RUN，不做任何修改）"))
+    print(f"{target['label']}部署（{TARGET_NAME}）" + ("" if args.apply else "（DRY-RUN，不做任何修改）"))
     print("=" * 60)
 
     try:
@@ -497,13 +549,13 @@ def main() -> int:
     if not args.apply:
         step("计划")
         print(f"  目标版本：v{info['local_version']}")
-        print(f"  当前线上：v{info['running_version']}")
+        print(f"  当前环境：v{info['running_version']}（{target['label']} :{target['port']}）")
         print(f"  数据基线：{info.get('records')} 条记录 / {info.get('vectors')} 条向量")
         print(f"  将要部署：{head_commit()}")
-        print("  将执行：打包 -> 备份 -> 上传 -> 解包 -> 切换 -> 验证")
+        print("  将执行：打包 -> " + ("" if skip_backup else "备份 -> ") + "上传 -> 解包 -> 切换 -> 验证")
         print("  失败时自动回滚代码（数据库需人工处理）")
         print("\n确认无误后执行：")
-        print("  python scripts/deploy_release.py --apply --confirm HEAD")
+        print(f"  python scripts/deploy_release.py --target {TARGET_NAME} --apply --confirm HEAD")
         print(f"  （或指定完整名称，如 --confirm native-<stamp>-{head_commit()}）")
         return 0
 
@@ -519,7 +571,7 @@ def main() -> int:
     try:
         code, out = run_remote(f"readlink -f {REMOTE_APP}", timeout=40)
         prev = out.strip().splitlines()[-1] if code == 0 else ""
-        if not args.skip_backup:
+        if not skip_backup:
             backup_dir = backup(prev)
         deploy(pkg, release)
         activate(release)
@@ -534,7 +586,8 @@ def main() -> int:
         return 1
 
     step("完成")
-    ok(f"线上已是 v{info['local_version']}（{release}）")
+    ok(f"{target['label']}已是 v{info['local_version']}（{release}）")
+    print(f"  地址：{target['scheme']}://{HOST}:{target['port']}/")
     if backup_dir:
         print(f"  备份：{backup_dir}")
     print("  回滚：python scripts/deploy_release.py 手动指定上一 release，或见 docs/DEPLOYMENT_REALITY.md")

@@ -13,6 +13,7 @@ web:
   markdown_chunk_size: 1500
   search_limit: 10
   session_hours: 12
+  remember_days: 30
   rate_limit_per_minute: 120
   chat:
     greeting: 你好，我可以检索知识与技术文档；需要写入时会引导你确认。

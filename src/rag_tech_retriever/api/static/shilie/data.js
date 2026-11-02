@@ -6,7 +6,7 @@ export const ERROR_TEXT = {
   NOT_FOUND: "内容不存在或已被删除",
   VERSION_CONFLICT: "记录已被其他操作更新，请刷新后重试",
   PAYLOAD_TOO_LARGE: "提交内容超过大小限制",
-  UNAUTHORIZED: "请先输入工作台访问令牌",
+  UNAUTHORIZED: "请先登录",
   FORBIDDEN: "操作被拒绝",
   RATE_LIMITED: "请求过于频繁，请稍后再试",
   STORAGE_UNAVAILABLE: "存储暂时不可用，请稍后重试",
@@ -130,6 +130,8 @@ export const state = {
   stageTime: "",
   stageError: "",
   authRequired: false,
+  accountLogin: false,
+  loginMode: "token",
   status: {},
   mode: read("mode", "portal"),
   density: read("density", 1),
@@ -209,6 +211,13 @@ export function currentNote() {
 export async function load() {
   const session = await api("session");
   state.authRequired = session.required && !session.authenticated;
+  /* 服务器启用账号登录时默认账号方式；未启用则强制令牌方式 */
+  state.accountLogin = Boolean(session.account_login);
+  if (state.accountLogin) {
+    state.loginMode = read("loginMode", "account") === "token" ? "token" : "account";
+  } else {
+    state.loginMode = "token";
+  }
   if (state.authRequired) {
     Object.assign(state, { loading: false, error: "" });
     return;

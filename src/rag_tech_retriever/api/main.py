@@ -37,6 +37,7 @@ from rag_tech_retriever.api.routes import operations as operations_routes
 from rag_tech_retriever.api.routes import private as private_routes
 from rag_tech_retriever.api.routes import search as search_routes
 from rag_tech_retriever.api.routes import stages as stage_routes
+from rag_tech_retriever.common.account_auth import is_configured, verify_login
 from rag_tech_retriever.common.config_loader import PROJECT_ROOT, ConfigLoader
 from rag_tech_retriever.common.middleware.exception import (
     AppError,
@@ -75,6 +76,10 @@ def create_app(
     store = store or RecordStore(str(config.get("web.table_prefix", "workspace")))
     secret = str(settings.env("WORKSPACE_ACCESS_TOKEN", "")) if token is None else token
     mcp_secret = str(settings.env("WORKSPACE_MCP_TOKEN", ""))
+    # 账号密码登录（可选）：仅当账号与密码哈希都配置时启用；未配置则登录页回退令牌方式。
+    account_user = str(settings.env("WORKSPACE_USER", "") or "")
+    account_hash = str(settings.env("WORKSPACE_PASSWORD_HASH", "") or "")
+    account_enabled = is_configured(account_user, account_hash)
     if mcp_secret and (len(mcp_secret) < 32 or mcp_secret != mcp_secret.strip() or secrets.compare_digest(mcp_secret, secret)):
         raise RuntimeError("MCP独立令牌须至少32位、无首尾空白且不同于工作台令牌")
     mcp_config = mcp_routes._load_mcp_config()
@@ -183,7 +188,7 @@ def create_app(
             and request.url.path != "/api/session"
             and not (mcp_authorized if mcp_path and mcp_secret else authenticated(request))
         ):
-            return guard_error(request, "请先输入工作台访问令牌", ErrorCode.UNAUTHORIZED, 401)
+            return guard_error(request, "请先登录", ErrorCode.UNAUTHORIZED, 401)
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
             origin = request.headers.get("origin")
             if origin and urlsplit(origin).netloc != request.headers.get("host"):
@@ -291,17 +296,38 @@ def create_app(
 
     @application.get("/api/session")
     def session_status(request: Request) -> dict:
-        return {"required": bool(secret), "authenticated": authenticated(request)}
+        return {
+            "required": bool(secret),
+            "authenticated": authenticated(request),
+            "account_login": account_enabled,
+        }
 
     @application.post("/api/session")
     def login(payload: dict, request: Request):
-        supplied = payload.get("token", "")
-        if not isinstance(supplied, str) or (
-            secret and not secrets.compare_digest(supplied, secret)
-        ):
-            raise HTTPException(401, "访问令牌不正确")
+        """登录：账号密码（可记住 30 天）或访问令牌，签发同一 HMAC 会话 cookie。
+
+        账号路径与令牌路径互不回退：账号密码错即 401，避免把枚举压力放到令牌上。
+        """
+        remember = bool(payload.get("remember"))
+        if "username" in payload or "password" in payload:
+            if not account_enabled:
+                raise HTTPException(401, "账号登录未配置，请改用访问令牌")
+            username, password = payload.get("username", ""), payload.get("password", "")
+            if not isinstance(username, str) or not isinstance(password, str):
+                raise HTTPException(401, "账号或密码不正确")
+            if not verify_login(username, password, account_user, account_hash):
+                raise HTTPException(401, "账号或密码不正确")
+        else:
+            supplied = payload.get("token", "")
+            if not isinstance(supplied, str) or (
+                secret and not secrets.compare_digest(supplied, secret)
+            ):
+                raise HTTPException(401, "访问令牌不正确")
         response = JSONResponse({"authenticated": True})
-        lifetime = int(config.get("web.session_hours", 12)) * 3600
+        if remember:
+            lifetime = int(config.get("web.remember_days", 30)) * 86400
+        else:
+            lifetime = int(config.get("web.session_hours", 12)) * 3600
         message = f"{int(time.time()) + lifetime}:{secrets.token_hex(16)}"
         signature = hmac.new(secret.encode(), message.encode(), hashlib.sha256).hexdigest()
         response.set_cookie(

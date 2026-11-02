@@ -7494,3 +7494,23 @@ body::before {
     overflow-x: auto;
   }
 }
+/* ── 登录页：账号/令牌双方式 ──────────────────────────────── */
+.login-panel .form-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0;
+  font-size: 13.5px;
+  color: #5e5044;
+  cursor: pointer;
+}
+.login-panel .form-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--sl-ember-500, #7a4419);
+  cursor: pointer;
+}
+.login-panel .login-switch {
+  display: block;
+  margin: 12px auto 0;
+}

@@ -1,31 +1,31 @@
-import { collaborationView } from "./collaboration.js?v=100";
-import { corpusSelect } from "./public-corpus.js?v=100";
-import { agentStudioView } from "./agent-studio.js?v=100";
-import { backupView } from "./backup.js?v=100";
-import { privateView } from "./private-view.js?v=100";
-import { modelConnectionView } from "./model-connection.js?v=100";
-import { treeView, treeDialog } from "./tree.js?v=100";
+import { collaborationView } from "./collaboration.js?v=101";
+import { corpusSelect } from "./public-corpus.js?v=101";
+import { agentStudioView } from "./agent-studio.js?v=101";
+import { backupView } from "./backup.js?v=101";
+import { privateView } from "./private-view.js?v=101";
+import { modelConnectionView } from "./model-connection.js?v=101";
+import { treeView, treeDialog } from "./tree.js?v=101";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=100";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=100";
-import { jobsView, jobsDialog } from "./jobs.js?v=100";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=100";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=100";
-import { serverStatusView } from "./server-status.js?v=100";
-import { evaluationView } from "./evaluation.js?v=100";
-import { directorActive } from "./director.js?v=100";
-import { icon, orbitIcon } from "./icons.js?v=100";
+} from "./automation-views.js?v=101";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=101";
+import { jobsView, jobsDialog } from "./jobs.js?v=101";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=101";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=101";
+import { serverStatusView } from "./server-status.js?v=101";
+import { evaluationView } from "./evaluation.js?v=101";
+import { directorActive } from "./director.js?v=101";
+import { icon, orbitIcon } from "./icons.js?v=101";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=100";
+} from "./data.js?v=101";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -354,8 +354,23 @@ function appearance() {
   );
 }
 export function render() {
-  if (state.authRequired)
-    return `<form id="login-form" class="module-surface login-panel"><h1>进入时列工作区</h1><p>输入服务器设置的访问令牌。</p><label class="form-field">访问令牌<input name="token" type="password" autocomplete="current-password" required></label><p id="login-error" class="error-text" role="alert" hidden></p><button class="primary-button" type="submit">进入工作区</button></form>`;
+  if (state.authRequired) {
+    /* 账号密码登录（服务器配置 WORKSPACE_USER/PASSWORD_HASH 后启用），令牌登录保留为备用 */
+    const account = state.accountLogin && state.loginMode !== "token";
+    return `<form id="login-form" class="module-surface login-panel"><h1>进入时列工作区</h1>${
+      account
+        ? `<p>使用账号登录。</p>
+        <label class="form-field">账号<input name="username" type="text" autocomplete="username" required maxlength="64"></label>
+        <label class="form-field">密码<input name="password" type="password" autocomplete="current-password" required maxlength="256"></label>
+        <label class="form-check"><input type="checkbox" name="remember"> 记住此账号 30 天</label>`
+        : `<p>输入服务器设置的访问令牌。</p>
+        <label class="form-field">访问令牌<input name="token" type="password" autocomplete="current-password" required></label>`
+    }<p id="login-error" class="error-text" role="alert" hidden></p><button class="primary-button" type="submit">进入工作区</button>${
+      state.accountLogin
+        ? `<button type="button" class="small-button login-switch" data-action="login-mode">${account ? "改用访问令牌登录" : "改用账号登录"}</button>`
+        : ""
+    }</form>`;
+  }
   if (state.loading) return '<p role="status">正在连接工作区…</p>';
   if (state.error)
     return `<section class="empty-panel"><h2>工作区暂不可用</h2><p>${esc(state.error)}</p><button class="primary-button" data-action="retry">重试</button></section>`;
