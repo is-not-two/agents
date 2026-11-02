@@ -28,3 +28,24 @@ output/web/browser-sandbox/
 
 # 完整数据库备份可能包含个人内容
 output/backups/
+
+# 自动门禁日志与发布包，不提交运行产物
+output/ci/
+
+# 浏览器验证快照、回滚副本、发布候选包：体积大且可重生成，不入库
+output/playwright/
+output/product-20261028/
+output/release-b/
+output/stages/
+output/deployment/
+output/web/*.png
+output/web/*.html
+
+# 本地产物与临时脚本
+.workbuddy/
+_tmp_smoke.ps1
+watch-verify.ps1
+collab-gpt/
+*.bak-before-blackhole
+*.bak
+({html
