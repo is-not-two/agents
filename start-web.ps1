@@ -1,7 +1,22 @@
-param([switch]$SkipDatabase, [switch]$Background)
+﻿param([switch]$SkipDatabase, [switch]$Background)
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 if (-not $SkipDatabase) {
+    docker info --format '{{.ServerVersion}}' *> $null
+    if ($LASTEXITCODE -ne 0) {
+        $desktopCandidates = @('F:\Program Files\Docker\Docker Desktop.exe', 'C:\Program Files\Docker\Docker\Docker Desktop.exe')
+        $desktopPath = $desktopCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+        if (-not $desktopPath) { throw '未找到 Docker Desktop，请先启动 Docker 后重试。' }
+        Write-Host '正在启动 Docker Desktop，数据库内容会保留。'
+        Start-Process -FilePath "$env:WINDIR\explorer.exe" -ArgumentList ('"' + $desktopPath + '"') -WindowStyle Hidden
+        $engineReady = $false
+        for ($dockerAttempt = 0; $dockerAttempt -lt 30; $dockerAttempt++) {
+            Start-Sleep -Seconds 2
+            docker info --format '{{.ServerVersion}}' *> $null
+            if ($LASTEXITCODE -eq 0) { $engineReady = $true; break }
+        }
+        if (-not $engineReady) { throw 'Docker 引擎尚未就绪；请检查 Docker Desktop 后重试，不要重置数据。' }
+    }
     docker compose up -d --wait db
     if ($LASTEXITCODE -ne 0) { throw 'PostgreSQL 启动失败，请检查 Docker Desktop' }
 }
@@ -14,6 +29,15 @@ if (-not $Background) {
     exit $LASTEXITCODE
 }
 if (Get-NetTCPConnection -LocalPort ([int]$webPort) -State Listen -ErrorAction SilentlyContinue) {
+    try {
+        $existingHealth = Invoke-RestMethod "$webAddress/health" -TimeoutSec 2
+        $existingProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $($existingHealth.pid)"
+        $expectedEntry = Join-Path $PSScriptRoot 'scripts\v2e_start_api.py'
+        if ($existingProcess.CommandLine -and $existingProcess.CommandLine.Contains($expectedEntry)) {
+            Write-Host '当前项目已经运行，可直接打开上面的地址。'
+            return
+        }
+    } catch { }
     throw "端口 $webPort 已被占用，请先停止现有服务"
 }
 New-Item -ItemType Directory -Path 'output\web' -Force | Out-Null

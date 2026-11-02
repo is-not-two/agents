@@ -54,3 +54,5 @@ output/web/preview/
 output/web/qa-runtime-data/
 output/web/runtime.json
 output/web/server-*.log
+output/web/_orbit-baseline/
+output/web/review/

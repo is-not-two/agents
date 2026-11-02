@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $runtimePath = Join-Path $PSScriptRoot 'output\web\runtime.json'
 if (-not (Test-Path -LiteralPath $runtimePath)) { Write-Host '没有本工作台的后台运行记录'; exit 0 }
 $webRuntime = Get-Content -LiteralPath $runtimePath -Raw | ConvertFrom-Json
