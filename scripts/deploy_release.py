@@ -297,18 +297,15 @@ def deploy(pkg: Path, release: str) -> None:
     ok(f"已上传 {pkg.name}")
 
     step("解包与接线")
-    # 两个约束必须同时满足：
-    # 1) systemd 设 ProtectSystem=strict + ReadWritePaths=/var/lib/shilie，
-    #    /opt/shilie 整体只读，运行期写 output/stages 会 EROFS 崩溃。
-    # 2) 代码里多处做 `(root / sub).resolve().is_relative_to(root.resolve())`
-    #    校验（技能目录、语料路径等）。一旦软链整个 data/，resolve 后跑到
-    #    /var/lib/shilie 下，校验即失败。
+    # 三个约束必须同时满足：
+    # 1) systemd ProtectSystem=strict + ReadWritePaths 只放行 /var/lib/shilie，
+    #    /opt/shilie 整体只读 → 运行期不能往项目目录写任何东西。
+    # 2) 代码里 (root/sub).resolve().is_relative_to(root.resolve()) 校验
+    #    （skills 目录、语料路径）→ 这些目录不能是软链，否则 resolve 后越界。
+    # 3) skills / skill-imports / exports / stages 必须可写。
     #
-    # 折中方案：只把「确实要写、且不做 is_relative_to 校验」的目录软链，
-    # 其余保持实体目录并预建好、给足权限。
-    #   - output/stages：StageJournal 只做读写，不校验路径归属 → 软链
-    #   - data/local/skills、skill-imports、exports：需要可写 → 软链到可写区
-    #   - data/processed、data/raw：只读语料，保持实体，打包时已带入
+    # 三者交集只有一条路：把这些目录做成**项目内实体目录**，并让 systemd
+    # 额外放行它们。放行用 drop-in 加 ReadWritePaths，比改主 unit 易回退。
     script = f"""
 set -e
 DEST={REMOTE_ROOT}/releases/{release}
@@ -317,40 +314,39 @@ tar -xzf {remote_pkg} -C "$DEST"
 PREV=$(readlink -f {REMOTE_APP})
 cp -a "$PREV/.venv" "$DEST/.venv"
 
-# 可写运行目录统一落在 /var/lib/shilie
-mkdir -p /var/lib/shilie/output/stages \
-         /var/lib/shilie/data/local/skills \
-         /var/lib/shilie/data/local/skill-imports \
-         /var/lib/shilie/data/local/exports
-
-# output/stages 软链（无条件可写）
-rm -rf "$DEST/output/stages"
-mkdir -p "$DEST/output"
-ln -sfn /var/lib/shilie/output/stages "$DEST/output/stages"
-
-# data/local 保持实体目录，只把必须可写的子目录软链进去，
-# 这样 (root/"data/local").resolve() 仍在项目内，is_relative_to 通过。
-rm -rf "$DEST/data/local"
-mkdir -p "$DEST/data/local"
-ln -sfn /var/lib/shilie/data/local/skills "$DEST/data/local/skills"
-ln -sfn /var/lib/shilie/data/local/skill-imports "$DEST/data/local/skill-imports"
-ln -sfn /var/lib/shilie/data/local/exports "$DEST/data/local/exports"
-
-# 用户数据文件放回实体 data/local（只读挂载下不会被写，但初值要在）
+# data/local 下四个目录必须是项目内实体且可写（代码会 resolve 校验）
+rm -rf "$DEST/data/local" "$DEST/output/stages"
+mkdir -p "$DEST/data/local/skills" \
+         "$DEST/data/local/skill-imports" \
+         "$DEST/data/local/exports" \
+         "$DEST/output/stages"
 cp -a /var/lib/shilie/data/local/private-vault.json "$DEST/data/local/" 2>/dev/null || true
+# 已有技能与导出内容继承过来，不丢用户数据
+cp -a /var/lib/shilie/data/local/skills/. "$DEST/data/local/skills/" 2>/dev/null || true
+cp -a /var/lib/shilie/data/local/skill-imports/. "$DEST/data/local/skill-imports/" 2>/dev/null || true
 
 cp -a /var/lib/shilie/config/. "$DEST/config/" 2>/dev/null || true
 chown -R root:shilie "$DEST"
 chmod 750 "$DEST"
-chown -R shilie:shilie /var/lib/shilie/output /var/lib/shilie/data/local 2>/dev/null || true
+chown -R shilie:shilie "$DEST/data/local" "$DEST/output" 2>/dev/null || true
+chmod -R u+rwX,g+rwX "$DEST/data/local" "$DEST/output" 2>/dev/null || true
+
+# 让 systemd 放行本 release 的可写子目录（drop-in，可随软链一起回退）
+mkdir -p /etc/systemd/system/shilie.service.d
+cat > /etc/systemd/system/shilie.service.d/runtime-writable.conf <<EOF
+[Service]
+ReadWritePaths=$DEST/output/stages $DEST/data/local/skills $DEST/data/local/skill-imports $DEST/data/local/exports
+EOF
+systemctl daemon-reload
+
 echo "PREV_RELEASE=$PREV"
 echo "NEW_VERSION=$(grep -o '?v=[0-9]*' "$DEST/src/rag_tech_retriever/api/static/shilie/index.html" | head -1)"
-echo "STAGES_LINK=$(readlink -f "$DEST/output/stages")"
+echo "SKILLS_DIR=$(readlink -f "$DEST/data/local/skills")"
 """
     code, out = run_remote(script, timeout=600)
     if code != 0:
         raise DeployError(f"解包失败：\n{out[-800:]}")
-    ok("解包完成，venv 已复用，可写目录已链接到 /var/lib/shilie")
+    ok("解包完成，venv 已复用，可写目录已放行")
 
 
 def activate(release: str) -> None:
@@ -456,9 +452,19 @@ if [ -d "{backup_dir}/src" ]; then
   cp -a "{backup_dir}/src/rag_tech_retriever" "$SITE"
   chown -R root:shilie "$SITE"
 fi
+# 回滚的同时撤掉本次为可写目录加的 drop-in，避免旧版本被多放行路径
+rm -f /etc/systemd/system/shilie.service.d/runtime-writable.conf
+systemctl daemon-reload
 systemctl restart shilie
-sleep 10
-systemctl is-active shilie
+i=0
+while [ $i -lt 40 ]; do
+  STATE=$(systemctl is-active shilie)
+  if [ "$STATE" = "active" ]; then echo "SERVICE=active"; exit 0; fi
+  if [ "$STATE" = "failed" ]; then echo "SERVICE=failed"; exit 1; fi
+  i=$((i+1)); sleep 2
+done
+echo "SERVICE=timeout"
+exit 1
 """
     code, out = run_remote(script, timeout=600)
     if code != 0:
