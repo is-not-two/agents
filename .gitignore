@@ -48,4 +48,9 @@ watch-verify.ps1
 collab-gpt/
 *.bak-before-blackhole
 *.bak
-({html
+
+# QA 运行产物：含私密页面副本与用户导出，禁止入库
+output/web/preview/
+output/web/qa-runtime-data/
+output/web/runtime.json
+output/web/server-*.log
