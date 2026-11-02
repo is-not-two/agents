@@ -181,42 +181,68 @@ echo "PROBE_END"
     return info
 
 
-def make_package() -> Path:
-    """从 git HEAD 打包，排除运行产物。"""
+def head_commit() -> str:
+    """当前 HEAD 短哈希，用作 release 名的一部分。"""
+    done = subprocess.run(
+        ["git", "rev-parse", "--short=7", "HEAD"],
+        cwd=PROJECT, check=False, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    if done.returncode != 0:
+        raise DeployError(f"读取 git HEAD 失败：{done.stderr.strip()}")
+    return done.stdout.strip()
+
+
+def make_package() -> tuple[Path, str]:
+    """从 git HEAD 打包，返回 (包路径, release 名)。
+
+    release 名由「提交哈希 + 时间戳」组成：哈希保证可追溯到具体提交，
+    时间戳区分同一提交的重复部署。用户在 dry-run 阶段就能看到确切名称，
+    不必猜时间戳——这正是 `--confirm` 可用的前提。
+
+    用 zip + .NET 解压而非 tar：Windows 自带 tar（bsdtar）在解含中文文件名的
+    归档时会报 "Invalid empty pathname"，data/raw/aihuoke_docs 下的中文文档会
+    整批丢失。zip 走 UTF-8 标志位，两侧都能正确还原。
+    """
     step("打包")
+    import shutil
+    import zipfile
+
+    commit = head_commit()
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    release = f"native-{stamp}"
+    release = f"native-{stamp}-{commit}"
     work = PROJECT / "output" / "deployment" / f"_release-{stamp}"
     stage = work / "stage"
     stage.mkdir(parents=True, exist_ok=True)
 
-    tar_path = work / "rel.tar"
+    archive = work / "rel.zip"
     done = subprocess.run(
-        ["git", "archive", "--format=tar", "--output", str(tar_path), "HEAD"],
+        ["git", "-c", "core.quotepath=false", "archive", "--format=zip",
+         f"--output={archive}", "HEAD"],
         cwd=PROJECT, check=False, capture_output=True, text=True,
         encoding="utf-8", errors="replace",
     )
-    if done.returncode != 0 or not tar_path.is_file():
+    if done.returncode != 0 or not archive.is_file():
         raise DeployError(f"git archive 失败：{done.stderr[-400:]}")
 
-    extracted = subprocess.run(
-        ["tar", "-x", "-f", str(tar_path), "-C", str(stage)],
-        check=False, capture_output=True, text=True, encoding="utf-8", errors="replace",
-    )
-    if extracted.returncode != 0:
-        raise DeployError(f"解包失败：{extracted.stderr[-600:]}")
+    with zipfile.ZipFile(archive) as zf:
+        zf.extractall(stage)
+
+    # 中文文件名必须完整保留，否则语料缺失会导致向量检索空转
+    raw_dir = stage / "data" / "raw" / "aihuoke_docs"
+    if not raw_dir.is_dir() or len(list(raw_dir.glob("*.md"))) < 14:
+        raise DeployError("语料目录不完整（中文文件名可能丢失），中止打包")
 
     for junk in ("output/stages", "output/playwright", "output/web",
                  "output/product-20261028", "output/deployment", "output/release-b"):
         target = stage / junk
         if target.exists():
-            import shutil
-
             shutil.rmtree(target, ignore_errors=True)
     weird = stage / "({html"
     if weird.exists():
         weird.unlink()
 
+    # tar.gz 供上传（压缩比好），内容由 zip 正确解出后再压
     pkg = work / f"{release}.tar.gz"
     packed = subprocess.run(
         ["tar", "-czf", str(pkg), "-C", str(stage), "."],
@@ -228,7 +254,7 @@ def make_package() -> Path:
     files = sum(1 for _ in stage.rglob("*") if _.is_file())
     size_mb = round(pkg.stat().st_size / 1024 / 1024, 2)
     ok(f"{release}：{files} 个文件，{size_mb} MB")
-    return pkg
+    return pkg, release
 
 
 def backup(prev_release: str) -> str:
@@ -271,6 +297,10 @@ def deploy(pkg: Path, release: str) -> None:
     ok(f"已上传 {pkg.name}")
 
     step("解包与接线")
+    # 关键：systemd 设了 ProtectSystem=strict + ReadWritePaths=/var/lib/shilie，
+    # 因此 /opt/shilie 整体只读。而 config 里 stages_dir/output_dir 是相对路径，
+    # 会解析到 RAG_PROJECT_ROOT 下——启动时写 output/stages 会 EROFS 崩溃。
+    # 解法：把可写产物目录软链到 /var/lib/shilie 下，代码保持只读。
     script = f"""
 set -e
 DEST={REMOTE_ROOT}/releases/{release}
@@ -278,22 +308,37 @@ rm -rf "$DEST"; mkdir -p "$DEST"
 tar -xzf {remote_pkg} -C "$DEST"
 PREV=$(readlink -f {REMOTE_APP})
 cp -a "$PREV/.venv" "$DEST/.venv"
+
+# 可写数据目录链接到 /var/lib/shilie（唯一允许写的位置）
+mkdir -p /var/lib/shilie/output/stages /var/lib/shilie/data/local /var/lib/shilie/data/processed
+rm -rf "$DEST/output" "$DEST/data"
+mkdir -p "$DEST/output" "$DEST/data"
+ln -sfn /var/lib/shilie/output/stages "$DEST/output/stages"
+ln -sfn /var/lib/shilie/data/local "$DEST/data/local"
+ln -sfn /var/lib/shilie/data/processed "$DEST/data/processed"
+if [ -d {REMOTE_ROOT}/releases/{release}/../.stage_raw ]; then rm -rf "$DEST/../.stage_raw"; fi
+
 cp -a /var/lib/shilie/config/. "$DEST/config/" 2>/dev/null || true
-mkdir -p "$DEST/data/local"
-cp -a /var/lib/shilie/data/local/. "$DEST/data/local/" 2>/dev/null || true
 chown -R root:shilie "$DEST"
 chmod 750 "$DEST"
+chown -R shilie:shilie /var/lib/shilie/output /var/lib/shilie/data/local 2>/dev/null || true
 echo "PREV_RELEASE=$PREV"
 echo "NEW_VERSION=$(grep -o '?v=[0-9]*' "$DEST/src/rag_tech_retriever/api/static/shilie/index.html" | head -1)"
+echo "STAGES_LINK=$(readlink -f "$DEST/output/stages")"
 """
     code, out = run_remote(script, timeout=600)
     if code != 0:
         raise DeployError(f"解包失败：\n{out[-800:]}")
-    ok("解包完成，venv 与配置已复用")
+    ok("解包完成，venv 已复用，可写目录已链接到 /var/lib/shilie")
 
 
 def activate(release: str) -> None:
-    """切软链 + 覆盖 site-packages（关键：非 editable 安装）+ 重启。"""
+    """切软链 + 覆盖 site-packages（关键：非 editable 安装）+ 重启。
+
+    服务启动要加载应用并连库，`systemctl restart` 返回后状态常为
+    `activating`，固定 sleep 会误判失败并触发不必要的回滚。
+    这里改成轮询等待 `active`，超时才判失败。
+    """
     step("切换与重启")
     script = f"""
 set -e
@@ -304,12 +349,23 @@ cp -a {REMOTE_APP}/src/rag_tech_retriever "$SITE"
 chown -R root:shilie "$SITE"
 chmod -R u+rwX,g+rX,o-rwx "$SITE"
 systemctl restart shilie
-sleep 10
-systemctl is-active shilie
+i=0
+while [ $i -lt 40 ]; do
+  STATE=$(systemctl is-active shilie)
+  if [ "$STATE" = "active" ]; then echo "SERVICE=active"; exit 0; fi
+  if [ "$STATE" = "failed" ]; then
+    echo "SERVICE=failed"
+    journalctl -u shilie -n 12 --no-pager 2>/dev/null | tail -12
+    exit 1
+  fi
+  i=$((i+1)); sleep 2
+done
+echo "SERVICE=timeout"
+exit 1
 """
-    code, out = run_remote(script, timeout=600)
-    if code != 0 or "active" not in out:
-        raise DeployError(f"切换或重启失败：\n{out[-800:]}")
+    code, out = run_remote(script, timeout=300)
+    if code != 0 or "SERVICE=active" not in out:
+        raise DeployError(f"切换或重启失败：\n{out[-1200:]}")
     ok("已切换并重启")
 
 
@@ -318,15 +374,24 @@ def verify(expected: dict) -> None:
     step("验证")
     deadline = time.time() + 180
     health = ""
+    last_journal = ""
     while time.time() < deadline:
         code, out = run_remote(
             f"curl -sk -m 8 https://127.0.0.1:{WEB_PORT}/health", timeout=40)
         if code == 0 and '"status":"ok"' in out:
             health = out.strip()
             break
+        # 服务起不来时把最近日志带出来，否则只报「超时」等于没诊断
+        jcode, jout = run_remote(
+            "journalctl -u shilie -n 25 --no-pager 2>/dev/null | "
+            "grep -iE 'error|exception|traceback|OSError|failed' | tail -8",
+            timeout=40)
+        if jcode == 0 and jout.strip():
+            last_journal = jout.strip()
         time.sleep(5)
     if not health:
-        raise DeployError("健康检查 180 秒内未通过")
+        hint = f"\n最近错误日志：\n{last_journal}" if last_journal else ""
+        raise DeployError(f"健康检查 180 秒内未通过{hint}")
     ok(f"健康：{health[:120]}")
 
     ver = remote_version()
@@ -407,16 +472,19 @@ def main() -> int:
         print(f"  目标版本：v{info['local_version']}")
         print(f"  当前线上：v{info['running_version']}")
         print(f"  数据基线：{info.get('records')} 条记录 / {info.get('vectors')} 条向量")
+        print(f"  将要部署：{head_commit()}")
         print("  将执行：打包 -> 备份 -> 上传 -> 解包 -> 切换 -> 验证")
         print("  失败时自动回滚代码（数据库需人工处理）")
         print("\n确认无误后执行：")
-        print("  python scripts/deploy_release.py --apply --confirm <release>")
+        print("  python scripts/deploy_release.py --apply --confirm HEAD")
+        print(f"  （或指定完整名称，如 --confirm native-<stamp>-{head_commit()}）")
         return 0
 
-    pkg = make_package()
-    release = pkg.name.replace(".tar.gz", "")
-    if args.confirm != release:
-        fail(f"--confirm 必须等于生成的 release 名：{release}")
+    pkg, release = make_package()
+    # 允许用 HEAD 表示「部署当前提交」，避免操作者去抄时间戳
+    expected = release if args.confirm == "HEAD" else args.confirm
+    if expected != release:
+        fail(f"--confirm 必须是 HEAD 或完整 release 名：{release}")
         return 1
 
     prev = ""
