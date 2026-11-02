@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "summary", "changes", "verification", "rollback_ids", "reasons"],
+  "properties": {
+    "status": {"type": "string", "enum": ["completed_changes", "checked_no_changes", "blocked", "failed"]},
+    "summary": {"type": "string"},
+    "changes": {"type": "array", "items": {"type": "string"}},
+    "verification": {"type": "array", "items": {"type": "string"}},
+    "rollback_ids": {"type": "array", "items": {"type": "string"}},
+    "reasons": {"type": "array", "items": {"type": "string"}}
+  }
+}

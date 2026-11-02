@@ -27,6 +27,43 @@ def note(api, title="原内容"):
     return api.post("/api/knowledge", json={"data": {"title": title, "content": "内容"}}).json()
 
 
+def test_public_backup_preserves_private_records_and_history(backup_api) -> None:
+    """Public restore must neither export nor remove unrelated encrypted records."""
+    api = backup_api
+    store = api.app.state.context.store
+    note(api)
+    snapshot = api.get("/api/export?format=json").json()
+    private = store.save("wish", {"cipher": "isolated-test-cipher"})
+    private = store.save("wish", {"cipher": "updated-test-cipher"}, private["id"], private["version"])
+    diary = store.save("diary", {"cipher": "isolated-diary"})
+    store.delete(diary["id"], diary["version"])
+    public = api.get("/api/export?format=json").json()
+    assert not {"wish", "diary"} & {r["kind"] for r in public["records"]}
+    assert private["id"] not in {v["record_id"] for v in public["versions"]}
+    assert api.get("/api/export?format=markdown").status_code == 200
+    note(api, "恢复时移除")
+    result = preview(api, snapshot)
+    assert restore(api, result).status_code == 200
+    assert store.get(private["id"]) == private
+    assert len(store.history(private["id"])) == 2
+    assert store.get(diary["id"], include_deleted=True)["deleted"]
+
+
+def test_public_restore_rejects_id_collision_with_private_record(backup_api) -> None:
+    """An imported public record cannot overwrite a private record with the same ID."""
+    api = backup_api
+    store = api.app.state.context.store
+    private = store.save("wish", {"cipher": "isolated-test-cipher"})
+    payload = {"format_version": 1, "records": [{
+        "id": private["id"], "kind": "knowledge", "data": {"title": "错误覆盖", "content": "x"},
+    }]}
+    result = preview(api, payload)
+    stages_before = api.get("/api/stages").json()
+    assert restore(api, result).status_code == 409
+    assert api.get("/api/stages").json() == stages_before
+    assert store.get(private["id"]) == private
+
+
 def preview(api, snapshot):
     response = api.post("/api/import/preview", json={"snapshot": snapshot})
     assert response.status_code == 200

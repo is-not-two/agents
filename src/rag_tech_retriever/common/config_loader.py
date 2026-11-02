@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 PROJECT_ROOT = Path(
     os.environ.get("RAG_PROJECT_ROOT", str(Path(__file__).resolve().parents[3]))
@@ -27,7 +27,7 @@ DEFAULT_SETTINGS_PATH = PROJECT_ROOT / "config" / "settings.yaml"
 DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
 
 #: 环境变量 → 配置路径覆盖映射（环境变量优先，无需改代码即可切换参数）
-ENV_OVERRIDES: Dict[str, str] = {
+ENV_OVERRIDES: dict[str, str] = {
     "EMBEDDING_MODEL": "embedding.model_name",
     "EMBEDDING_DIM": "embedding.dim",
     "EMBEDDING_DEVICE": "embedding.device",
@@ -38,6 +38,42 @@ ENV_OVERRIDES: Dict[str, str] = {
 
 class ConfigError(Exception):
     """配置加载或取值失败。"""
+
+
+def load_yaml_mapping(path: Path) -> dict[str, Any]:
+    """Read safe YAML, rejecting duplicate keys instead of silently discarding values."""
+    try:
+        import yaml
+    except ImportError as exc:
+        raise ConfigError("未安装 pyyaml") from exc
+
+    class UniqueLoader(yaml.SafeLoader):
+        """Local loader: do not mutate PyYAML's global constructors."""
+
+    def mapping(loader, node, deep=False):
+        loader.flatten_mapping(node)
+        result = {}
+        for key_node, value_node in node.value:
+            key = loader.construct_object(key_node, deep=deep)
+            try:
+                duplicate = key in result
+            except TypeError as exc:
+                raise ConfigError("YAML 键必须为标量") from exc
+            if duplicate:
+                raise ConfigError(f"{path.name}:{key_node.start_mark.line + 1} 重复配置键：{key}")
+            result[key] = loader.construct_object(value_node, deep=deep)
+        return result
+
+    UniqueLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, mapping)
+    try:
+        data = yaml.load(path.read_text(encoding="utf-8-sig"), Loader=UniqueLoader)
+    except (OSError, UnicodeError, yaml.YAMLError) as exc:
+        raise ConfigError(f"配置文件不可读取或 YAML 格式错误：{path.name}") from exc
+    if data is None:
+        return {}
+    if not isinstance(data, dict):
+        raise ConfigError(f"配置顶层必须是映射：{path.name}")
+    return data
 
 
 def _coerce(value: str) -> Any:
@@ -75,15 +111,15 @@ class ConfigLoader:
         self._data = self._load_settings()
 
     @classmethod
-    def load_default(cls) -> "ConfigLoader":
+    def load_default(cls) -> ConfigLoader:
         """使用项目默认路径加载配置。"""
         return cls()
 
-    def _load_env_file(self) -> Dict[str, str]:
+    def _load_env_file(self) -> dict[str, str]:
         """解析 .env 文件（KEY=VALUE；# 开头为注释；值可用引号包裹）。"""
         if not self.env_path.is_file():
             return {}
-        values: Dict[str, str] = {}
+        values: dict[str, str] = {}
         for raw_line in self.env_path.read_text(encoding="utf-8-sig").splitlines():
             line = raw_line.strip()
             if not line or line.startswith("#") or "=" not in line:
@@ -92,17 +128,11 @@ class ConfigLoader:
             values[key.strip()] = value.strip().strip('"').strip("'")
         return values
 
-    def _load_settings(self) -> Dict[str, Any]:
+    def _load_settings(self) -> dict[str, Any]:
         """读取 yaml 并应用环境变量覆盖。"""
         if not self.settings_path.is_file():
             raise ConfigError(f"settings.yaml 不存在：{self.settings_path}")
-        try:
-            import yaml
-        except ImportError as exc:
-            raise ConfigError('未安装 pyyaml，请先执行 pip install -e ".[rag]"') from exc
-        data = yaml.safe_load(self.settings_path.read_text(encoding="utf-8")) or {}
-        if not isinstance(data, dict):
-            raise ConfigError(f"settings.yaml 顶层必须是映射：{self.settings_path}")
+        data = load_yaml_mapping(self.settings_path)
         for env_name, config_path in ENV_OVERRIDES.items():
             raw = self.env(env_name)
             if raw not in (None, ""):
@@ -110,7 +140,7 @@ class ConfigLoader:
         return data
 
     @staticmethod
-    def _set_path(data: Dict[str, Any], dotted: str, value: Any) -> None:
+    def _set_path(data: dict[str, Any], dotted: str, value: Any) -> None:
         """按 "a.b.c" 路径写值，中间层缺失时自动创建。"""
         keys = dotted.split(".")
         node = data
@@ -122,7 +152,7 @@ class ConfigLoader:
             node = child
         node[keys[-1]] = value
 
-    def env(self, name: str, default: Optional[str] = None) -> Optional[str]:
+    def env(self, name: str, default: str | None = None) -> str | None:
         """读取环境变量：进程环境优先，其次 .env 文件。"""
         if name in os.environ:
             return os.environ[name]
@@ -144,7 +174,7 @@ class ConfigLoader:
             raise ConfigError(f"缺少必填配置项：{dotted}")
         return value
 
-    def resolve(self, dotted: str, default: Any = None) -> Optional[Path]:
+    def resolve(self, dotted: str, default: Any = None) -> Path | None:
         """读取相对路径配置并解析为项目内绝对路径。"""
         value = self.get(dotted, default)
         if value is None:

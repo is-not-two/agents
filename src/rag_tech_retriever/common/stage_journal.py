@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from rag_tech_retriever.common.middleware.exception import AppError
+
 SOURCE_DIRS = ("src", "scripts", "config", "tests", "output/v1", "output/v1.5")
 SOURCE_SUFFIXES = {
     ".py",
@@ -62,8 +64,11 @@ def digest(path: Path) -> str | None:
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
 
 
-class JournalError(Exception):
-    """阶段不存在、快照损坏或存在未被覆盖授权的后续改动。"""
+class JournalError(AppError):
+    """阶段不存在、快照损坏或存在未被覆盖授权的后续改动。
+
+    继承 AppError 体系获得稳定错误码（VALIDATION_ERROR/400，与历史行为一致）。
+    """
 
 
 class StageJournal:

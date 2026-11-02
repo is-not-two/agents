@@ -34,6 +34,11 @@ vector_store:                      # V1 起启用
 retrieval:                         # V1 起启用
   top_k: 5                         # V1 基线口径：top-5 召回率
   candidate_k: 20                  # V1.5 重排候选池
+  status_aware: false              # V2-b 实测负结果（守护 100%→80%）：降权伤及召回且无收益，默认关闭；
+                                   # 启用前必须重跑 scripts/v2b_enable_status.py 并通过守护集
+  status_weights:                  # 实验档位（output/v2/v2b_status_report.md §5）；未列出的状态=1.0
+    DISABLED: 0.85                 # 占位/不分配/不 dispatch
+    PENDING: 0.92                  # 待注册/待接入/号段需确认
 
 reranker:                          # V1.5 起启用（候选池 → CrossEncoder 精排）
   model_name: BAAI/bge-reranker-base

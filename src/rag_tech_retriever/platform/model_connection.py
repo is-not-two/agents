@@ -6,20 +6,24 @@ import json
 import os
 import tempfile
 import threading
-import urllib.error
-import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 from uuid import uuid4
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
+from rag_tech_retriever.common.provider import (
+    DEFAULT_CONTEXT_CHARS,
+    ProviderError,
+    post_chat,
+    validate_provider_url,
+)
 from rag_tech_retriever.domains.life_planning import DomainError, text
 from rag_tech_retriever.platform.record_store import StorageError, VersionConflict
 
 
 def normalize_base(value: object) -> str:
-    """只接受不含凭据或查询参数的 HTTP(S) 基础地址，兼容粘贴完整端点。"""
+    """HTTPS或回环HTTP；不含凭据/查询参数，兼容粘贴完整端点。"""
     value = text(value, "API 地址", 2048, True).rstrip("/")
     try:
         parts = urlsplit(value)
@@ -37,7 +41,10 @@ def normalize_base(value: object) -> str:
     except ValueError as exc:
         raise DomainError("请填写有效的 HTTP(S) API 地址，不要在地址中附带密钥或参数") from exc
     path = parts.path.removesuffix("/chat/completions")
-    return urlunsplit((parts.scheme, parts.netloc, path, "", "")).rstrip("/")
+    try:
+        return validate_provider_url(urlunsplit((parts.scheme, parts.netloc, path, "", "")))
+    except ProviderError as exc:
+        raise DomainError(str(exc)) from exc
 
 
 class ModelConnection:
@@ -161,36 +168,17 @@ class ModelConnection:
         if "revision" in payload and payload["revision"] != current["revision"]:
             raise VersionConflict("模型连接已被更新，请重新加载后再测试")
         config = self.prepare(payload, current)
-        request = urllib.request.Request(
-            config["base_url"] + "/chat/completions",
-            json.dumps(
-                {
-                    "model": config["model"],
-                    "messages": [{"role": "user", "content": "Reply OK."}],
-                    "max_tokens": 8,
-                    "stream": False,
-                }
-            ).encode(),
-            {"Content-Type": "application/json", "Authorization": "Bearer " + config["api_key"]},
-        )
+        body = {"model": config["model"], "messages": [{"role": "user", "content": "Reply OK."}],
+                "max_tokens": 8, "stream": False}
         try:
-            with urllib.request.urlopen(request, timeout=self.test_timeout) as response:
-                raw = response.read(1048577)
-                if len(raw) > 1048576:
-                    raise ValueError
-                content = json.loads(raw)["choices"][0]["message"]["content"]
-                if not isinstance(content, str) or not content.strip():
-                    raise ValueError
-        except urllib.error.HTTPError as exc:
-            messages = {
-                401: "密钥无效或已失效",
-                403: "此密钥没有访问权限",
-                404: "API 地址或模型名称不正确",
-                429: "请求受限或余额不足，请检查服务商账户",
-            }
-            return {"ok": False, "message": messages.get(exc.code, "模型服务返回错误，请稍后重试")}
-        except (urllib.error.URLError, OSError, TimeoutError):
-            return {"ok": False, "message": "无法连接模型服务，请检查地址、网络或超时"}
+            envelope = post_chat(config, body, self.test_timeout, DEFAULT_CONTEXT_CHARS)
+            content = envelope["choices"][0]["message"]["content"]
+            if not isinstance(content, str) or not content.strip():
+                raise ValueError
+        except ProviderError as exc:
+            messages = {401: "密钥无效或已失效", 403: "此密钥没有访问权限",
+                        404: "API 地址或模型名称不正确", 429: "请求受限或余额不足，请检查服务商账户"}
+            return {"ok": False, "message": messages.get(exc.status, "无法连接模型服务或响应无效，请检查配置")}
         except (ValueError, KeyError, IndexError, TypeError):
             return {"ok": False, "message": "服务响应不符合聊天接口格式，请检查 API 地址和模型"}
         return {"ok": True, "message": "连接成功，模型已返回有效回复"}

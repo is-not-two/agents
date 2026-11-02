@@ -14,6 +14,12 @@ import psycopg2
 from psycopg2.extras import Json, RealDictCursor
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
+from rag_tech_retriever.common.schema_policy import configured_schema_mode, schema_timeouts
+from rag_tech_retriever.platform.workspace_schema import (
+    SchemaValidationError,
+    managed_kind_check,
+    verify_workspace_schema,
+)
 
 RECORD_KINDS = {
     "knowledge",
@@ -21,11 +27,17 @@ RECORD_KINDS = {
     "agent_profile",
     "workflow",
     "workflow_run",
+    # 谨记名单：个人错题/教训，按类型分类（2026-10-24 起）。
+    "lesson",
+    "job_lead", "application", "interview_report", "resume_version",
+    "learning_card", "learning_review", "notification_outbox", "agent_memory", "agent_session",
     # 私密管理：愿望清单与日记。加密在应用层完成，这里只存密文，
     # 因此不与普通内容混用同一字段语义。
     "wish",
     "diary",
 }
+# 外发意图不能进入公共恢复，否则恢复旧备份可能重发消息。
+WORKSPACE_KINDS = RECORD_KINDS - {"wish", "diary", "notification_outbox", "agent_memory", "agent_session"}
 
 
 def records_revision(records: list[dict]) -> str:
@@ -80,10 +92,80 @@ class RecordStore:
             if conn is not None:
                 conn.close()
 
+    def ping(self, timeout_seconds: int = 3) -> None:
+        """Probe PostgreSQL with bounded connection/statement timeouts and no writes."""
+        if (not isinstance(timeout_seconds, int) or isinstance(timeout_seconds, bool)
+                or not 2 <= timeout_seconds <= 10):
+            raise ValueError("探针超时必须在 2–10 秒之间")
+        cfg = self.config
+        conn = None
+        try:
+            conn = psycopg2.connect(
+                host=cfg.env("POSTGRES_HOST", "127.0.0.1"),
+                port=cfg.env("POSTGRES_PORT", "5432"),
+                dbname=cfg.env("POSTGRES_DB", "rag_tech_doc"),
+                user=cfg.env("POSTGRES_USER", "rag"),
+                password=cfg.env("POSTGRES_PASSWORD", ""),
+                connect_timeout=timeout_seconds,
+                options=f"-c statement_timeout={timeout_seconds * 1000}",
+            )
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+        except psycopg2.Error as exc:
+            raise StorageError("数据库就绪检查失败") from exc
+        finally:
+            if conn is not None:
+                conn.close()
+
     def ensure_schema(self) -> None:
-        """幂等创建工作台表，不触碰既有向量表和原始文档。"""
+        """Local auto-init remains compatible; production/direct scripts only verify."""
+        profile, mode = configured_schema_mode(self.config)
+        if mode == "verify":
+            self.verify_schema(require_runtime_role=profile == "production")
+            return
+        self._apply_schema()
+
+    def verify_schema(self, *, require_runtime_role: bool = False) -> dict:
+        """Check schema/permissions without DDL, row writes or migration fallback."""
+        timeouts = schema_timeouts(self.config)
+        try:
+            with self.transaction() as cur:
+                cur.execute("SET TRANSACTION READ ONLY")
+                cur.execute(f"SET LOCAL statement_timeout = {timeouts['schema_verify_timeout_ms']}")
+                return verify_workspace_schema(cur, self.records, self.versions, RECORD_KINDS,
+                                               require_runtime_role=require_runtime_role)
+        except SchemaValidationError as exc:
+            raise StorageError(str(exc)) from None
+
+    def migrate_schema(self, confirmation: str) -> dict:
+        """Explicit operator path; no deletion or automatic data/schema repair."""
+        if confirmation != "仅创建或升级工作台结构，不删除记录":
+            raise StorageError("结构迁移需要完整确认文字")
+        self._apply_schema()
+        return {"migrated": True, "tables": [self.records, self.versions], "records_deleted": 0}
+
+    def _apply_schema(self) -> None:
+        """One administrator/local transaction, checked before commit; never called in verify mode."""
+        try:
+            self._apply_schema_transaction()
+        except SchemaValidationError as exc:
+            raise StorageError(str(exc)) from None
+
+    def _apply_schema_transaction(self) -> None:
+        timeouts = schema_timeouts(self.config)
         with self.transaction() as cur:
+            cur.execute(f"SET LOCAL lock_timeout = {timeouts['schema_lock_timeout_ms']}")
+            cur.execute(f"SET LOCAL statement_timeout = {timeouts['schema_migration_timeout_ms']}")
             cur.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (self.prefix + ":schema",))
+            cur.execute("SELECT to_regclass(%s) AS records,to_regclass(%s) AS versions", (self.records, self.versions))
+            existing = cur.fetchone()
+            if existing["records"] and not existing["versions"]:
+                cur.execute(f"SELECT 1 FROM {self.records} LIMIT 1")
+                if cur.fetchone():
+                    raise SchemaValidationError("非空记录表缺少历史表，不能用空历史掩盖丢失；请管理员核对备份")
+            if existing["versions"] and not existing["records"]:
+                raise SchemaValidationError("历史表缺少所属记录表，请管理员核对备份")
             cur.execute(f"""CREATE TABLE IF NOT EXISTS {self.records} (
                 id TEXT PRIMARY KEY, kind TEXT NOT NULL CHECK(kind IN ('knowledge','plan')),
                 version INTEGER NOT NULL, data JSONB NOT NULL, deleted BOOLEAN NOT NULL DEFAULT FALSE,
@@ -95,24 +177,25 @@ class RecordStore:
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(record_id,version)
             )""")
             # 事务升级旧约束；工作台记录与版本原样保留，向量表不参与。
-            constraint = self.records + "_kind_check"
+            constraint = self.records.lower() + "_kind_check"
+            verify_workspace_schema(cur, self.records, self.versions, RECORD_KINDS, verify_kind=False)
             cur.execute(
-                "SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint "
+                "SELECT pg_get_expr(conbin,conrelid) AS expression,convalidated FROM pg_constraint "
                 "WHERE conrelid=%s::regclass AND conname=%s",
                 (self.records, constraint),
             )
             row = cur.fetchone()
             # 约束需要覆盖当前全部 kind；任一缺失即重建
-            definition = row["definition"] if row else ""
-            missing = [kind for kind in sorted(RECORD_KINDS) if f"'{kind}'" not in definition]
-            if row and missing:
+            complete = bool(row and row["convalidated"] and managed_kind_check(row["expression"], RECORD_KINDS))
+            if row and not complete:
                 cur.execute(f"ALTER TABLE {self.records} DROP CONSTRAINT {constraint}")
-            if not row or missing:
+            if not complete:
                 allowed = ",".join("'" + kind + "'" for kind in sorted(RECORD_KINDS))
                 cur.execute(
                     f"ALTER TABLE {self.records} ADD CONSTRAINT {constraint} "
                     f"CHECK (kind IN ({allowed}))"
                 )
+            verify_workspace_schema(cur, self.records, self.versions, RECORD_KINDS)
 
     @staticmethod
     def _serialize(row: Any) -> dict:
@@ -128,14 +211,17 @@ class RecordStore:
         deleted: bool = False,
         limit: int | None = None,
         omit: tuple[str, ...] = (),
+        data_kinds: tuple[str, ...] = (),
     ) -> list[dict]:
         """列出当前有效或回收站记录。"""
         with self.transaction() as cur:
             cur.execute(
                 f"SELECT id,kind,version,data - %s::text[] AS data,deleted,created_at,updated_at "
                 f"FROM {self.records} WHERE deleted=%s "
-                "AND (%s IS NULL OR kind=%s) ORDER BY updated_at DESC,id LIMIT %s",
-                (list(omit), deleted, kind, kind, limit),
+                "AND (%s IS NULL OR kind=%s) "
+                "AND (%s::text[]='{}'::text[] OR data->>'kind'=ANY(%s::text[])) "
+                "ORDER BY updated_at DESC,id LIMIT %s",
+                (list(omit), deleted, kind, kind, list(data_kinds), list(data_kinds), limit),
             )
             return [self._serialize(row) for row in cur.fetchall()]
 
@@ -258,12 +344,19 @@ class RecordStore:
             )
 
     def export(self) -> dict:
-        """完整可移植快照，包含历史与回收站，不导出连接密钥。"""
+        """公共工作区快照包含历史与回收站；私密内容及连接密钥独立备份。"""
         with self.transaction() as cur:
             cur.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-            cur.execute(f"SELECT * FROM {self.records} ORDER BY id")
+            cur.execute(
+                f"SELECT * FROM {self.records} WHERE kind=ANY(%s) ORDER BY id",
+                (sorted(WORKSPACE_KINDS),),
+            )
             records = [self._serialize(row) for row in cur.fetchall()]
-            cur.execute(f"SELECT * FROM {self.versions} ORDER BY record_id,version")
+            cur.execute(
+                f"SELECT v.* FROM {self.versions} v JOIN {self.records} r ON r.id=v.record_id "
+                "WHERE r.kind=ANY(%s) ORDER BY v.record_id,v.version",
+                (sorted(WORKSPACE_KINDS),),
+            )
             versions = [self._serialize(row) for row in cur.fetchall()]
             return {"format_version": 1, "records": records, "versions": versions}
 
@@ -279,7 +372,7 @@ class RecordStore:
         target = {}
         for row in snapshot["records"]:
             kind = row.get("kind")
-            if kind not in RECORD_KINDS or not isinstance(row.get("id"), str):
+            if kind not in WORKSPACE_KINDS or not isinstance(row.get("id"), str):
                 raise StorageError("快照记录格式错误")
             if row["id"] in target:
                 raise StorageError("快照存在重复 ID")
@@ -291,14 +384,22 @@ class RecordStore:
         with self.transaction() as cur:
             cur.execute(f"LOCK TABLE {self.records} IN EXCLUSIVE MODE")
             cur.execute(f"SELECT * FROM {self.records} ORDER BY id")
-            current = {row["id"]: row for row in cur.fetchall()}
+            all_current = {row["id"]: row for row in cur.fetchall()}
+            private_ids = {key for key, row in all_current.items() if row["kind"] not in WORKSPACE_KINDS}
+            if private_ids & target.keys():
+                raise VersionConflict("备份记录 ID 与私密条目冲突，无法恢复")
+            current = {key: row for key, row in all_current.items() if key not in private_ids}
             if (
                 expected_revision is not None
                 and records_revision(list(current.values())) != expected_revision
             ):
                 raise VersionConflict("预览后工作区内容已改变，请重新预览，避免覆盖新修改")
             if before_restore is not None:
-                cur.execute(f"SELECT * FROM {self.versions} ORDER BY record_id,version")
+                cur.execute(
+                    f"SELECT v.* FROM {self.versions} v JOIN {self.records} r ON r.id=v.record_id "
+                    "WHERE r.kind=ANY(%s) ORDER BY v.record_id,v.version",
+                    (sorted(WORKSPACE_KINDS),),
+                )
                 protected = {
                     "format_version": 1,
                     "records": [self._serialize(row) for row in current.values()],

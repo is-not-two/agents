@@ -13,6 +13,10 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     router = APIRouter()
     search = context.search
 
+    @router.get("/api/query/options")
+    def options() -> dict:
+        return search.catalog.options()
+
     @router.post("/api/query")
     def query(payload: QueryInput) -> dict:
         if payload.scope not in {"all", "personal", "docs", "planning"} or payload.mode not in {
@@ -22,6 +26,8 @@ def create_router(context: WorkspaceContext) -> APIRouter:
             raise HTTPException(400, "查询范围或模式不支持")
         if not payload.query.strip():
             raise HTTPException(400, "请输入查询内容")
-        return search.query(payload.query.strip(), payload.scope, payload.mode, payload.generate)
+        if payload.namespace is None:
+            return search.query(payload.query.strip(), payload.scope, payload.mode, payload.generate)
+        return search.query(payload.query.strip(), payload.scope, payload.mode, payload.generate, payload.namespace)
 
     return router

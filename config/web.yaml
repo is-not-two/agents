@@ -1,17 +1,31 @@
 # Web 工作台：服务器与本机均使用 PostgreSQL，连接信息取环境变量。
 web:
   host: 127.0.0.1
-  port: 8766
+  port: 8770
   title: 时列 · 个人工作台
   table_prefix: workspace
   export_dir: data/local/exports
   stages_dir: output/stages
   max_body_bytes: 2097152
   max_import_bytes: 33554432
+  private_backup_max_bytes: 67108864
+  max_markdown_bytes: 262144
+  markdown_chunk_size: 1500
   search_limit: 10
   session_hours: 12
+  rate_limit_per_minute: 120
+  chat:
+    greeting: 你好，我可以检索知识与技术文档；需要写入时会引导你确认。
+    write_hint: 尚未执行写入。请前往资料入库或Agent工作室，核对内容后人工确认。
 llm:
   timeout_seconds: 25
   max_tokens: 800
   test_timeout_seconds: 12
   connection_file: data/local/llm-connection.json
+
+operations:
+  profile: local
+  readiness_timeout_seconds: 3
+  schema_verify_timeout_ms: 3000
+  schema_lock_timeout_ms: 5000
+  schema_migration_timeout_ms: 60000

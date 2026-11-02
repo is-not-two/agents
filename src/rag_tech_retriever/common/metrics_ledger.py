@@ -35,10 +35,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from datetime import date
 from pathlib import Path
-from typing import List, Optional, Sequence
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -69,7 +69,7 @@ class MetricEntry:
     metric: str
     result: float
     unit: str = "%"
-    baseline: Optional[float] = None
+    baseline: float | None = None
     variable: str = ""
     sample: str = ""
     conclusion: str = ""
@@ -79,14 +79,14 @@ class MetricEntry:
     domain: str = "tech_doc"
 
     @property
-    def delta_abs(self) -> Optional[float]:
+    def delta_abs(self) -> float | None:
         """绝对差：百分数指标即「百分点（pp）」。"""
         if self.baseline is None:
             return None
         return self.result - self.baseline
 
     @property
-    def delta_rel(self) -> Optional[float]:
+    def delta_rel(self) -> float | None:
         """相对提升比例（0.375 表示 +37.5%）；基线为 0 时无定义。"""
         if self.baseline in (None, 0):
             return None
@@ -111,7 +111,7 @@ class MetricEntry:
             rel_text = f"，相对 {sign}{_fmt_number(rel * 100)}%" if rel is not None else ""
             head += f"（{abs_text}{rel_text}）"
 
-        extras: List[str] = []
+        extras: list[str] = []
         if self.variable:
             extras.append(f"变量：{self.variable}")
         if self.sample:
@@ -138,15 +138,15 @@ class MetricsLedger:
         self.export_path = Path(export_path)
 
     @classmethod
-    def default(cls) -> "MetricsLedger":
+    def default(cls) -> MetricsLedger:
         """使用项目默认路径（output/metrics_ledger.jsonl）。"""
         return cls()
 
-    def load(self) -> List[MetricEntry]:
+    def load(self) -> list[MetricEntry]:
         """读取全部记录；账本不存在时返回空列表。"""
         if not self.ledger_path.is_file():
             return []
-        entries: List[MetricEntry] = []
+        entries: list[MetricEntry] = []
         for lineno, line in enumerate(
             self.ledger_path.read_text(encoding="utf-8").splitlines(), start=1
         ):
@@ -158,7 +158,7 @@ class MetricsLedger:
                 raise MetricLedgerError(f"账本第 {lineno} 行无法解析：{exc}") from exc
         return entries
 
-    def _next_entry_id(self, entries: List[MetricEntry]) -> str:
+    def _next_entry_id(self, entries: list[MetricEntry]) -> str:
         """计算下一个自增编号（M001、M002…）。"""
         max_seq = 0
         for item in entries:
@@ -174,7 +174,7 @@ class MetricsLedger:
         metric: str,
         result: float,
         unit: str = "%",
-        baseline: Optional[float] = None,
+        baseline: float | None = None,
         variable: str = "",
         sample: str = "",
         conclusion: str = "",
@@ -182,7 +182,7 @@ class MetricsLedger:
         notes: str = "",
         domain: str = "tech_doc",
         unique_by_topic: bool = False,
-        on_date: Optional[str] = None,
+        on_date: str | None = None,
     ) -> MetricEntry:
         """追加一条记录并落盘，返回新记录。
 
@@ -209,7 +209,7 @@ class MetricsLedger:
             raise MetricLedgerError("stage / topic / metric 均为必填")
         entries = self.load()
         domain_clean = domain.strip() or "tech_doc"
-        existing: Optional[MetricEntry] = None
+        existing: MetricEntry | None = None
         if unique_by_topic:
             for item in entries:
                 if (
@@ -250,7 +250,7 @@ class MetricsLedger:
             for item in entries:
                 fp.write(json.dumps(asdict(item), ensure_ascii=False) + "\n")
 
-    def render_markdown(self, domain: Optional[str] = None) -> str:
+    def render_markdown(self, domain: str | None = None) -> str:
         """渲染 Markdown 成果清单（按「域 · 阶段」分组，保持记录顺序）。
 
         Args:
@@ -262,8 +262,10 @@ class MetricsLedger:
         lines = [
             "# 量化成果清单（简历 / 汇报用）",
             "",
-            "> 由 scripts/record_metric.py 导出；数据源 output/metrics_ledger.jsonl，"
-            "改动账本后请重新导出，勿手改本文件。",
+            (
+                "> 由 scripts/record_metric.py 导出；数据源 output/metrics_ledger.jsonl，"
+                "改动账本后请重新导出，勿手改本文件。"
+            ),
             "> 口径说明：括号内先给绝对差（百分数指标为 pp 百分点），再给相对提升百分比。",
             "",
         ]
@@ -285,7 +287,7 @@ class MetricsLedger:
             lines.append(line)
         return "\n".join(lines) + "\n"
 
-    def export_markdown(self, domain: Optional[str] = None) -> Path:
+    def export_markdown(self, domain: str | None = None) -> Path:
         """导出 Markdown 清单（可按域过滤）并返回文件路径。"""
         self.export_path.parent.mkdir(parents=True, exist_ok=True)
         self.export_path.write_text(self.render_markdown(domain), encoding="utf-8")

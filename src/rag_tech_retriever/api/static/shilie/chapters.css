@@ -1,0 +1,255 @@
+.story-board {
+  display: grid;
+  gap: 30px;
+}
+.story-group > h3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+}
+.story-group > h3 small {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 12px;
+}
+.storyline {
+  border: 1px solid #d9e2dc;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+  margin: 12px 0;
+}
+.storyline > summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px;
+  cursor: pointer;
+  list-style: none;
+  background: linear-gradient(105deg, #edf3ee, #fff);
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+.storyline-mark {
+  display: grid;
+  place-items: center;
+  background: #dcebe4;
+  color: #2d6b56;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  font-family: serif;
+  font-size: 22px;
+  flex: none;
+}
+.storyline-mark.side {
+  background: #f3e9de;
+  color: #946236;
+}
+.storyline-title {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+.storyline-title strong {
+  font-size: 19px;
+  overflow-wrap: anywhere;
+}
+.storyline-title small,
+.chapter-label small {
+  color: #657569;
+  font-size: 12px;
+}
+.fold-chevron {
+  color: #697c70;
+  transition: transform 0.2s;
+  flex: none;
+}
+details[open] > summary > .fold-chevron {
+  transform: rotate(180deg);
+}
+.storyline-body {
+  padding: 0 24px 24px;
+}
+.story-description {
+  padding-top: 12px;
+  color: #657569;
+}
+.chapter-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.chapter-timeline {
+  border-left: 1px solid #d6e1d8;
+  margin-left: 20px;
+  padding-left: 22px;
+}
+.story-chapter {
+  margin: 16px 0;
+  border: 1px solid #e0e7e1;
+  border-radius: 12px;
+}
+.story-chapter > summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 17px;
+  cursor: pointer;
+  list-style: none;
+}
+.chapter-index {
+  font-family: serif;
+  color: #718774;
+  font-size: 24px;
+  flex: none;
+}
+.chapter-label {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.chapter-label strong {
+  overflow-wrap: anywhere;
+}
+.chapter-progress {
+  font-size: 12px;
+  color: #657569;
+  white-space: nowrap;
+}
+.chapter-body {
+  padding: 0 18px 18px;
+}
+.chapter-description {
+  border-left: 3px solid #a7bba9;
+  padding: 8px 12px;
+  background: #f6f8f4;
+}
+.preserve-lines {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.story-task {
+  border-top: 1px solid #e8ede8;
+}
+.story-task > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 3px;
+  cursor: pointer;
+  list-style: none;
+}
+.story-task > summary > span:nth-child(2) {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.story-task small {
+  color: #657569;
+  font-size: 12px;
+}
+.story-task strong {
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+.story-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #53987a;
+  flex: none;
+}
+.story-task.locked .story-status-dot {
+  background: #bb9c72;
+}
+.story-task.done .story-status-dot {
+  background: #a7b3a9;
+}
+.story-task.done strong {
+  text-decoration: line-through;
+  color: #78847c;
+}
+.story-task-body {
+  padding: 0 20px 16px;
+}
+.prerequisite-list {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 16px 0;
+  font-size: 13px;
+}
+.prerequisite-list > span {
+  border-radius: 6px;
+  padding: 5px 9px;
+  background: #f4f5ef;
+}
+.prerequisite-list .met {
+  color: #39745c;
+  background: #edf5ec;
+}
+.prerequisite-list .waiting {
+  color: #91652f;
+  background: #f8f0e3;
+}
+.story-task-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.storyline > summary:hover,
+.story-chapter > summary:hover,
+.story-task > summary:hover {
+  background-color: #f3f7f1;
+}
+.storyline > summary:active,
+.story-chapter > summary:active {
+  background-color: #e7eee5;
+}
+.story-board button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+@media (max-width: 700px) {
+  .storyline > summary {
+    padding: 16px;
+    gap: 10px;
+  }
+  .storyline-title strong {
+    font-size: 17px;
+  }
+  .storyline-body {
+    padding: 0 12px 12px;
+  }
+  .chapter-timeline {
+    margin-left: 8px;
+    padding-left: 10px;
+  }
+  .story-chapter > summary {
+    padding: 13px 10px;
+    gap: 9px;
+  }
+  .chapter-body {
+    padding: 0 10px 12px;
+  }
+  .story-task-body {
+    padding: 0 3px 12px;
+  }
+  .chapter-index {
+    font-size: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fold-chevron {
+    transition: none;
+  }
+}

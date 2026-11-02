@@ -12,22 +12,51 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from rag_tech_retriever.agent.capability_runtime import AgentRuntime
+from rag_tech_retriever.agent.collaboration import CollaborationService
 from rag_tech_retriever.api.dependencies import WorkspaceContext
+from rag_tech_retriever.api.routes import admin as admin_routes
 from rag_tech_retriever.api.routes import automation, history, knowledge, planning
+from rag_tech_retriever.api.routes import capabilities as capability_routes
+from rag_tech_retriever.api.routes import chat as chat_routes
+from rag_tech_retriever.api.routes import collaboration as collaboration_routes
+from rag_tech_retriever.api.routes import evaluation as evaluation_routes
 from rag_tech_retriever.api.routes import exports as export_routes
+from rag_tech_retriever.api.routes import job_insights as job_insight_routes
+from rag_tech_retriever.api.routes import jobs as job_routes
+from rag_tech_retriever.api.routes import learning as learning_routes
+from rag_tech_retriever.api.routes import lessons as lesson_routes
+from rag_tech_retriever.api.routes import mcp as mcp_routes
 from rag_tech_retriever.api.routes import model_connection as connection_routes
+from rag_tech_retriever.api.routes import notifications as notification_routes
+from rag_tech_retriever.api.routes import operations as operations_routes
 from rag_tech_retriever.api.routes import private as private_routes
 from rag_tech_retriever.api.routes import search as search_routes
 from rag_tech_retriever.api.routes import stages as stage_routes
 from rag_tech_retriever.common.config_loader import PROJECT_ROOT, ConfigLoader
-from rag_tech_retriever.common.stage_journal import JournalError, StageJournal
-from rag_tech_retriever.domains.life_planning import DomainError
+from rag_tech_retriever.common.middleware.exception import (
+    AppError,
+    ErrorCode,
+    error_payload,
+)
+from rag_tech_retriever.common.middleware.logger import get_logger, log_event
+from rag_tech_retriever.common.middleware.rate_limiter import RateLimitMiddleware
+from rag_tech_retriever.common.middleware.tracer import (
+    TracerMiddleware,
+    current_request_id,
+    new_request_id,
+)
+from rag_tech_retriever.common.schema_policy import resolve_schema_mode
+from rag_tech_retriever.common.stage_journal import StageJournal
+from rag_tech_retriever.platform.agent_capabilities import CapabilityService
+from rag_tech_retriever.platform.mcp_client import ToolError
+from rag_tech_retriever.platform.mcp_policy import business_enabled, validate_mcp_config
 from rag_tech_retriever.platform.model_connection import ModelConnection
+from rag_tech_retriever.platform.operations import configuration_report
 from rag_tech_retriever.platform.record_store import (
     RecordMissing,
     RecordStore,
@@ -45,8 +74,23 @@ def create_app(
     config = ConfigLoader(settings.settings_path.parent / "web.yaml")
     store = store or RecordStore(str(config.get("web.table_prefix", "workspace")))
     secret = str(settings.env("WORKSPACE_ACCESS_TOKEN", "")) if token is None else token
+    mcp_secret = str(settings.env("WORKSPACE_MCP_TOKEN", ""))
+    if mcp_secret and (len(mcp_secret) < 32 or mcp_secret != mcp_secret.strip() or secrets.compare_digest(mcp_secret, secret)):
+        raise RuntimeError("MCP独立令牌须至少32位、无首尾空白且不同于工作台令牌")
+    mcp_config = mcp_routes._load_mcp_config()
+    validate_mcp_config(mcp_config)
+    if business_enabled(mcp_config) and not mcp_secret:
+        raise RuntimeError("启用业务MCP查询必须配置独立WORKSPACE_MCP_TOKEN")
     if str(settings.env("WORKSPACE_REQUIRE_AUTH", "false")).lower() == "true" and not secret:
         raise RuntimeError("请设置 WORKSPACE_ACCESS_TOKEN")
+    profile = str(settings.env("WORKSPACE_PROFILE", config.get("operations.profile", "local")))
+    if profile not in {"local", "production"}:
+        raise RuntimeError("WORKSPACE_PROFILE 必须为 local 或 production")
+    schema_mode = resolve_schema_mode(profile, str(settings.env("WORKSPACE_SCHEMA_MODE", "")))
+    if profile == "production":
+        report = configuration_report(settings.settings_path.parent.parent, profile, settings.env)
+        if not report["passed"]:
+            raise RuntimeError("生产配置预检失败；请运行 release_gate.py 检查脱敏报告")
     journal = StageJournal(root, root / str(config.get("web.stages_dir", "output/stages")))
     exports = root / str(config.get("web.export_dir", "data/local/exports"))
     search = SearchService(
@@ -58,14 +102,44 @@ def create_app(
             root / str(config.get("llm.connection_file", "data/local/llm-connection.json")),
             int(config.get("llm.test_timeout_seconds", 12)),
         ),
+        corpus_root=root if (root / "config/corpora.yaml").exists() else None,
     )
+
+    # 挂载的子应用（MCP）需要其自身 lifespan 初始化会话管理器；
+    # FastAPI 挂载不会代跑子应用 lifespan，故在父 lifespan 中手动接力。
+    mounted_lifespans: list = []
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
-        store.ensure_schema()
-        yield
+        if schema_mode == "verify":
+            store.verify_schema(require_runtime_role=profile == "production")
+        else:
+            store.ensure_schema()
+        if not mounted_lifespans:
+            yield
+            return
+        import contextlib
+
+        async with contextlib.AsyncExitStack() as stack:
+            for sub_app in mounted_lifespans:
+                await stack.enter_async_context(sub_app.router.lifespan_context(sub_app))
+            yield
 
     application = FastAPI(title="时列 · 个人工作台", lifespan=lifespan)
+    # 中间件：add 顺序越晚越靠外层——限流在内，追踪最外（访问日志覆盖限流响应）。
+    # 限流阈值：WEB_RATE_LIMIT_PER_MINUTE 环境变量 > web.yaml；<=0 关闭（回归/压测场景）。
+    rate_limit_env = settings.env("WEB_RATE_LIMIT_PER_MINUTE", "")
+    rate_limit = (
+        int(rate_limit_env)
+        if rate_limit_env.strip().lstrip("-").isdigit()
+        else int(config.get("web.rate_limit_per_minute", 120))
+    )
+    application.add_middleware(
+        RateLimitMiddleware,
+        limit=rate_limit,
+        window_seconds=60,
+    )
+    application.add_middleware(TracerMiddleware)
     application.state.store = store
     application.state.journal = journal
     application.state.search = search
@@ -85,25 +159,42 @@ def create_app(
         except (ValueError, IndexError):
             return False
 
+    def guard_error(request: Request, detail: str, code: str, status: int) -> JSONResponse:
+        """protect 早退响应：统一错误信封并回传请求 ID（与访问日志可关联）。"""
+        request_id = rid(request)
+        return JSONResponse(
+            error_payload(detail, code, request_id),
+            status_code=status,
+            headers={"X-Request-ID": request_id},
+        )
+
     @application.middleware("http")
     async def protect(request: Request, call_next):
+        bearer = request.headers.get("Authorization", "")
+        mcp_bearer = bool(mcp_secret and bearer.startswith("Bearer ") and secrets.compare_digest(bearer[7:], mcp_secret))
+        mcp_path = request.url.path == "/mcp" or request.url.path.startswith("/mcp/")
+        if mcp_bearer and request.url.path.startswith("/api/"):
+            return guard_error(request, "MCP令牌只允许只读协议入口", ErrorCode.UNAUTHORIZED, 401)
+        mcp_authorized = False
+        if mcp_path and mcp_secret:
+            mcp_authorized = mcp_bearer or bool(secret and authenticated(request))
         if (
-            request.url.path.startswith("/api/")
+            request.url.path.startswith(("/api/", "/mcp"))
             and request.url.path != "/api/session"
-            and not authenticated(request)
+            and not (mcp_authorized if mcp_path and mcp_secret else authenticated(request))
         ):
-            return JSONResponse({"detail": "请先输入工作台访问令牌"}, status_code=401)
+            return guard_error(request, "请先输入工作台访问令牌", ErrorCode.UNAUTHORIZED, 401)
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
             origin = request.headers.get("origin")
             if origin and urlsplit(origin).netloc != request.headers.get("host"):
-                return JSONResponse({"detail": "拒绝跨站写入"}, status_code=403)
+                return guard_error(request, "拒绝跨站写入", ErrorCode.FORBIDDEN, 403)
             limit_key = (
                 "web.max_import_bytes"
-                if request.url.path in {"/api/import", "/api/import/preview"}
+                if request.url.path in {"/api/import", "/api/import/preview", "/api/knowledge/import/markdown"}
                 else "web.max_body_bytes"
             )
             if len(await request.body()) > int(config.get(limit_key, 2097152)):
-                return JSONResponse({"detail": "提交内容超过大小限制"}, status_code=413)
+                return guard_error(request, "提交内容超过大小限制", ErrorCode.PAYLOAD_TOO_LARGE, 413)
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
@@ -111,28 +202,92 @@ def create_app(
             response.headers["Cache-Control"] = "no-store"
         return response
 
+    error_log = get_logger("unhandled")
+    http_error_codes = {
+        400: ErrorCode.VALIDATION,
+        401: ErrorCode.UNAUTHORIZED,
+        403: ErrorCode.FORBIDDEN,
+        404: ErrorCode.NOT_FOUND,
+        409: ErrorCode.VERSION_CONFLICT,
+        413: ErrorCode.PAYLOAD_TOO_LARGE,
+        422: ErrorCode.VALIDATION,
+        429: ErrorCode.RATE_LIMITED,
+        503: ErrorCode.STORAGE,
+    }
+
+    def rid(request: Request) -> str:
+        """错误信封的 request_id：优先取追踪器挂在 request.state 的值（与访问日志一致）。"""
+        return getattr(request.state, "request_id", "") or current_request_id() or new_request_id()
+
+    def error_response(request: Request, payload: dict, status: int, headers: dict | None = None) -> JSONResponse:
+        """统一错误信封响应：回传 X-Request-ID，保证信封与日志可关联。"""
+        response_headers = {"X-Request-ID": payload["request_id"]}
+        if headers:
+            response_headers.update(headers)
+        return JSONResponse(payload, status_code=status, headers=response_headers)
+
+    @application.exception_handler(AppError)
+    async def app_error(request: Request, exc: AppError):
+        """业务异常：code 与 HTTP 状态来自异常类本身（DomainError/JournalError 同属此类）。"""
+        return error_response(request, exc.payload(rid(request)), exc.http_status)
+
     @application.exception_handler(StorageError)
     async def storage_error(request: Request, exc: StorageError):
-        code = (
-            404
+        code, status = (
+            (ErrorCode.NOT_FOUND, 404)
             if isinstance(exc, RecordMissing)
-            else 409
+            else (ErrorCode.VERSION_CONFLICT, 409)
             if isinstance(exc, VersionConflict)
-            else 503
+            else (ErrorCode.STORAGE, 503)
         )
-        return JSONResponse({"detail": str(exc)}, status_code=code)
+        return error_response(request, error_payload(str(exc), code, rid(request)), status)
+
+    @application.exception_handler(ToolError)
+    async def tool_error(request: Request, exc: ToolError):
+        return error_response(request, error_payload(str(exc), ErrorCode.TOOL, rid(request)), 503)
 
     @application.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError):
-        # 默认校验响应可能包含原始输入；凭据接口不能回显提交内容。
-        if request.url.path.startswith("/api/model-connection"):
-            return JSONResponse({"detail": "连接信息格式不正确，请检查填写内容"}, status_code=400)
-        return await request_validation_exception_handler(request, exc)
+        # 统一脱敏：只回显字段位置与规则说明，绝不回显提交内容（input/ctx/url 全部剥离）。
+        # 替代历史按 URL 前缀特例化脱敏：新端点无需记得登记即不泄漏。
+        fields = [
+            {
+                "loc": [str(part) for part in error.get("loc", ())],
+                "msg": str(error.get("msg", "")),
+                "type": str(error.get("type", "")),
+            }
+            for error in exc.errors()
+        ]
+        payload = error_payload("提交内容不符合要求，请检查输入", ErrorCode.VALIDATION, rid(request))
+        payload["fields"] = fields
+        return error_response(request, payload, 400)
 
-    @application.exception_handler(DomainError)
-    @application.exception_handler(JournalError)
-    async def input_error(request: Request, exc: Exception):
-        return JSONResponse({"detail": str(exc)}, status_code=400)
+    @application.exception_handler(HTTPException)
+    async def http_error(request: Request, exc: HTTPException):
+        detail = exc.detail if isinstance(exc.detail, str) and exc.detail else "请求无法完成"
+        code = http_error_codes.get(exc.status_code, ErrorCode.INTERNAL)
+        return error_response(
+            request,
+            error_payload(detail, code, rid(request)),
+            exc.status_code,
+            getattr(exc, "headers", None),
+        )
+
+    @application.exception_handler(Exception)
+    async def unhandled_error(request: Request, exc: Exception):
+        request_id = rid(request)
+        log_event(
+            error_log,
+            "unhandled_error",
+            request_id=request_id,
+            path=request.url.path,
+            error=f"{type(exc).__name__}: {exc}",
+        )
+        return error_response(
+            request,
+            error_payload("服务器内部错误，请稍后重试", ErrorCode.INTERNAL, request_id),
+            500,
+        )
 
     @application.get("/api/session")
     def session_status(request: Request) -> dict:
@@ -179,6 +334,7 @@ def create_app(
             "plan_count": len(plans),
             "node_count": len(nodes),
             "done_count": sum(n["done"] for n in nodes),
+            "lessons_count": len(store.list("lesson")),
             "stages_count": len(journal.list()),
             "export_directory": str(exports),
             "auth_enabled": bool(secret),
@@ -192,19 +348,41 @@ def create_app(
         return {"status": "ok", "storage": "PostgreSQL", "pid": os.getpid()}
 
     context = WorkspaceContext(store, journal, search, exports, settings, config)
+    context.capabilities = CapabilityService(root, store, search, settings.env)
+    context.runtime = AgentRuntime(store, search.connection, context.capabilities)
+    context.collaboration = CollaborationService(root, store, search.connection, context.capabilities)
+    application.include_router(operations_routes.create_router(context))
     application.state.context = context
+    application.state.agent_runtime = context.runtime
+    application.state.collaboration_service = context.collaboration
     for module in (
+        collaboration_routes,
         knowledge,
         planning,
         history,
         search_routes,
+        chat_routes,
+        admin_routes,
+        lesson_routes,
+        job_routes,
+        job_insight_routes,
+        learning_routes,
+        notification_routes,
         export_routes,
         stage_routes,
         automation,
         connection_routes,
         private_routes,
+        capability_routes,
+        mcp_routes,
+        evaluation_routes,
     ):
         application.include_router(module.create_router(context))
+
+    # MCP 标准协议端点（Streamable HTTP）；鉴权与 /api/ 一致（protect 已覆盖 /mcp）
+    mcp_asgi = mcp_routes.streamable_app(context.search, mcp_config)
+    mounted_lifespans.append(mcp_asgi)
+    application.mount("/mcp", mcp_asgi)
 
     static = Path(__file__).parent / "static"
     static.mkdir(exist_ok=True)

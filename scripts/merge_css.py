@@ -33,20 +33,21 @@ HEAD = ('/* 时列样式：单一入口。\n'
 parts = [HEAD]
 total = 0
 for name in FILES:
-    src = open(name, encoding='utf-8').read()
+    with open(name, encoding='utf-8') as _f:
+        src = _f.read()
     total += len(src)
-    parts.append('\n/* ==================== %s（原 %s） ==================== */\n\n'
-                 % (LABELS[name], name))
+    parts.append(f'\n/* ==================== {LABELS[name]}（原 {name}） ==================== */\n\n')
     parts.append(src.strip())
     parts.append('\n')
 
 text = '\n'.join(parts)
-open('app.css', 'w', encoding='utf-8', newline='\n').write(text)
+with open('app.css', 'w', encoding='utf-8', newline='\n') as _f:
+    _f.write(text)
 
-print('源文件合计字节: %d' % total)
-print('app.css 字节  : %d' % len(text))
-print('花括号配平    : %d == %d %s' % (text.count('{'), text.count('}'),
-      'OK' if text.count('{') == text.count('}') else 'FAIL'))
+print(f'源文件合计字节: {total}')
+print(f'app.css 字节  : {len(text)}')
+balanced = text.count('{') == text.count('}')
+print(f"花括号配平    : {text.count('{')} == {text.count('}')} {'OK' if balanced else 'FAIL'}")
 print('.toast 保留   : %s' % ('.toast{' in text.replace(' ', '')))
-print('font-family   : %d 处' % text.count('font-family'))
-print('overflow:auto : %d 处' % text.count('overflow:auto'))
+print(f"font-family   : {text.count('font-family')} 处")
+print(f"overflow:auto : {text.count('overflow:auto')} 处")

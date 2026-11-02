@@ -28,7 +28,7 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     """注入现有持久化与检索服务，统一受主应用鉴权保护。"""
     router = APIRouter()
     store = context.store
-    service = WorkflowService(store, context.search)
+    service = WorkflowService(store, context.search, context.capabilities)
 
     @router.post("/api/automation/setup")
     def setup() -> dict:
@@ -36,16 +36,20 @@ def create_router(context: WorkspaceContext) -> APIRouter:
 
     @router.get("/api/agents")
     def agents() -> list:
-        return store.list("agent_profile")
+        # Normalize old records on read without rewriting their stored version.
+        return [{**row, "data": validate_agent(row["data"])} for row in store.list("agent_profile")]
 
     @router.post("/api/agents", status_code=201)
     def agent_create(payload: RecordInput) -> dict:
-        return store.save("agent_profile", validate_agent(payload.data))
+        data = context.capabilities.validate_binding(validate_agent(payload.data))
+        return store.save("agent_profile", data)
 
     @router.put("/api/agents/{record_id}")
     def agent_update(record_id: str, payload: RecordInput) -> dict:
-        service.agent(record_id)
-        return store.save("agent_profile", validate_agent(payload.data), record_id, payload.version)
+        current = service.agent(record_id)
+        # Old UI forms do not know capability fields; preserve omitted grants.
+        data = context.capabilities.validate_binding(validate_agent({**current["data"], **payload.data}))
+        return store.save("agent_profile", data, record_id, payload.version)
 
     @router.get("/api/workflows")
     def workflows() -> list:
@@ -68,12 +72,15 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     @router.get("/api/workflow-runs")
     def runs() -> list:
         # 列表不带大正文与冻结配置，详情按需读取；最近 100 次不删除历史。
-        return store.list("workflow_run", limit=100, omit=("input", "result", "workflow", "agent", "steps"))
+        rows = [row for kind in ("workflow_run", "agent_session") for row in
+                store.list(kind, limit=100, data_kinds=("answer", "ingest"),
+                           omit=("input", "result", "workflow", "agent", "steps"))]
+        return sorted(rows, key=lambda row: row["data"].get("started_at", ""), reverse=True)[:100]
 
     @router.get("/api/workflow-runs/{record_id}")
     def run_detail(record_id: str) -> dict:
         row = store.get(record_id)
-        if row["kind"] != "workflow_run":
+        if row["kind"] not in {"workflow_run", "agent_session"} or row["data"].get("kind") not in {"answer", "ingest"}:
             raise RecordMissing("运行记录不存在")
         return row
 

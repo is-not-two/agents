@@ -1,0 +1,406 @@
+.automation-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.workflow-list {
+  display: grid;
+  gap: 8px;
+}
+.workflow-list button {
+  text-align: left;
+  padding: 18px;
+  border: 1px solid #dce3df;
+  border-radius: 12px;
+  display: grid;
+  gap: 7px;
+  background: #fff;
+}
+.workflow-list button[aria-pressed="true"] {
+  background: #e8efe9;
+  border-color: #8da99b;
+  color: #244f3f;
+}
+.workflow-list button strong {
+  overflow-wrap: anywhere;
+}
+.workflow-list small,
+.workflow-list span {
+  font-size: 12px;
+  color: #65736d;
+}
+.workflow-workspace {
+  min-width: 0;
+  background: #fff;
+  border: 1px solid #dce4dd;
+  border-radius: 16px;
+  padding: 24px;
+}
+.workflow-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 22px;
+}
+.workflow-heading h2 {
+  margin: 0;
+}
+.pipeline-rail {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 28px;
+}
+.pipeline-rail li {
+  border-top: 2px solid #a2b9ac;
+  padding: 12px 8px;
+  font-size: 13px;
+  display: grid;
+  gap: 7px;
+  color: #4d6657;
+}
+.pipeline-rail li span {
+  font-family: serif;
+  font-size: 22px;
+  color: #7f9a8b;
+}
+.workflow-agent {
+  font-size: 12px;
+  color: #637b6d;
+}
+.ingest-input-head {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ingest-input-head > .form-field {
+  flex: 1;
+  min-width: 140px;
+}
+.file-import {
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.file-import input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.file-import:focus-within {
+  outline: 3px solid #498cff;
+}
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.agent-config {
+  border: 1px solid #dce4dd;
+  border-radius: 16px;
+  background: #fff;
+  padding: 22px;
+}
+.agent-config header {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+}
+.agent-monogram {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: #e9e4f2;
+  color: #72558b;
+  border-radius: 12px;
+  flex: none;
+  font-size: 18px;
+}
+.agent-config header > div {
+  flex: 1;
+  min-width: 0;
+}
+.agent-config h2 {
+  margin-bottom: 5px;
+  overflow-wrap: anywhere;
+}
+.agent-config small {
+  font-size: 12px;
+  color: #748076;
+}
+.agent-instruction {
+  margin: 20px 0;
+  line-height: 1.9;
+}
+.agent-config footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid #e6ebe6;
+  padding-top: 18px;
+  margin-top: 20px;
+  color: #6f7b72;
+  font-size: 12px;
+}
+.scope-checkboxes {
+  border: 1px solid #dbe2dc;
+  padding: 14px;
+  border-radius: 8px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.scope-checkboxes input {
+  accent-color: #438085;
+}
+.scope-checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.scope-checkboxes legend {
+  color: #607463;
+  font-size: 12px;
+  padding: 0 5px;
+}
+.run-result {
+  margin-top: 26px;
+  border-top: 1px solid #dce4dd;
+  padding-top: 24px;
+  min-width: 0;
+}
+.run-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.run-result-head h2 {
+  margin: 7px 0;
+}
+.run-result-head small {
+  color: #657568;
+  font-size: 12px;
+}
+.run-badge {
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: #eaf0e9;
+  color: #477055;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.run-badge.fallback,
+.run-badge.awaiting_confirmation {
+  background: #f7eddc;
+  color: #9c6a2e;
+}
+.run-badge.failed {
+  background: #f8e6e4;
+  color: #ae4d43;
+}
+.run-badge.running {
+  background: #e7eef3;
+  color: #51718a;
+}
+.run-steps {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+.run-steps li {
+  display: flex;
+  gap: 13px;
+  align-items: start;
+  padding: 13px 0;
+  border-bottom: 1px solid #e9ede9;
+}
+.run-steps li > div {
+  flex: 1;
+  min-width: 0;
+}
+.run-steps p {
+  font-size: 13px;
+  margin: 5px 0;
+  overflow-wrap: anywhere;
+}
+.run-steps small {
+  font-size: 12px;
+  color: #7c877f;
+  white-space: nowrap;
+}
+.step-indicator {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  background: #e9f1e8;
+  color: #477055;
+  border-radius: 50%;
+  flex: none;
+}
+.step-indicator.fallback,
+.step-indicator.failed {
+  background: #f7eddf;
+  color: #98692e;
+}
+.step-indicator.skipped {
+  background: #eff1ed;
+  color: #7d867e;
+}
+.run-context summary {
+  padding: 12px 0;
+  cursor: pointer;
+  font-size: 13px;
+  color: #647568;
+}
+.run-context pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 13px/1.8 inherit;
+  max-height: 240px;
+  overflow: auto;
+  background: #f4f6f1;
+  padding: 14px;
+  border-radius: 8px;
+}
+.result-notice {
+  background: #f7f2e7;
+  padding: 13px 15px;
+  border-radius: 9px;
+  font-size: 13px;
+  color: #877047;
+}
+.run-citations details,
+.ingest-chunk {
+  border: 1px solid #dfe7df;
+  border-radius: 10px;
+  margin-top: 12px;
+}
+.run-citations summary,
+.ingest-chunk summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  cursor: pointer;
+}
+.run-citations summary span,
+.ingest-chunk summary strong {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+.run-citations small,
+.ingest-chunk small {
+  font-size: 12px;
+  color: #778476;
+}
+.run-citations p,
+.ingest-chunk p {
+  padding: 0 16px;
+  max-height: 320px;
+  overflow: auto;
+}
+.run-citations details > small {
+  display: block;
+  padding: 0 16px 14px;
+  overflow-wrap: anywhere;
+}
+.ingest-chunk input {
+  width: 17px;
+  height: 17px;
+  accent-color: #438085;
+}
+.run-list {
+  display: grid;
+  gap: 10px;
+}
+.run-list button {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #dce4dd;
+  border-radius: 10px;
+  text-align: left;
+}
+.run-list button > span:nth-child(2) {
+  flex: 1;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.run-list strong {
+  overflow-wrap: anywhere;
+}
+.run-list small {
+  font-size: 12px;
+  color: #7a867c;
+}
+@media (max-width: 900px) {
+  .agent-grid {
+    grid-template-columns: 1fr;
+  }
+  .automation-layout {
+    grid-template-columns: 1fr;
+  }
+  .workflow-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .workflow-list button {
+    padding: 15px;
+  }
+}
+@media (max-width: 700px) {
+  .workflow-workspace {
+    padding: 16px;
+  }
+  .pipeline-rail {
+    gap: 5px;
+  }
+  .pipeline-rail li {
+    font-size: 12px;
+    padding: 10px 2px;
+  }
+  .workflow-heading {
+    align-items: start;
+  }
+  .workflow-heading h2 {
+    font-size: 17px;
+  }
+  .run-list button {
+    gap: 10px;
+    padding: 13px;
+    flex-wrap: wrap;
+  }
+  .run-list button > span:last-child {
+    display: none;
+  }
+  .agent-config {
+    padding: 16px;
+  }
+  .agent-config header {
+    flex-wrap: wrap;
+  }
+  .run-result-head {
+    flex-wrap: wrap;
+  }
+  .run-citations summary,
+  .ingest-chunk summary {
+    padding: 12px;
+    gap: 8px;
+  }
+}

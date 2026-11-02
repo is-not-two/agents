@@ -1,0 +1,29 @@
+# Server-admin configuration, never writable through the browser.
+skills_dir: data/local/skills
+limits:
+  max_steps: 6
+  max_calls: 12
+  max_tools: 32
+  timeout_seconds: 30
+  max_result_chars: 16000
+  max_skill_bytes: 65536
+  max_tokens: 1500
+  run_timeout_seconds: 120
+  max_context_chars: 120000
+  max_evidence_chars: 3000
+# No service is contacted until explicitly configured, trusted and enabled.
+# servers:
+#   docs:
+#     transport: streamable_http
+#     url: https://HOST/mcp
+#     enabled: true
+#     trusted: true
+#     headers_env: {Authorization: MCP_DOCS_AUTHORIZATION}
+#     allow_tools: [search]
+#     readonly_tools: [search]
+# Local stdio: command/args/env_refs are configured by the server administrator,
+# not accepted from API request bodies. Unknown/write tools require confirmation.
+servers: {}
+github:
+  timeout_seconds: 60
+  max_bytes: 52428800

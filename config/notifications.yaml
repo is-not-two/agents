@@ -1,0 +1,10 @@
+# 默认不发送。凭据/收件地址仅从环境变量读取，不写 YAML。
+notifications:
+  enabled: false
+  timezone_offset_minutes: 480
+  max_attempts: 3
+  retry_base_seconds: 60
+  claim_stale_seconds: 180
+  smtp_timeout_seconds: 15
+  batch_limit: 5
+  preview_item_limit: 20

@@ -24,7 +24,6 @@ import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CORPUS_PATH = PROJECT_ROOT / "data" / "processed" / "corpus.jsonl"
@@ -36,7 +35,7 @@ class EvalQuestionError(Exception):
 
 
 #: 10 道评测题（qid / 题型 / 问题 / 必须命中的锚点 chunk / 标准答案要点）
-QUESTIONS: List[Dict[str, object]] = [
+QUESTIONS: list[dict[str, object]] = [
     {
         "qid": "Q01",
         "type": "事实查询",
@@ -116,11 +115,11 @@ QUESTIONS: List[Dict[str, object]] = [
 ]
 
 
-def load_corpus_index(corpus_path: Path) -> Dict[str, str]:
+def load_corpus_index(corpus_path: Path) -> dict[str, str]:
     """读取语料库，返回 {chunk_id: heading_path} 索引。"""
     if not corpus_path.is_file():
         raise EvalQuestionError(f"语料文件不存在：{corpus_path}（请先运行 scripts/ingest_md.py）")
-    index: Dict[str, str] = {}
+    index: dict[str, str] = {}
     with corpus_path.open(encoding="utf-8") as fp:
         for line in fp:
             record = json.loads(line)
@@ -128,7 +127,7 @@ def load_corpus_index(corpus_path: Path) -> Dict[str, str]:
     return index
 
 
-def validate_questions(questions: List[Dict[str, object]], corpus_index: Dict[str, str]) -> None:
+def validate_questions(questions: list[dict[str, object]], corpus_index: dict[str, str]) -> None:
     """强校验：qid 唯一、题目/答案非空、must_retrieve 锚点必须存在于语料库。"""
     seen: set[str] = set()
     for item in questions:
@@ -148,7 +147,7 @@ def validate_questions(questions: List[Dict[str, object]], corpus_index: Dict[st
                 raise EvalQuestionError(f"{qid} 的锚点不存在于语料库：{chunk_id}")
 
 
-def build_payload(questions: List[Dict[str, object]], corpus_chunks: int) -> Dict[str, object]:
+def build_payload(questions: list[dict[str, object]], corpus_chunks: int) -> dict[str, object]:
     """组装评测题集输出结构。"""
     type_counter = Counter(str(item["type"]) for item in questions)
     return {
@@ -164,7 +163,7 @@ def build_payload(questions: List[Dict[str, object]], corpus_chunks: int) -> Dic
     }
 
 
-def print_report(questions: List[Dict[str, object]], corpus_index: Dict[str, str]) -> None:
+def print_report(questions: list[dict[str, object]], corpus_index: dict[str, str]) -> None:
     """打印校验结果与题目清单，便于人工核对可客观判定性。"""
     print("=" * 72)
     print("V0 评测题集生成完成")

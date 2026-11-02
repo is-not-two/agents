@@ -4,6 +4,7 @@ import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -168,7 +169,7 @@ def test_validation_and_connection_failure_keep_saved_settings(
     def timeout(*args, **kwargs):
         raise TimeoutError("dummy-private-key must not be echoed")
 
-    monkeypatch.setattr("urllib.request.urlopen", timeout)
+    monkeypatch.setattr("urllib.request.build_opener", lambda *handlers: SimpleNamespace(open=timeout))
     failed = client.post("/api/model-connection/test", json=settings(client, base))
     assert failed.status_code == 200 and not failed.json()["ok"]
     assert "dummy-private-key" not in failed.text

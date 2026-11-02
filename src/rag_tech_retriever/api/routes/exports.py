@@ -1,5 +1,6 @@
 """exports 路由：输入/领域校验与服务调用。"""
 
+import json
 import re
 import secrets
 import time
@@ -48,6 +49,16 @@ def markdown_snapshot(snapshot: dict) -> str:
             ]
         elif row["kind"] == "workflow":
             lines += ["流程：" + data["kind"], "Agent：" + data.get("agent_id", ""), ""]
+        elif row["kind"] == "lesson":
+            lines += [
+                f"【谨记·{data['category']}】" + data["title"],
+                "",
+                data.get("content", ""),
+                "对策：" + (data.get("remedy") or "（未填）"),
+                "",
+            ]
+        elif row["kind"] in {"job_lead", "application", "interview_report", "resume_version", "learning_card", "learning_review"}:
+            lines += ["求职记录：" + row["kind"], "", "```json", json.dumps(data, ensure_ascii=False, indent=2), "```", ""]
         else:
             lines += ["运行状态：" + data["status"], ""]
             for step in data.get("steps", []):

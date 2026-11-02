@@ -3,6 +3,7 @@
 import io
 import json
 from concurrent.futures import ThreadPoolExecutor
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -152,7 +153,7 @@ def test_model_request_role_and_invalid_response_fallback(client, monkeypatch):
     def fake_open(request, timeout):
         requests.append(json.loads(request.data))
         return io.BytesIO(json.dumps({"choices": [{"message": {"content": None}}]}).encode())
-    monkeypatch.setattr("urllib.request.urlopen", fake_open)
+    monkeypatch.setattr("urllib.request.build_opener", lambda *handlers: SimpleNamespace(open=fake_open))
     answer, notes = client.app.state.search.generate_answer("问题", [{"title": "依据", "content": "正文"}], "本轮角色指令")
     assert not answer and notes
     assert "本轮角色指令" in requests[0]["messages"][0]["content"]

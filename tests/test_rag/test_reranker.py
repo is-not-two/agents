@@ -1,6 +1,6 @@
 """V1.5 重排模块单测：重排正确性、边界（空池 / top_k 超界 / 同分稳定）、异常（打分数量不匹配）。"""
 
-from typing import Dict, List, Sequence
+from collections.abc import Sequence
 
 import pytest
 
@@ -30,9 +30,9 @@ def test_from_config_reads_reranker_section() -> None:
 
 def test_rerank_reorders_and_tracks_ranks() -> None:
     """正常用例：按注入 scorer 的分数重排，记录重排前后排名（模拟「排序靠后」被救回）。"""
-    captured: Dict[str, object] = {}
+    captured: dict[str, object] = {}
 
-    def scorer(query: str, texts: Sequence[str]) -> List[float]:
+    def scorer(query: str, texts: Sequence[str]) -> list[float]:
         captured["query"] = query
         captured["texts"] = list(texts)
         # 候选池第 3 位分数最高，应被提到第 1 位
@@ -53,7 +53,7 @@ def test_rerank_reorders_and_tracks_ranks() -> None:
 def test_rerank_empty_pool_does_not_call_scorer() -> None:
     """边界用例：空候选池直接返回空列表，不触发打分（不加载模型）。"""
 
-    def scorer(query: str, texts: Sequence[str]) -> List[float]:
+    def scorer(query: str, texts: Sequence[str]) -> list[float]:
         raise AssertionError("空候选池不应调用 scorer")
 
     reranker = Reranker(scorer=scorer)

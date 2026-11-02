@@ -15,16 +15,16 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
 from rag_tech_retriever.rag.embedding.bge_embedder import BgeEmbedder
 from rag_tech_retriever.rag.vector_store.pgvector_client import PgVectorClient
 
 
-def load_corpus(corpus_path: Path) -> List[Dict[str, Any]]:
+def load_corpus(corpus_path: Path) -> list[dict[str, Any]]:
     """读取 corpus.jsonl，返回记录列表。"""
-    records: List[Dict[str, Any]] = []
+    records: list[dict[str, Any]] = []
     with corpus_path.open(encoding="utf-8") as fp:
         for line in fp:
             if line.strip():

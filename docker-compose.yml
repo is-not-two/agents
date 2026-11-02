@@ -2,6 +2,7 @@
 services:
   db:
     image: pgvector/pgvector:pg16
+    restart: unless-stopped
     container_name: rag-pgvector
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-rag_tech_doc}
@@ -34,10 +35,11 @@ services:
       LLM_BASE_URL: ${LLM_BASE_URL:-}
       LLM_MODEL: ${LLM_MODEL:-}
     ports:
-      - "127.0.0.1:${WEB_PORT:-8766}:8000"
+      - "127.0.0.1:${WEB_PORT:-8770}:8000"
     volumes:
       - ./data/processed:/app/data/processed:ro
       - ./data/local:/app/data/local
+      - ./config/agent-tools.yaml:/app/config/agent-tools.yaml:ro
       - ./output/stages:/app/output/stages
       - model_cache:/home/workspace/.cache/huggingface
     depends_on:
@@ -45,7 +47,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=5)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready',timeout=5)"]
       interval: 20s
       timeout: 8s
       retries: 3

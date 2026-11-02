@@ -6,6 +6,8 @@ from copy import deepcopy
 from datetime import date
 from uuid import uuid4
 
+from rag_tech_retriever.common.middleware.exception import ValidationError
+
 
 def inspect_branch(plan: dict, node_id: str) -> dict:
     """计算分支及外部依赖；不更改内容，不将父子组织关系视作前置条件。"""
@@ -29,8 +31,12 @@ def inspect_branch(plan: dict, node_id: str) -> dict:
     return {"affected": affected, "blockers": blockers, "can_delete": not blockers}
 
 
-class DomainError(ValueError):
-    """可向用户展示的输入规则错误。"""
+class DomainError(ValidationError, ValueError):
+    """可向用户展示的输入规则错误。
+
+    继承 AppError 体系获得稳定错误码（VALIDATION_ERROR/400）；
+    保留 ValueError 基类以兼容既有 except ValueError 调用点。
+    """
 
 
 def text(value: object, label: str, limit: int, required: bool = False) -> str:
@@ -52,9 +58,13 @@ def validate_plan(payload: dict) -> dict:
     kind = payload.get("kind", "main")
     if not isinstance(kind, str) or kind not in {"main", "side"}:
         raise DomainError("规划类型只支持主线或支线")
+    done = payload.get("done", False)
+    if not isinstance(done, bool):
+        raise DomainError("完成标志必须为布尔值")
     plan = {
         "title": text(payload.get("title", ""), "规划名称", 160, True),
         "kind": kind,
+        "done": done,
         "description": text(payload.get("description", ""), "规划说明", 20000),
         "acts": [],
     }
@@ -115,6 +125,10 @@ def validate_plan(payload: dict) -> dict:
                 "parent_id": text(node.get("parent_id", ""), "父节点 ID", 100),
                 "requires": list(dict.fromkeys(dependencies)),
             }
+            branch_kind = node.get("kind", "side")
+            if not isinstance(branch_kind, str) or branch_kind not in {"main", "side"}:
+                raise DomainError("节点类型只支持主线或支线")
+            clean["kind"] = branch_kind
             nodes[node_id] = clean
             clean_act["nodes"].append(clean)
         plan["acts"].append(clean_act)
@@ -122,6 +136,10 @@ def validate_plan(payload: dict) -> dict:
         parent = node["parent_id"]
         if parent and (parent not in nodes or parent == node["id"]):
             raise DomainError("父节点不存在或指向自身")
+        if node["kind"] == "main" and (
+            (parent and nodes[parent]["kind"] != "main") or kind != "main"
+        ):
+            raise DomainError("后续主线只能添加在主线后面")
         for dependency in node["requires"]:
             if dependency not in nodes:
                 raise DomainError("前置节点不存在或属于其他规划")

@@ -3,6 +3,9 @@
 server:
   name: rag-tech-doc-retriever
   port: 8765
+  # 服务器按用户口径使用 HTTP（无 TLS）。公网/内网暴露时可填 Host 白名单启用
+  # SDK 的防 DNS 重绑定校验，如 ["workbench.example.com:8080"]；留空 = 关闭（本机默认）。
+  allowed_hosts: []
 
 tools:                             # 原子工具 → MCP 标准工具暴露开关
   protocol_query:
@@ -14,6 +17,31 @@ tools:                             # 原子工具 → MCP 标准工具暴露开�
   debug_retriever:
     enabled: true
     permission: readonly
+  search_docs:                     # 技术文档/个人知识检索（只读，不生成）
+    enabled: true
+    permission: readonly
+  knowledge_search:               # search_docs同策略别名，兼容既有名称
+    enabled: true
+    permission: readonly
+  jobs_search:                    # 业务数据外发必须由管理员明确启用
+    enabled: false
+    permission: readonly
+  jobs_weekly_stats:
+    enabled: false
+    permission: readonly
+  learning_due:
+    enabled: false
+    permission: readonly
+
+query_limits:
+  default_limit: 20
+  max_limit: 50
+  max_offset: 10000
+  max_query_chars: 200
+  max_title_chars: 240
+  statement_timeout_ms: 3000
+  max_stats_records: 5000
+  max_stats_versions: 20000
 
 resources:                         # 文档片段、检索结果作为标准 MCP 资源暴露
   corpus:

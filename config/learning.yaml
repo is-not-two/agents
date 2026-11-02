@@ -1,0 +1,9 @@
+# 调度纯本地计算；漏答不清零，间隔按实际复习时间起算。
+learning:
+  first_days: [1, 1, 1, 3]
+  second_days: [1, 2, 3, 7]
+  ease_changes: [-0.2, -0.15, 0.0, 0.15]
+  min_ease: 1.3
+  max_ease: 3.0
+  max_interval_days: 365
+  difficult_multiplier: 1.2

@@ -24,7 +24,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
 from rag_tech_retriever.common.metrics_ledger import MetricsLedger
@@ -45,13 +45,13 @@ REPORT_PATH_NAME = "v15_optimize_report.md"
 DATA_PATH_NAME = "v15_optimize_data.json"
 
 
-def load_eval_questions(eval_path: Path) -> List[Dict[str, Any]]:
+def load_eval_questions(eval_path: Path) -> list[dict[str, Any]]:
     """读取评测题集。"""
     payload = json.loads(eval_path.read_text(encoding="utf-8"))
     return list(payload["questions"])
 
 
-def fmt_rank(rank: Optional[int]) -> str:
+def fmt_rank(rank: int | None) -> str:
     """排名格式化：无命中显示 —，否则 #n。"""
     return "—" if rank is None else f"#{rank}"
 
@@ -63,8 +63,8 @@ def run_optimize(
     table_name: str,
     top_k: int,
     candidate_k: int,
-    questions: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    questions: list[dict[str, Any]],
+) -> dict[str, Any]:
     """逐题跑「优化前 / 优化后」并汇总。
 
     Args:
@@ -79,7 +79,7 @@ def run_optimize(
     Returns:
         含 baseline / reranked 汇总与逐题明细的字典。
     """
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     for item in questions:
         anchors = set(item["must_retrieve"])
         hits = client.search(table_name, embedder.embed_query(item["question"]), FETCH_K)
@@ -159,7 +159,7 @@ def run_optimize(
     }
 
 
-def render_report(summary: Dict[str, Any], corpus_chunks: int, reranker_desc: str) -> str:
+def render_report(summary: dict[str, Any], corpus_chunks: int, reranker_desc: str) -> str:
     """渲染 Markdown 对比报告。
 
     Args:
@@ -182,30 +182,40 @@ def render_report(summary: Dict[str, Any], corpus_chunks: int, reranker_desc: st
     lost = [result["qid"] for result in results if result["change"] == CHANGE_LOST]
     missed_before = [result for result in results if not result["baseline_hit"]]
 
-    lines: List[str] = [
+    lines: list[str] = [
         "# V1.5 重排优化报告：向量候选池 → CrossEncoder 精排",
         "",
         f"> 生成时间：{datetime.now().isoformat(timespec='seconds')}",
-        f"> 语料：{corpus_chunks} 条 chunk | 评测：{baseline['total']} 道题 | "
-        f"判定口径：锚点任一进 top-{top_k} 即命中",
-        f"> 单变量：向量库 / 切片 / 评测集 / query 编码（直接编码）与 V1 基线完全一致，"
-        f"唯一变量 = 候选池 top-{candidate_k} 后是否接入重排（{reranker_desc}）",
+        (
+            f"> 语料：{corpus_chunks} 条 chunk | 评测：{baseline['total']} 道题 | "
+            f"判定口径：锚点任一进 top-{top_k} 即命中"
+        ),
+        (
+            f"> 单变量：向量库 / 切片 / 评测集 / query 编码（直接编码）与 V1 基线完全一致，"
+            f"唯一变量 = 候选池 top-{candidate_k} 后是否接入重排（{reranker_desc}）"
+        ),
         "",
         "## 1. 核心数字（优化前后对比）",
         "",
         "| 口径 | 召回流程 | top-5 召回率 | 命中题数 |",
         "| --- | --- | --- | --- |",
-        f"| 优化前（V1 基线复算） | 向量相似度直接取 top-{top_k} | {recall_before:.1f}% | "
-        f"{baseline['hit_count']}/{baseline['total']} |",
-        f"| 优化后（V1.5） | 向量候选池 top-{candidate_k} → 重排 → top-{top_k} | "
-        f"{recall_after:.1f}% | {reranked['hit_count']}/{reranked['total']} |",
+        (
+            f"| 优化前（V1 基线复算） | 向量相似度直接取 top-{top_k} | {recall_before:.1f}% | "
+            f"{baseline['hit_count']}/{baseline['total']} |"
+        ),
+        (
+            f"| 优化后（V1.5） | 向量候选池 top-{candidate_k} → 重排 → top-{top_k} | "
+            f"{recall_after:.1f}% | {reranked['hit_count']}/{reranked['total']} |"
+        ),
         "",
         f"**差值**：{delta_pp:+.1f} 个百分点",
         "",
         "## 2. 逐题明细（重排前后排名变化）",
         "",
-        f"| 题号 | 类型 | 向量最优排名 | 向量命中@{top_k} | 重排后最优排名 | "
-        f"重排命中@{top_k} | 变化 |",
+        (
+            f"| 题号 | 类型 | 向量最优排名 | 向量命中@{top_k} | 重排后最优排名 | "
+            f"重排命中@{top_k} | 变化 |"
+        ),
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for result in results:
@@ -216,8 +226,10 @@ def render_report(summary: Dict[str, Any], corpus_chunks: int, reranker_desc: st
         )
     lines += [
         "",
-        f"> 排名口径：向量排名 = 锚点在向量召回中的最优位置（分析深度 top-{summary['fetch_k']}）；"
-        f"重排排名 = 锚点在候选池重排序中的最优位置（池内全量排序）。"
+        (
+            f"> 排名口径：向量排名 = 锚点在向量召回中的最优位置（分析深度 top-{summary['fetch_k']}）；"
+            f"重排排名 = 锚点在候选池重排序中的最优位置（池内全量排序）。"
+        ),
         "",
         "## 3. 优化前失败题专项",
         "",

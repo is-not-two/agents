@@ -26,8 +26,9 @@ V1 基线的失败点为「排序靠后」（锚点在向量召回中排 top-5 �
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Sequence
+from typing import Any
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
 from rag_tech_retriever.rag.vector_store.pgvector_client import SearchHit
@@ -36,7 +37,7 @@ from rag_tech_retriever.rag.vector_store.pgvector_client import SearchHit
 DEFAULT_RERANKER_MODEL = "BAAI/bge-reranker-base"
 
 #: 打分函数签名：(query, 候选文本列表) -> 与候选等长的分数列表
-ScoreFn = Callable[[str, Sequence[str]], List[float]]
+ScoreFn = Callable[[str, Sequence[str]], list[float]]
 
 
 class RerankerError(Exception):
@@ -77,7 +78,7 @@ class Reranker:
         self,
         model_name: str = DEFAULT_RERANKER_MODEL,
         device: str = "cpu",
-        scorer: Optional[ScoreFn] = None,
+        scorer: ScoreFn | None = None,
     ) -> None:
         """初始化（不加载模型）。
 
@@ -92,7 +93,7 @@ class Reranker:
         self._model: Any = None
 
     @classmethod
-    def from_config(cls, settings: ConfigLoader) -> "Reranker":
+    def from_config(cls, settings: ConfigLoader) -> Reranker:
         """从 settings.yaml 构建（reranker.model_name / reranker.device）。
 
         Args:
@@ -128,7 +129,7 @@ class Reranker:
             ]
         return self._scorer
 
-    def score(self, query: str, texts: Sequence[str]) -> List[float]:
+    def score(self, query: str, texts: Sequence[str]) -> list[float]:
         """对 (query, 文本) 逐对打分。
 
         Args:
@@ -154,7 +155,7 @@ class Reranker:
         query: str,
         hits: Sequence[SearchHit],
         top_k: int,
-    ) -> List[RerankedHit]:
+    ) -> list[RerankedHit]:
         """候选池重排：打分 → 降序（同分保持原序）→ 取 top_k。
 
         Args:
@@ -169,7 +170,7 @@ class Reranker:
             return []
         scores = self.score(query, [hit.content for hit in hits])
         order = sorted(range(len(hits)), key=lambda index: (-scores[index], index))
-        results: List[RerankedHit] = []
+        results: list[RerankedHit] = []
         for new_rank, index in enumerate(order[:top_k], start=1):
             hit = hits[index]
             results.append(
@@ -183,6 +184,43 @@ class Reranker:
                     rerank_score=scores[index],
                     original_rank=index + 1,
                     new_rank=new_rank,
+                )
+            )
+        return results
+
+    def pass_through(
+        self,
+        hits: Sequence[SearchHit],
+        top_k: int,
+    ) -> list[RerankedHit]:
+        """不重排：按向量相似度原序截取 top_k（评测对照基线）。
+
+        与 `rerank` 返回同一结构，使「关闭重排」可以逐题对比而无需两套解析代码。
+        此时 `rerank_score` 复用相似度、`original_rank == new_rank`，
+        调用方据此可判定该条未被重排移动。
+
+        Args:
+            hits: 向量检索候选池（按相似度降序）。
+            top_k: 截取条数；超过候选数时返回全部。
+
+        Returns:
+            按相似度排序的命中列表；空候选池或 top_k <= 0 返回空列表。
+        """
+        if not hits or top_k <= 0:
+            return []
+        results: list[RerankedHit] = []
+        for rank, hit in enumerate(hits[:top_k], start=1):
+            results.append(
+                RerankedHit(
+                    chunk_id=hit.chunk_id,
+                    source_file=hit.source_file,
+                    heading_path=hit.heading_path,
+                    content=hit.content,
+                    status_marker=hit.status_marker,
+                    similarity=hit.similarity,
+                    rerank_score=hit.similarity,
+                    original_rank=rank,
+                    new_rank=rank,
                 )
             )
         return results

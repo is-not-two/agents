@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
 from rag_tech_retriever.common.stage_journal import StageJournal
@@ -20,6 +21,9 @@ class WorkspaceContext:
     exports: Path
     settings: ConfigLoader
     config: ConfigLoader
+    capabilities: Any = None
+    runtime: Any = None
+    collaboration: Any = None
 
 
 def visible(row: dict) -> dict:

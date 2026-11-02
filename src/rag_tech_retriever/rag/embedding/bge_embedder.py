@@ -12,8 +12,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, List, Sequence
+from typing import Any
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
 
@@ -52,7 +53,7 @@ class BgeEmbedder:
         settings: ConfigLoader,
         prompts: ConfigLoader,
         with_instruction: bool = True,
-    ) -> "BgeEmbedder":
+    ) -> BgeEmbedder:
         """从配置构建：模型参数读 settings.yaml，前缀读 prompts.yaml。
 
         Args:
@@ -98,7 +99,7 @@ class BgeEmbedder:
             return f"{self.query_instruction}{query}"
         return query
 
-    def embed_passages(self, texts: Sequence[str]) -> List[List[float]]:
+    def embed_passages(self, texts: Sequence[str]) -> list[list[float]]:
         """passage 侧批量编码（不加任何前缀）。
 
         Args:
@@ -116,7 +117,7 @@ class BgeEmbedder:
         )
         return [[float(value) for value in vector] for vector in vectors]
 
-    def embed_query(self, query: str) -> List[float]:
+    def embed_query(self, query: str) -> list[float]:
         """query 侧编码：按 with_instruction 决定是否加 instruction 前缀。
 
         Args:

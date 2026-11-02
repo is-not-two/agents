@@ -6,6 +6,10 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 RAG_PROJECT_ROOT=/app
 ARG WITH_RAG=false
 
+# GitHub skill imports use a quarantined git clone; no repository code is run.
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY config ./config

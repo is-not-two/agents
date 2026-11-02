@@ -1,6 +1,6 @@
 """Web 请求契约；不处理存储和页面。"""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 
 class RecordInput(BaseModel):
@@ -20,10 +20,12 @@ class RestoreInput(BaseModel):
 class QueryInput(BaseModel):
     """查询文本、范围与模式。"""
 
+    model_config = ConfigDict(extra="forbid")
     query: str = Field(min_length=1, max_length=1000)
     scope: str = "all"
     mode: str = "text"
-    generate: bool = False
+    generate: StrictBool = False
+    namespace: str | None = Field(default=None, min_length=1, max_length=64)
 
 
 class StageInput(BaseModel):

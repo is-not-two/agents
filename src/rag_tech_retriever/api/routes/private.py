@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 
 from rag_tech_retriever.api.dependencies import WorkspaceContext
 from rag_tech_retriever.platform import private_store as crypto
+from rag_tech_retriever.platform.record_store import RecordMissing
 
 META_KIND = "private_meta"
 WISH_MAX = 500
@@ -127,6 +128,7 @@ def create_router(context: WorkspaceContext) -> APIRouter:
             return {"configured": False, "strong_crypto": crypto.have_strong_crypto()}
         return {
             "configured": True,
+            "requires_password": not bool(_last_secret),
             "strong_crypto": crypto.have_strong_crypto(),
             "has_recovery": bool(meta.get("recovery")),
             "updated_at": meta.get("updated_at"),
@@ -217,10 +219,14 @@ def create_router(context: WorkspaceContext) -> APIRouter:
         return store.save(kind, {"cipher": cipher}, record_id, payload.version)
 
     @router.delete("/api/private/{kind}/{record_id}")
-    def private_delete(kind: str, record_id: str, version: int) -> dict:
+    def private_delete(kind: str, record_id: str, version: int, ticket: str = "") -> dict:
         if kind not in ("wish", "diary"):
             raise HTTPException(status_code=404, detail="未知类型")
-        return store.remove(kind, record_id, version)
+        secret_for(None, ticket)
+        row = store.get(record_id)
+        if row["kind"] != kind:
+            raise RecordMissing("私密条目不存在")
+        return store.delete(record_id, version)
 
     return router
 

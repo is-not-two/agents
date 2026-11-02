@@ -22,7 +22,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
 from rag_tech_retriever.common.metrics_ledger import MetricsLedger
@@ -39,13 +39,13 @@ REPORT_PATH_NAME = "v1_baseline_report.md"
 DATA_PATH_NAME = "v1_baseline_data.json"
 
 
-def load_eval_questions(eval_path: Path) -> List[Dict[str, Any]]:
+def load_eval_questions(eval_path: Path) -> list[dict[str, Any]]:
     """读取评测题集。"""
     payload = json.loads(eval_path.read_text(encoding="utf-8"))
     return list(payload["questions"])
 
 
-def fmt_rank(rank: Optional[int]) -> str:
+def fmt_rank(rank: int | None) -> str:
     """排名格式化：无命中显示 —，否则 #n。"""
     return "—" if rank is None else f"#{rank}"
 
@@ -55,8 +55,8 @@ def run_condition(
     client: PgVectorClient,
     table_name: str,
     top_k: int,
-    questions: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    questions: list[dict[str, Any]],
+) -> dict[str, Any]:
     """在一个 query 编码条件下跑全部评测题。
 
     Args:
@@ -69,7 +69,7 @@ def run_condition(
     Returns:
         条件结果（含逐题明细与召回率）。
     """
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     for item in questions:
         anchors = set(item["must_retrieve"])
         hits = client.search(table_name, embedder.embed_query(item["question"]), FETCH_K)
@@ -118,8 +118,8 @@ def run_condition(
 
 
 def render_report(
-    condition_a: Dict[str, Any],
-    condition_b: Dict[str, Any],
+    condition_a: dict[str, Any],
+    condition_b: dict[str, Any],
     corpus_chunks: int,
     top_k: int,
     adopted_key: str,
@@ -143,14 +143,18 @@ def render_report(
     adopted = condition_b if adopted_key == "B" else condition_a
     adopted_name = "条件 B（加 instruction 前缀）" if adopted_key == "B" else "条件 A（直接编码）"
 
-    lines: List[str] = [
+    lines: list[str] = [
         "# V1 基线报告：纯向量检索 + query 前缀对照实验",
         "",
         f"> 生成时间：{datetime.now().isoformat(timespec='seconds')}",
-        f"> 语料：{corpus_chunks} 条 chunk | 评测：{condition_a['total']} 道题 | "
-        f"判定口径：锚点任一进 top-{top_k} 即命中",
-        "> 单变量：仅切换 query 侧是否加 instruction 前缀"
-        "（`Represent this sentence for searching relevant passages: `），向量库与切片完全不变",
+        (
+            f"> 语料：{corpus_chunks} 条 chunk | 评测：{condition_a['total']} 道题 | "
+            f"判定口径：锚点任一进 top-{top_k} 即命中"
+        ),
+        (
+            "> 单变量：仅切换 query 侧是否加 instruction 前缀"
+            "（`Represent this sentence for searching relevant passages: `），向量库与切片完全不变"
+        ),
         "",
         "## 1. 核心数字（对照实验）",
         "",

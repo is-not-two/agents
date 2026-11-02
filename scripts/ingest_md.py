@@ -27,10 +27,10 @@ import json
 import random
 import re
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Sequence, Tuple
 
 # ---------------------------------------------------------------------------
 # 路径与参数常量（V0 阶段固定值，可按需修改）
@@ -53,7 +53,7 @@ RANDOM_SEED = 42
 STATUS_AWARE_FILES = frozenset({"RPA微信命令与事件协议v0.md"})
 
 #: 状态归类正则，字典顺序即优先级：先匹配到的类别生效
-STATUS_PATTERNS: Dict[str, re.Pattern[str]] = {
+STATUS_PATTERNS: dict[str, re.Pattern[str]] = {
     "DISABLED": re.compile(r"不分配|占位|不\s*dispatch|不接入|不实现|不落地"),
     "PENDING": re.compile(r"待注册|需注册|待客户端确认|号段需客户端确认|需客户端确认|待接入"),
     "EXCEPTION": re.compile(r"走\s*protobuf|走特殊通道|特殊通道"),
@@ -69,7 +69,7 @@ _SEPARATOR_RE = re.compile(r"^\s*([*\-_])(?:\s*\1){2,}\s*$")
 class Section:
     """一个待切分的文档片段（标题路径 + 正文）。"""
 
-    heading_path: Tuple[str, ...]
+    heading_path: tuple[str, ...]
     body: str
 
 
@@ -83,7 +83,7 @@ class Chunk:
     content: str
     status_marker: str
 
-    def to_record(self) -> Dict[str, object]:
+    def to_record(self) -> dict[str, object]:
         """转换为 corpus.jsonl 的单行记录结构。"""
         return {
             "chunk_id": self.chunk_id,
@@ -112,7 +112,7 @@ def _clean_body(lines: Sequence[str]) -> str:
     return re.sub(r"\n{3,}", "\n\n", body.strip())
 
 
-def parse_sections(text: str) -> List[Section]:
+def parse_sections(text: str) -> list[Section]:
     """按标题层级解析文档，产出 (标题路径, 正文) 片段列表。
 
     跳过代码围栏（```/~~~）内部的行，避免把代码块里的 ``#`` 注释误判为标题。
@@ -123,10 +123,10 @@ def parse_sections(text: str) -> List[Section]:
     Returns:
         Section 列表，顺序与文档出现顺序一致；纯空/纯标题片段已过滤。
     """
-    sections: List[Section] = []
-    stack: Dict[int, str] = {}
-    current_path: Tuple[str, ...] = ()
-    current_lines: List[str] = []
+    sections: list[Section] = []
+    stack: dict[int, str] = {}
+    current_path: tuple[str, ...] = ()
+    current_lines: list[str] = []
     in_fence = False
 
     def flush() -> None:
@@ -156,9 +156,9 @@ def parse_sections(text: str) -> List[Section]:
     return sections
 
 
-def _split_by_lines(block: str, max_chars: int) -> List[str]:
+def _split_by_lines(block: str, max_chars: int) -> list[str]:
     """按行打包切分超长块；单行本身超限时按字符硬切。"""
-    parts: List[str] = []
+    parts: list[str] = []
     buffer = ""
     for line in block.splitlines():
         while len(line) > max_chars:
@@ -178,13 +178,13 @@ def _split_by_lines(block: str, max_chars: int) -> List[str]:
     return parts
 
 
-def split_chunk_content(body: str, max_chars: int) -> List[str]:
+def split_chunk_content(body: str, max_chars: int) -> list[str]:
     """按字符上限二次切分正文：优先整段保留，超长段按行打包。"""
     if len(body) <= max_chars:
         return [body]
 
     blocks = re.split(r"\n\s*\n", body)
-    parts: List[str] = []
+    parts: list[str] = []
     buffer = ""
 
     def push_buffer() -> None:
@@ -223,7 +223,7 @@ def extract_status_marker(heading_path: str, content: str) -> str:
     return "UNKNOWN"
 
 
-def collect_source_files() -> List[Path]:
+def collect_source_files() -> list[Path]:
     """收集待处理文件：data/raw/aihuoke_docs/*.md（非递归）。"""
     files = sorted(SOURCE_DOCS_DIR.glob("*.md"))
     for path in files:
@@ -232,9 +232,9 @@ def collect_source_files() -> List[Path]:
     return files
 
 
-def build_corpus(files: Sequence[Path]) -> List[Chunk]:
+def build_corpus(files: Sequence[Path]) -> list[Chunk]:
     """解析全部源文件并按规则切分为标准语料。"""
-    corpus: List[Chunk] = []
+    corpus: list[Chunk] = []
     for path in files:
         sections = parse_sections(read_text(path))
         seq = 0
@@ -267,10 +267,10 @@ def write_corpus(corpus: Sequence[Chunk], output_path: Path) -> None:
             fp.write(json.dumps(chunk.to_record(), ensure_ascii=False) + "\n")
 
 
-def build_stats(corpus: Sequence[Chunk], sample: Sequence[Chunk]) -> Dict[str, object]:
+def build_stats(corpus: Sequence[Chunk], sample: Sequence[Chunk]) -> dict[str, object]:
     """汇总四类统计数字，供报告与 output/v0 存档使用。"""
-    per_file: Dict[str, int] = {}
-    per_status: Dict[str, int] = {}
+    per_file: dict[str, int] = {}
+    per_status: dict[str, int] = {}
     for chunk in corpus:
         per_file[chunk.source_file] = per_file.get(chunk.source_file, 0) + 1
         per_status[chunk.status_marker] = per_status.get(chunk.status_marker, 0) + 1
@@ -288,8 +288,8 @@ def build_stats(corpus: Sequence[Chunk], sample: Sequence[Chunk]) -> Dict[str, o
 
 def print_report(corpus: Sequence[Chunk], sample: Sequence[Chunk], files: Sequence[Path]) -> None:
     """在控制台输出四个数字：总条数 / 各文档条数 / 随机 10 条抽样 / 状态分布。"""
-    per_file: Dict[str, int] = {}
-    per_status: Dict[str, int] = {}
+    per_file: dict[str, int] = {}
+    per_status: dict[str, int] = {}
     for chunk in corpus:
         per_file[chunk.source_file] = per_file.get(chunk.source_file, 0) + 1
         per_status[chunk.status_marker] = per_status.get(chunk.status_marker, 0) + 1

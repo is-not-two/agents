@@ -1,17 +1,143 @@
 /* 分支删除预检与撤销：服务端版本是唯一提交依据。 */
-import {api} from './data.js?v=53';
-const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let undo=null,undoError='',pending=false;
-export function branchNotice(plan){return undo&&plan&&undo.planId===plan.id?`<div class="branch-notice" role="status"><span>已删除 ${undo.count} 个节点。${undoError?`<strong class="error-text">${escape(undoError)}</strong>`:''}</span><button data-branch-action="undo" ${pending?'disabled':''}>${pending?'恢复中…':'撤销删除'}</button><button data-branch-action="dismiss" aria-label="关闭撤销提示" ${pending?'disabled':''}>×</button></div>`:'';}
-export function branchDialog(){return `<dialog id="branch-delete-dialog" class="form-dialog" aria-labelledby="branch-delete-title"><header class="drawer-header"><h2 id="branch-delete-title">确认删除这条分支</h2><button class="icon-button" data-action="close-dialog" aria-label="关闭删除确认">×</button></header><div class="drawer-content"><div id="branch-delete-body" aria-live="polite"></div><p id="branch-delete-error" class="error-text" role="alert" hidden></p><div class="form-actions"><button class="small-button" data-action="close-dialog">取消</button><button class="primary-button" data-branch-action="confirm" disabled>确认删除</button></div></div></dialog>`;}
-export function bindBranch({getPlan,refresh,redraw,toast,setBusy,clearSelection}){
- const dialog=document.querySelector('#branch-delete-dialog'),body=document.querySelector('#branch-delete-body'),error=document.querySelector('#branch-delete-error'),confirmButton=dialog.querySelector('[data-branch-action=confirm]');let target=null,requestId=0;
- const showError=e=>{error.textContent=e.message;error.hidden=false;};
- async function preview(nodeId){const p=getPlan();if(!p||pending)return;const ticket=++requestId;target=null;error.hidden=true;confirmButton.disabled=true;body.textContent='正在检查影响范围…';dialog.showModal();try{const result=await api(`plans/${p.id}/nodes/${nodeId}/delete-preview`);if(ticket!==requestId||!dialog.open)return;target={planId:p.id,nodeId,...result};body.innerHTML=`<p>将删除下面 ${result.affected.length} 个节点：</p><ul class="branch-impact">${result.affected.map(n=>`<li>${escape(n.title)}</li>`).join('')}</ul>${result.blockers.length?`<div class="branch-blocked"><strong>暂时不能删除</strong><p>以下任务还需要先完成这条分支，请先修改它们的要求：</p><ul>${result.blockers.map(n=>`<li>${escape(n.title)}</li>`).join('')}</ul></div>`:'<p>删除后可在页面直接撤销；若其他人已修改规划，系统会阻止覆盖。</p>'}`;confirmButton.disabled=!result.can_delete;}catch(e){if(ticket===requestId&&dialog.open)showError(e);}}
- document.addEventListener('click',async e=>{const button=e.target.closest('[data-branch-action]');if(!button||pending)return;const action=button.dataset.branchAction;
-  if(action==='dismiss'){undo=null;undoError='';redraw();return;}
-  if(action==='confirm'){if(!target?.can_delete)return;pending=true;setBusy(true);confirmButton.disabled=true;confirmButton.textContent='删除中…';error.hidden=true;try{const row=await api(`plans/${target.planId}/nodes/${target.nodeId}?version=${target.version}&cascade=true`,undefined,'DELETE');undo={planId:target.planId,targetVersion:target.version,currentVersion:row.version,count:target.affected.length};undoError='';clearSelection();await refresh();dialog.close();toast('分支已删除，可以撤销');}catch(e){showError(e);}finally{pending=false;setBusy(false);confirmButton.textContent='确认删除';confirmButton.disabled=!target?.can_delete;redraw();}}
-  if(action==='undo'&&undo){const restore={...undo};pending=true;setBusy(true);undoError='';redraw();try{await api(`records/${restore.planId}/restore`,{target_version:restore.targetVersion,current_version:restore.currentVersion});undo=null;await refresh();toast('分支已恢复');}catch(e){undoError=e.message;}finally{pending=false;setBusy(false);redraw();}}
- });
- return {preview};
+import { api } from "./data.js?v=100";
+const escape = (x) =>
+  String(x ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ],
+  );
+let undo = null,
+  undoError = "",
+  pending = false;
+export function branchNotice(plan) {
+  return undo && (undo.root || (plan && undo.planId === plan.id))
+    ? `<div class="branch-notice" role="status"><span>已删除 ${undo.count} 个节点。${undoError ? `<strong class="error-text">${escape(undoError)}</strong>` : ""}</span><button data-branch-action="undo" ${pending ? "disabled" : ""}>${pending ? "恢复中…" : "撤销删除"}</button><button data-branch-action="dismiss" aria-label="关闭撤销提示" ${pending ? "disabled" : ""}>×</button></div>`
+    : "";
+}
+export function branchDialog() {
+  return `<dialog id="branch-delete-dialog" class="form-dialog" aria-labelledby="branch-delete-title"><header class="drawer-header"><h2 id="branch-delete-title">确认删除这条分支</h2><button class="icon-button" data-action="close-dialog" aria-label="关闭删除确认">×</button></header><div class="drawer-content"><div id="branch-delete-body" aria-live="polite"></div><p id="branch-delete-error" class="error-text" role="alert" hidden></p><div class="form-actions"><button class="small-button" data-action="close-dialog">取消</button><button class="primary-button" data-branch-action="confirm" disabled>确认删除</button></div></div></dialog>`;
+}
+export function bindBranch({
+  getPlan,
+  refresh,
+  redraw,
+  toast,
+  setBusy,
+  clearSelection,
+}) {
+  const dialog = document.querySelector("#branch-delete-dialog"),
+    body = document.querySelector("#branch-delete-body"),
+    error = document.querySelector("#branch-delete-error"),
+    confirmButton = dialog.querySelector("[data-branch-action=confirm]");
+  let target = null,
+    requestId = 0;
+  const showError = (e) => {
+    error.textContent = e.message;
+    error.hidden = false;
+  };
+  async function preview(nodeId, root = false) {
+    const p = getPlan();
+    if (!p || pending) return;
+    const ticket = ++requestId;
+    target = null;
+    error.hidden = true;
+    confirmButton.disabled = true;
+    body.textContent = "正在检查影响范围…";
+    dialog.showModal();
+    try {
+      const result = root
+        ? {
+            version: p.version,
+            affected: [
+              { id: p.id, title: p.data.title },
+              ...p.data.acts
+                .flatMap((a) => a.nodes)
+                .map((n) => ({ id: n.id, title: n.title })),
+            ],
+            blockers: [],
+            can_delete: true,
+          }
+        : await api(`plans/${p.id}/nodes/${nodeId}/delete-preview`);
+      if (ticket !== requestId || !dialog.open) return;
+      target = { planId: p.id, nodeId, root, ...result };
+      body.innerHTML = `<p>将删除下面 ${result.affected.length} 个节点：</p><ul class="branch-impact">${result.affected.map((n) => `<li>${escape(n.title)}</li>`).join("")}</ul>${result.blockers.length ? `<div class="branch-blocked"><strong>暂时不能删除</strong><p>以下任务还需要先完成这条分支，请先修改它们的要求：</p><ul>${result.blockers.map((n) => `<li>${escape(n.title)}</li>`).join("")}</ul></div>` : "<p>删除后可在页面直接撤销；若其他人已修改规划，系统会阻止覆盖。</p>"}`;
+      confirmButton.disabled = !result.can_delete;
+    } catch (e) {
+      if (ticket === requestId && dialog.open) showError(e);
+    }
+  }
+  document.addEventListener("click", async (e) => {
+    if (!(e.target instanceof Element)) return;
+    const button = e.target.closest("[data-branch-action]");
+    if (!button || pending) return;
+    const action = button.dataset.branchAction;
+    if (action === "dismiss") {
+      undo = null;
+      undoError = "";
+      redraw();
+      return;
+    }
+    if (action === "confirm") {
+      if (!target?.can_delete) return;
+      pending = true;
+      setBusy(true);
+      confirmButton.disabled = true;
+      confirmButton.textContent = "删除中…";
+      error.hidden = true;
+      try {
+        const row = await api(
+          target.root
+            ? `records/${target.planId}?version=${target.version}`
+            : `plans/${target.planId}/nodes/${target.nodeId}?version=${target.version}&cascade=true`,
+          undefined,
+          "DELETE",
+        );
+        undo = {
+          planId: target.planId,
+          targetVersion: target.version,
+          currentVersion: row.version,
+          count: target.affected.length,
+          root: target.root,
+        };
+        undoError = "";
+        clearSelection();
+        await refresh();
+        dialog.close();
+        toast("分支已删除，可以撤销");
+      } catch (e) {
+        showError(e);
+      } finally {
+        pending = false;
+        setBusy(false);
+        confirmButton.textContent = "确认删除";
+        confirmButton.disabled = !target?.can_delete;
+        redraw();
+      }
+    }
+    if (action === "undo" && undo) {
+      const restore = { ...undo };
+      pending = true;
+      setBusy(true);
+      undoError = "";
+      redraw();
+      try {
+        await api(`records/${restore.planId}/restore`, {
+          target_version: restore.targetVersion,
+          current_version: restore.currentVersion,
+        });
+        undo = null;
+        await refresh();
+        toast("分支已恢复");
+      } catch (e) {
+        undoError = e.message;
+      } finally {
+        pending = false;
+        setBusy(false);
+        redraw();
+      }
+    }
+  });
+  return { preview };
 }

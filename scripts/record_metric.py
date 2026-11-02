@@ -17,9 +17,9 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
-from rag_tech_retriever.common.metrics_ledger import MetricsLedger, MetricLedgerError
+from rag_tech_retriever.common.metrics_ledger import MetricLedgerError, MetricsLedger
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -97,7 +97,7 @@ def cmd_export(ledger: MetricsLedger, args: argparse.Namespace) -> int:
     return 0
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     """脚本入口：解析参数并分发子命令。"""
     for stream in (sys.stdout, sys.stderr):
         try:

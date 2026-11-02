@@ -4,7 +4,11 @@ import hashlib
 import json
 
 from rag_tech_retriever.domains.automation import VALIDATORS
+from rag_tech_retriever.domains.jobs import VALIDATORS as JOB_VALIDATORS
+from rag_tech_retriever.domains.jobs import validate_references
 from rag_tech_retriever.domains.knowledge import validate_knowledge
+from rag_tech_retriever.domains.learning import VALIDATORS as LEARNING_VALIDATORS
+from rag_tech_retriever.domains.learning import validate_references as validate_learning_references
 from rag_tech_retriever.domains.life_planning import DomainError, validate_plan
 
 
@@ -21,7 +25,7 @@ def validate_snapshot(snapshot: dict) -> dict:
     records = []
     ids = set()
     for row in snapshot["records"]:
-        validators = {"knowledge": validate_knowledge, "plan": validate_plan, **VALIDATORS}
+        validators = {"knowledge": validate_knowledge, "plan": validate_plan, **VALIDATORS, **JOB_VALIDATORS, **LEARNING_VALIDATORS}
         if (
             not isinstance(row, dict)
             or not isinstance(row.get("kind"), str)
@@ -35,6 +39,8 @@ def validate_snapshot(snapshot: dict) -> dict:
         ids.add(row["id"])
         validate = validators[row["kind"]]
         records.append({**row, "data": validate(row["data"]), "deleted": row.get("deleted", False)})
+    validate_references(records)
+    validate_learning_references(records)
     return {**snapshot, "records": records}
 
 

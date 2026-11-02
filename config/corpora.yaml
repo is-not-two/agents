@@ -1,0 +1,10 @@
+# Restart after review. A corpus selector is not permission to publish the workspace.
+default: tech_doc
+allowed: [tech_doc]
+corpora:
+  tech_doc:
+    label: 本机技术语料
+    path: data/processed/corpus.jsonl
+  public_docs:
+    label: 公开技术文档
+    path: data/public/public_docs.bundle.json

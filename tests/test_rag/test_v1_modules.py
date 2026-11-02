@@ -1,10 +1,9 @@
 """V1 核心模块单测：配置加载、前缀开关、SQL 生成、向量字面量（正常 + 异常用例）。"""
 
-from pathlib import Path
 
 import pytest
 
-from rag_tech_retriever.common.config_loader import ConfigLoader, ConfigError
+from rag_tech_retriever.common.config_loader import ConfigError, ConfigLoader
 from rag_tech_retriever.rag.embedding.bge_embedder import BgeEmbedder
 from rag_tech_retriever.rag.vector_store.pgvector_client import to_vector_literal
 from rag_tech_retriever.rag.vector_store.schema import (

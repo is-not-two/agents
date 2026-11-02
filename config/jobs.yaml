@@ -1,0 +1,26 @@
+jobs:
+  max_profile_bytes: 262144
+  max_analysis_bytes: 1048576
+  max_model_context_chars: 30000
+  model_timeout_seconds: 25
+  max_tokens: 1800
+  # 规则只辅助提取，不给出“满足岗位/具备能力”的自动结论。
+  taxonomy:
+    - {name: Python, aliases: [Python, Python3]}
+    - {name: FastAPI, aliases: [FastAPI]}
+    - {name: PostgreSQL, aliases: [PostgreSQL, Postgres]}
+    - {name: pgvector, aliases: [pgvector]}
+    - {name: MySQL, aliases: [MySQL]}
+    - {name: Redis, aliases: [Redis]}
+    - {name: Docker, aliases: [Docker]}
+    - {name: Linux, aliases: [Linux]}
+    - {name: RAG, aliases: [RAG, 检索增强生成]}
+    - {name: LangGraph, aliases: [LangGraph]}
+    - {name: LangChain, aliases: [LangChain]}
+    - {name: MCP, aliases: [MCP]}
+    - {name: Agent, aliases: [Agent, 智能体]}
+    - {name: Java, aliases: [Java]}
+    - {name: JavaScript, aliases: [JavaScript]}
+    - {name: TypeScript, aliases: [TypeScript]}
+    - {name: Git, aliases: [Git]}
+    - {name: CI/CD, aliases: [CI/CD, 持续集成]}

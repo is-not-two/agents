@@ -8,11 +8,13 @@ POSTGRES_USER / POSTGRES_PASSWORD，见 .env.example），禁止写入配置文�
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any
 
 import psycopg2
 import psycopg2.extras
+from psycopg2.extras import RealDictCursor
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
 from rag_tech_retriever.rag.vector_store.schema import (
@@ -52,11 +54,11 @@ class PgVectorClient:
 
     def __init__(
         self,
-        host: Optional[str] = None,
-        port: Optional[str] = None,
-        dbname: Optional[str] = None,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
+        host: str | None = None,
+        port: str | None = None,
+        dbname: str | None = None,
+        user: str | None = None,
+        password: str | None = None,
     ) -> None:
         """初始化连接参数（未显式传入时从环境变量 / .env 读取）。
 
@@ -64,7 +66,7 @@ class PgVectorClient:
             host: 数据库主机；None 时读 POSTGRES_HOST。
             port: 端口；None 时读 POSTGRES_PORT。
             dbname: 库名；None 时读 POSTGRES_DB。
-            user: 用户名；None 时读 POSTGRES_USER。
+            user: 用户；None 时读 POSTGRES_USER。
             password: 密码；None 时读 POSTGRES_PASSWORD。
         """
         config = ConfigLoader.load_default()
@@ -100,7 +102,7 @@ class PgVectorClient:
             self._conn.close()
             self._conn = None
 
-    def execute(self, sql: str, params: Optional[Sequence[Any]] = None) -> None:
+    def execute(self, sql: str, params: Sequence[Any] | None = None) -> None:
         """执行一条无返回值的 SQL。"""
         self.connect()
         try:
@@ -110,7 +112,7 @@ class PgVectorClient:
         except psycopg2.Error as exc:
             raise VectorStoreError(f"SQL 执行失败：{exc}") from exc
 
-    def fetch_scalar(self, sql: str, params: Optional[Sequence[Any]] = None) -> Any:
+    def fetch_scalar(self, sql: str, params: Sequence[Any] | None = None) -> Any:
         """执行 SQL 并返回第一行第一列。"""
         self.connect()
         try:
@@ -119,6 +121,16 @@ class PgVectorClient:
                 cursor.execute(sql, params)
                 row = cursor.fetchone()
                 return row[0] if row else None
+        except psycopg2.Error as exc:
+            raise VectorStoreError(f"SQL 查询失败：{exc}") from exc
+
+    def fetch_all(self, sql: str, params: Sequence[Any] | None = None) -> list[dict]:
+        """执行 SQL 并返回全部行为字典列表（列名为键）。"""
+        self.connect()
+        try:
+            with self._conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(sql, params)
+                return [dict(row) for row in cursor.fetchall()]
         except psycopg2.Error as exc:
             raise VectorStoreError(f"SQL 查询失败：{exc}") from exc
 
@@ -145,7 +157,7 @@ class PgVectorClient:
     def upsert_chunks(
         self,
         table_name: str,
-        rows: Sequence[Dict[str, Any]],
+        rows: Sequence[dict[str, Any]],
         batch_size: int = 64,
         namespace: str = "tech_doc",
     ) -> int:
@@ -156,6 +168,7 @@ class PgVectorClient:
             rows: 每项需含 chunk_id / source_file / heading_path / content /
                 status_marker / embedding。
             batch_size: execute_values 的页大小。
+            namespace: 目标命名空间（主键组成部分）。
 
         Returns:
             写入的记录条数。
@@ -191,13 +204,14 @@ class PgVectorClient:
         query_vector: Sequence[float],
         top_k: int,
         namespace: str = "tech_doc",
-    ) -> List[SearchHit]:
+    ) -> list[SearchHit]:
         """cosine 相似度检索 top_k。
 
         Args:
             table_name: 表名。
             query_vector: 查询向量。
             top_k: 返回条数。
+            namespace: 命名空间过滤。
 
         Returns:
             SearchHit 列表，按相似度降序。
