@@ -1,0 +1,104 @@
+{
+  "description": "V2-a 公开文档对照实验评测题集（namespace=python_docs）。must_retrieve 锚点按切片时的 chunk_id 客观判定：锚点任一进 top-5 即命中。覆盖 FastAPI 中文教程 5 页、pgvector README、Python 标准库 pathlib/json。",
+  "questions": [
+    {
+      "qid": "PQ01",
+      "type": "事实查询",
+      "question": "FastAPI 里怎么定义在响应返回后继续执行的后台任务？用哪个类、哪个方法把任务加进去？",
+      "must_retrieve": [
+        "fastapi-background-tasks::002",
+        "fastapi-background-tasks::004"
+      ],
+      "reference_answer": "用 BackgroundTasks：在路径操作函数中声明 BackgroundTasks 类型参数，调用 .add_task() 把任务函数和参数传入，响应返回后执行。"
+    },
+    {
+      "qid": "PQ02",
+      "type": "类型约束",
+      "question": "FastAPI 路径参数想限制为预设的几个值（如 alexnet/resnet/lenet）应该用什么机制？拿到枚举成员后怎么取它的实际值？",
+      "must_retrieve": [
+        "fastapi-path-params::009",
+        "fastapi-path-params::015"
+      ],
+      "reference_answer": "用标准 Python Enum（继承 str 和 Enum）创建预设值枚举，路径参数用该枚举类型注解；用 model_name.value 获取实际字符串值。"
+    },
+    {
+      "qid": "PQ03",
+      "type": "参数识别",
+      "question": "FastAPI 路径操作函数的参数，什么情况下被识别为查询参数而不是路径参数？同时声明多个路径参数和查询参数时，声明顺序重要吗？",
+      "must_retrieve": [
+        "fastapi-query-params::005",
+        "fastapi-query-params::001"
+      ],
+      "reference_answer": "不是路径参数的参数自动解释为查询参数；多个参数同时声明时顺序不重要，FastAPI 通过参数名检测。"
+    },
+    {
+      "qid": "PQ04",
+      "type": "执行顺序",
+      "question": "FastAPI 用 @app.middleware() 添加多个中间件时，它们的执行顺序是怎样的？",
+      "must_retrieve": [
+        "fastapi-middleware::004"
+      ],
+      "reference_answer": "后添加的中间件在最外层：第一个加入的中间件最后执行（每个新中间件包住之前的），请求按添加逆序进入、响应按添加顺序返回。"
+    },
+    {
+      "qid": "PQ05",
+      "type": "实现细节",
+      "question": "FastAPI 上传文件的 UploadFile 有哪些属性？和直接用 bytes 声明文件参数有什么区别？",
+      "must_retrieve": [
+        "fastapi-request-files::005",
+        "fastapi-request-files::003"
+      ],
+      "reference_answer": "UploadFile 有 filename（原始文件名）、size、content_type（MIME 类型）、file（SpooledTemporaryFile 对象）等属性；bytes 会把全部内容读进内存且无元数据，UploadFile 适合大文件并在需要元数据时使用。"
+    },
+    {
+      "qid": "PQ06",
+      "type": "配置口径",
+      "question": "pgvector 的 HNSW 索引和 IVFFlat 索引分别用什么 SQL 创建？HNSW 查询时的动态候选列表大小（ef_search）默认是多少？",
+      "must_retrieve": [
+        "pgvector-README::010",
+        "pgvector-README::012",
+        "pgvector-README::015"
+      ],
+      "reference_answer": "HNSW：CREATE INDEX ON items USING hnsw (embedding vector_cosine_ops)；IVFFlat：USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)；HNSW 动态候选列表 hnsw.ef_search 默认 40。"
+    },
+    {
+      "qid": "PQ07",
+      "type": "机制原理",
+      "question": "pgvector 不建索引时执行的是什么搜索？召回效果如何？什么时候应该建索引？",
+      "must_retrieve": [
+        "pgvector-README::009"
+      ],
+      "reference_answer": "默认执行精确最近邻搜索（exact nearest neighbor search），召回完美（perfect recall）；数据量增大后可建 HNSW 或 IVFFlat 近似索引换取速度。"
+    },
+    {
+      "qid": "PQ08",
+      "type": "模式语言",
+      "question": "pathlib 的 Path.glob() 模式里 ** 能匹配什么？它和 glob 模块的行为有什么差异（比如以点号开头的文件）？",
+      "must_retrieve": [
+        "pydoc-pathlib::036",
+        "pydoc-pathlib::037"
+      ],
+      "reference_answer": "** 匹配该层级及任意多级子目录（整个分段递归）；与 glob 模块相比，pathlib 的 glob 默认不匹配以点号开头的文件（需显式以点开头书写模式），且 ** 不跟随符号链接之外的行为差异见文档对照表。"
+    },
+    {
+      "qid": "PQ09",
+      "type": "行为细节",
+      "question": "pathlib 怎么遍历目录下的对象？Path.walk() 的 top_down 参数控制什么遍历顺序？",
+      "must_retrieve": [
+        "pydoc-pathlib::027",
+        "pydoc-pathlib::029"
+      ],
+      "reference_answer": "Path.iterdir() 产生目录下的路径对象；Path.walk() 自顶向下（top_down=True，默认）先产出当前目录再产出子目录，设为 False 则自底向上。"
+    },
+    {
+      "qid": "PQ10",
+      "type": "参数口径",
+      "question": "json.dumps 的 ensure_ascii 和 indent 参数默认值是什么？indent 非 None 时 separators 的默认值和 indent 为 None 时有什么不同？",
+      "must_retrieve": [
+        "pydoc-json::005",
+        "pydoc-json::010"
+      ],
+      "reference_answer": "ensure_ascii 默认 True（非 ASCII 字符转义），indent 默认 None（单行）；indent 非 None 时 separators 默认 (',', ': ')，indent 为 None 时默认 (', ', ': ')。"
+    }
+  ]
+}

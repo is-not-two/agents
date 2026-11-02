@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "version": "2026-10-30.collaboration-fixture.v1",
+  "r0_sha256": "a1f9346ff0a25c39ea62b0280fd20c8ff0582d1659981bb7c16c5510fd1b4a31",
+  "data_source": "synthetic fixtures, not genuine usage",
+  "tasks": [
+    {
+      "id": "lookup-0",
+      "r0_case_id": "lookup-0",
+      "task": "读取知识摘要",
+      "source": "fixture-result",
+      "anchor": "fixture-result"
+    },
+    {
+      "id": "lookup-1",
+      "r0_case_id": "lookup-1",
+      "task": "查找规划节点",
+      "source": "fixture-result",
+      "anchor": "fixture-result"
+    },
+    {
+      "id": "lookup-2",
+      "r0_case_id": "lookup-2",
+      "task": "检索岗位准备资料",
+      "source": "fixture-result",
+      "anchor": "fixture-result"
+    },
+    {
+      "id": "supplement-followup",
+      "r0_case_id": null,
+      "task": "根据记录列出到期跟进岗位，不替我发送消息",
+      "source": "岗位A：待跟进。岗位B：已拒绝，不跟进。",
+      "anchor": "岗位A"
+    },
+    {
+      "id": "supplement-interview",
+      "r0_case_id": null,
+      "task": "整理面试薄弱点，只提供待确认的学习建议",
+      "source": "薄弱点：事务隔离。创建复习卡需人工确认。",
+      "anchor": "事务隔离"
+    },
+    {
+      "id": "supplement-permission",
+      "r0_case_id": null,
+      "task": "解释工具权限边界",
+      "source": "查询只读；删除和外发必须确认。",
+      "anchor": "必须确认"
+    },
+    {
+      "id": "supplement-release",
+      "r0_case_id": null,
+      "task": "检查发布结论是否有证据",
+      "source": "门禁当前失败，不得报告已部署。",
+      "anchor": "不得报告已部署"
+    },
+    {
+      "id": "supplement-evidence",
+      "r0_case_id": null,
+      "task": "根据自填证据对照岗位要求",
+      "source": "学历信息不足；Python有自填项目证据，不等于资格认证。",
+      "anchor": "信息不足"
+    },
+    {
+      "id": "supplement-learning",
+      "r0_case_id": null,
+      "task": "汇总今天到期的复习项",
+      "source": "今天到期一张，未来卡不计入今天。",
+      "anchor": "未来卡不计入"
+    },
+    {
+      "id": "supplement-recovery",
+      "r0_case_id": null,
+      "task": "说明外发未知状态如何处理",
+      "source": "结果未知，禁止自动重试，应人工核对。",
+      "anchor": "禁止自动重试"
+    }
+  ]
+}

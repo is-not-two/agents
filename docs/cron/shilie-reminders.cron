@@ -1,0 +1,9 @@
+# 模板，不自动安装。按项目实际 native runtime 路径由管理员审核。
+# 以受限 shilie 服务账号运行。必须先准备私密环境注入；cron 不继承
+# systemd EnvironmentFile。不要把密码粘进本模板或给此账号 sudo 权限。
+# 启用前验证只读 daily_briefing.py、权限、时区、日志目录与恢复步骤。
+# 下面时刻以 cron 宿主时区为准；管理员应核对为 Asia/Taipei 或调整。
+# 55 7 * * * cd /var/lib/shilie && /opt/shilie/current/.venv/bin/python scripts/daily_briefing.py --enqueue >> output/notifications-cron.log 2>&1
+# */5 * * * * cd /var/lib/shilie && /opt/shilie/current/.venv/bin/python scripts/notification_worker.py --confirm-send --limit 5 >> output/notifications-cron.log 2>&1
+# 周日报告只生成纯统计快照并入队，是否发送仍由独立 worker 配置决定。
+# 0 21 * * 0 cd /var/lib/shilie && /opt/shilie/current/.venv/bin/python scripts/weekly_war_report.py --save --enqueue >> output/notifications-cron.log 2>&1

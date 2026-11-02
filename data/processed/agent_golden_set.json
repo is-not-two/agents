@@ -1,0 +1,821 @@
+{
+  "schema": 1,
+  "version": "2026-10-28.runtime-contract.v1",
+  "cases": [
+    {
+      "id": "answer-0",
+      "task": "解释工具权限",
+      "messages": [
+        {
+          "content": "fixture answer"
+        }
+      ],
+      "grants": [],
+      "expect": {
+        "status": "completed",
+        "executed": [],
+        "answer_contains": "fixture answer",
+        "max_calls": 0
+      }
+    },
+    {
+      "id": "answer-1",
+      "task": "回答但不执行动作",
+      "messages": [
+        {
+          "content": "fixture answer"
+        }
+      ],
+      "grants": [],
+      "expect": {
+        "status": "completed",
+        "executed": [],
+        "answer_contains": "fixture answer",
+        "max_calls": 0
+      }
+    },
+    {
+      "id": "answer-2",
+      "task": "给出有界的文本结果",
+      "messages": [
+        {
+          "content": "fixture answer"
+        }
+      ],
+      "grants": [],
+      "expect": {
+        "status": "completed",
+        "executed": [],
+        "answer_contains": "fixture answer",
+        "max_calls": 0
+      }
+    },
+    {
+      "id": "lookup-0",
+      "task": "读取知识摘要",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "引用 fixture-result"
+        }
+      ],
+      "grants": [
+        "lookup"
+      ],
+      "expect": {
+        "status": "completed",
+        "executed": [
+          "lookup"
+        ],
+        "answer_contains": "fixture-result",
+        "max_calls": 1
+      }
+    },
+    {
+      "id": "lookup-1",
+      "task": "查找规划节点",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "引用 fixture-result"
+        }
+      ],
+      "grants": [
+        "lookup"
+      ],
+      "expect": {
+        "status": "completed",
+        "executed": [
+          "lookup"
+        ],
+        "answer_contains": "fixture-result",
+        "max_calls": 1
+      }
+    },
+    {
+      "id": "lookup-2",
+      "task": "检索岗位准备资料",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "引用 fixture-result"
+        }
+      ],
+      "grants": [
+        "lookup"
+      ],
+      "expect": {
+        "status": "completed",
+        "executed": [
+          "lookup"
+        ],
+        "answer_contains": "fixture-result",
+        "max_calls": 1
+      }
+    },
+    {
+      "id": "denied-0",
+      "task": "拒绝未授权工具 write",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "未执行请求"
+        }
+      ],
+      "grants": [],
+      "expect": {
+        "status": "fallback",
+        "executed": []
+      }
+    },
+    {
+      "id": "denied-1",
+      "task": "拒绝未授权工具 lookup",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "未执行请求"
+        }
+      ],
+      "grants": [],
+      "expect": {
+        "status": "fallback",
+        "executed": []
+      }
+    },
+    {
+      "id": "denied-2",
+      "task": "拒绝未授权工具 unknown",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "unknown",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "未执行请求"
+        }
+      ],
+      "grants": [],
+      "expect": {
+        "status": "fallback",
+        "executed": []
+      }
+    },
+    {
+      "id": "bad-arguments-0",
+      "task": "处理非法工具参数",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{"
+              }
+            }
+          ]
+        },
+        {
+          "content": "参数不可用"
+        }
+      ],
+      "grants": [
+        "lookup"
+      ],
+      "expect": {
+        "status": "fallback",
+        "executed": []
+      }
+    },
+    {
+      "id": "bad-arguments-1",
+      "task": "处理非法工具参数",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "[]"
+              }
+            }
+          ]
+        },
+        {
+          "content": "参数不可用"
+        }
+      ],
+      "grants": [
+        "lookup"
+      ],
+      "expect": {
+        "status": "fallback",
+        "executed": []
+      }
+    },
+    {
+      "id": "bad-arguments-2",
+      "task": "处理非法工具参数",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "\"text\""
+              }
+            }
+          ]
+        },
+        {
+          "content": "参数不可用"
+        }
+      ],
+      "grants": [
+        "lookup"
+      ],
+      "expect": {
+        "status": "fallback",
+        "executed": []
+      }
+    },
+    {
+      "id": "pending-save",
+      "task": "保存知识",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{}"
+              }
+            }
+          ]
+        }
+      ],
+      "grants": [
+        "write"
+      ],
+      "expect": {
+        "status": "awaiting_confirmation",
+        "executed": [],
+        "max_calls": 0
+      }
+    },
+    {
+      "id": "pending-notify",
+      "task": "发送提醒",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{}"
+              }
+            }
+          ]
+        }
+      ],
+      "grants": [
+        "write"
+      ],
+      "expect": {
+        "status": "awaiting_confirmation",
+        "executed": [],
+        "max_calls": 0
+      }
+    },
+    {
+      "id": "pending-memory",
+      "task": "记住个人偏好",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{}"
+              }
+            }
+          ]
+        }
+      ],
+      "grants": [
+        "write"
+      ],
+      "expect": {
+        "status": "awaiting_confirmation",
+        "executed": [],
+        "max_calls": 0
+      }
+    },
+    {
+      "id": "reject-save",
+      "task": "保存知识",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "完成 fixture action"
+        }
+      ],
+      "grants": [
+        "write"
+      ],
+      "expect": {
+        "status": "failed",
+        "executed": []
+      },
+      "confirm": false
+    },
+    {
+      "id": "reject-notify",
+      "task": "发送提醒",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "完成 fixture action"
+        }
+      ],
+      "grants": [
+        "write"
+      ],
+      "expect": {
+        "status": "failed",
+        "executed": []
+      },
+      "confirm": false
+    },
+    {
+      "id": "reject-memory",
+      "task": "保存长期记忆",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "完成 fixture action"
+        }
+      ],
+      "grants": [
+        "write"
+      ],
+      "expect": {
+        "status": "failed",
+        "executed": []
+      },
+      "confirm": false
+    },
+    {
+      "id": "approve-save",
+      "task": "保存知识",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "完成 fixture action"
+        }
+      ],
+      "grants": [
+        "write"
+      ],
+      "expect": {
+        "status": "completed",
+        "executed": [
+          "write"
+        ]
+      },
+      "confirm": true
+    },
+    {
+      "id": "approve-notify",
+      "task": "发送提醒",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "完成 fixture action"
+        }
+      ],
+      "grants": [
+        "write"
+      ],
+      "expect": {
+        "status": "completed",
+        "executed": [
+          "write"
+        ]
+      },
+      "confirm": true
+    },
+    {
+      "id": "approve-memory",
+      "task": "保存长期记忆",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "完成 fixture action"
+        }
+      ],
+      "grants": [
+        "write"
+      ],
+      "expect": {
+        "status": "completed",
+        "executed": [
+          "write"
+        ]
+      },
+      "confirm": true
+    },
+    {
+      "id": "model-unavailable",
+      "task": "模型服务失效",
+      "messages": [
+        "MODEL_FAILURE"
+      ],
+      "grants": [],
+      "expect": {
+        "status": "failed",
+        "executed": []
+      }
+    },
+    {
+      "id": "empty-answer",
+      "task": "模型返回空回答",
+      "messages": [
+        {
+          "content": ""
+        }
+      ],
+      "grants": [],
+      "expect": {
+        "status": "failed",
+        "executed": []
+      }
+    },
+    {
+      "id": "null-answer",
+      "task": "模型返回非文本回答",
+      "messages": [
+        {
+          "content": null
+        }
+      ],
+      "grants": [],
+      "expect": {
+        "status": "failed",
+        "executed": []
+      }
+    },
+    {
+      "id": "loop-budget",
+      "task": "重复工具调用必须触顶",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "unreachable"
+        }
+      ],
+      "grants": [
+        "lookup"
+      ],
+      "expect": {
+        "status": "failed",
+        "executed": [
+          "lookup"
+        ]
+      },
+      "limits": {
+        "max_steps": 1
+      }
+    },
+    {
+      "id": "duplicate-id",
+      "task": "重复调用标识必须被拒绝",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        }
+      ],
+      "grants": [
+        "lookup"
+      ],
+      "expect": {
+        "status": "failed",
+        "executed": [
+          "lookup"
+        ]
+      }
+    },
+    {
+      "id": "bad-call",
+      "task": "错误工具调用结构",
+      "messages": [
+        {
+          "tool_calls": [
+            {
+              "id": "c1"
+            }
+          ]
+        }
+      ],
+      "grants": [
+        "lookup"
+      ],
+      "expect": {
+        "status": "failed",
+        "executed": []
+      }
+    },
+    {
+      "id": "upstream-failure",
+      "task": "上游工具错误应降级",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "explode",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "工具失败，不声称完成"
+        }
+      ],
+      "grants": [
+        "explode"
+      ],
+      "expect": {
+        "status": "fallback",
+        "executed": [
+          "explode"
+        ]
+      }
+    },
+    {
+      "id": "oversize-result",
+      "task": "超大结果不作为成功使用",
+      "messages": [
+        {
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "oversize",
+                "arguments": "{}"
+              }
+            }
+          ]
+        },
+        {
+          "content": "结果超出限制"
+        }
+      ],
+      "grants": [
+        "oversize"
+      ],
+      "expect": {
+        "status": "fallback",
+        "executed": [
+          "oversize"
+        ]
+      }
+    },
+    {
+      "id": "call-budget",
+      "task": "同轮多个工具触顶",
+      "messages": [
+        {
+          "tool_calls": [
+            {
+              "id": "c1",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            },
+            {
+              "id": "c2",
+              "type": "function",
+              "function": {
+                "name": "lookup",
+                "arguments": "{}"
+              }
+            }
+          ]
+        }
+      ],
+      "grants": [
+        "lookup"
+      ],
+      "expect": {
+        "status": "failed",
+        "executed": []
+      },
+      "limits": {
+        "max_calls": 1
+      }
+    }
+  ]
+}

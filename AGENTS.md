@@ -30,7 +30,7 @@
 | 向量数据库 | PostgreSQL + pgvector | psycopg2驱动；当前精确扫描（历史 V1 用 IVFFlat）；建表维度读取配置生成 |
 | 后端框架 | FastAPI | 轻量REST接口封装 |
 | Agent编排 | LangGraph | 意图识别 + 工具路由 + 状态机流程 |
-| MCP协议 | 原生实现 | 兼容Anthropic MCP标准，工具/资源/权限三层封装 |
+| MCP协议 | 官方 Python SDK 2.3.0 客户端 | stdio/Streamable HTTP 工具发现与调用；对外MCP服务端仍待实现 |
 | 工程化 | Docker + docker-compose | 最简可运行部署，依赖检查 + 格式检查 |
 
 ## Full Project Structure
@@ -90,13 +90,10 @@ rag-tech-doc-retriever/
 │       │       ├── reranker.py          # 重排算法
 │       │       ├── status_filter.py     # 业务状态感知降权逻辑
 │       │       └── level_matcher.py     # 三层降级匹配机制
-│       ├── agent/               # 【Agent编排层】（V2-d阶段）
+│       ├── agent/               # 【Agent编排层】（V2-d 原规划五模块已被替代实现取代并删除，2026-10-24）
 │       │   ├── __init__.py
-│       │   ├── intent_classifier.py  # 意图识别与工具路由
-│       │   ├── context_manager.py   # 多轮对话上下文管理
-│       │   ├── memory.py            # 短期/会话记忆
-│       │   ├── tool_executor.py     # 工具调度、参数校验、异常降级
-│       │   └── rag_graph.py         # LangGraph状态机：检索→工具调用→生成完整链路
+│       │   ├── capability_runtime.py # AgentRuntime：模型→工具→模型循环、写入确认、限额（未入 git 基线）
+│       │   └── workflow_service.py   # LangGraph 固定流程：知识处理+人工确认、检索+可选生成
 │       ├── tools/               # 【原子工具集】供Agent调用（V2-c阶段）
 │       │   ├── __init__.py
 │       │   ├── protocol_query.py    # 协议号精准查询工具
@@ -139,6 +136,30 @@ rag-tech-doc-retriever/
     ├── v1.5/                    # V1.5优化前后对比报告
     └── v2/                      # V2各阶段测试报告、接口日志
 ```
+
+### 结构与磁盘的差异（2026-10-24 核对，权威视图见工作区根 DESIGN.md §2）
+
+上方结构树是 V2 规划时代的快照，实际磁盘已演进为工作台形态，主要差异：
+- `src/rag_tech_retriever/platform/`（10 模块：record_store/private_store/private_backup/search_service/model_connection/agent_capabilities/skill_registry/mcp_client/github_skills/maintenance_results）与 `domains/`（knowledge/life_planning/automation/snapshot 纯校验层）为现行核心，未在上方树中
+- `api/routes/` 13 个文件全部有路由（2026-10-24 起 admin/chat/mcp 三占位已实现：/api/admin/stats、/api/chat、/api/mcp/status + /mcp Streamable HTTP 端点）；前端在 `api/static/shilie/`（14 个 JS 模块，v65）与 `/legacy`（15 模块）
+- `agent/` 现为 capability_runtime + workflow_service（原规划五模块 2026-10-24 删除）；`tools/`、`mcp/` 两包未接线（归 D-02）
+- 配置新增 `web.yaml`、`agent-tools.yaml`；测试 18 个文件 191 项；scripts 含 web_regression、verify-ui、check_static_version 等工程工具
+
+### 结构与磁盘的差异（2026-10-24 核对，权威视图见工作区根 DESIGN.md §2）
+
+上方结构树是 V2 规划时代的快照，实际磁盘已演进为工作台形态，主要差异：
+- `src/rag_tech_retriever/platform/`（10 模块：record_store/private_store/private_backup/search_service/model_connection/agent_capabilities/skill_registry/mcp_client/github_skills/maintenance_results）与 `domains/`（knowledge/life_planning/automation/snapshot 纯校验层）为现行核心，未在上方树中
+- `api/routes/` 13 个文件全部有路由（2026-10-24 起 admin/chat/mcp 三占位已实现：/api/admin/stats、/api/chat、/api/mcp/status + /mcp Streamable HTTP 端点）；前端在 `api/static/shilie/`（14 个 JS 模块，v65）与 `/legacy`（15 模块）
+- `agent/` 现为 capability_runtime + workflow_service（原规划五模块 2026-10-24 删除）；`tools/`、`mcp/` 两包未接线（归 D-02）
+- 配置新增 `web.yaml`、`agent-tools.yaml`；测试 18 个文件 191 项；scripts 含 web_regression、verify-ui、check_static_version 等工程工具
+
+### 结构与磁盘的差异（2026-10-24 核对，权威视图见工作区根 DESIGN.md §2）
+
+上方结构树是 V2 规划时代的快照，实际磁盘已演进为工作台形态，主要差异：
+- `src/rag_tech_retriever/platform/`（10 模块：record_store/private_store/private_backup/search_service/model_connection/agent_capabilities/skill_registry/mcp_client/github_skills/maintenance_results）与 `domains/`（knowledge/life_planning/automation/snapshot 纯校验层）为现行核心，未在上方树中
+- `api/routes/` 13 个文件全部有路由（2026-10-24 起 admin/chat/mcp 三占位已实现：/api/admin/stats、/api/chat、/api/mcp/status + /mcp Streamable HTTP 端点）；前端在 `api/static/shilie/`（14 个 JS 模块，v65）与 `/legacy`（15 模块）
+- `agent/` 现为 capability_runtime + workflow_service（原规划五模块 2026-10-24 删除）；`tools/`、`mcp/` 两包未接线（归 D-02）
+- 配置新增 `web.yaml`、`agent-tools.yaml`；测试 18 个文件 191 项；scripts 含 web_regression、verify-ui、check_static_version 等工程工具
 
 ## Execution Plan
 严格按顺序执行，单变量迭代，不提前引入额外变量

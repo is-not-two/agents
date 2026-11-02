@@ -1,0 +1,79 @@
+{
+  "fastapi-first-steps.md": {
+    "url": "https://raw.githubusercontent.com/fastapi/fastapi/master/docs/zh/docs/tutorial/first-steps.md",
+    "origin": "FastAPI 官方文档（中文）· GitHub raw",
+    "lang": "zh",
+    "chars": 9282,
+    "fetched_at": "2026-10-25T02:06:04"
+  },
+  "fastapi-path-params.md": {
+    "url": "https://raw.githubusercontent.com/fastapi/fastapi/master/docs/zh/docs/tutorial/path-params.md",
+    "origin": "FastAPI 官方文档（中文）· GitHub raw",
+    "lang": "zh",
+    "chars": 4598,
+    "fetched_at": "2026-10-25T02:06:26"
+  },
+  "fastapi-query-params.md": {
+    "url": "https://raw.githubusercontent.com/fastapi/fastapi/master/docs/zh/docs/tutorial/query-params.md",
+    "origin": "FastAPI 官方文档（中文）· GitHub raw",
+    "lang": "zh",
+    "chars": 2530,
+    "fetched_at": "2026-10-25T02:06:47"
+  },
+  "fastapi-body.md": {
+    "url": "https://raw.githubusercontent.com/fastapi/fastapi/master/docs/zh/docs/tutorial/body.md",
+    "origin": "FastAPI 官方文档（中文）· GitHub raw",
+    "lang": "zh",
+    "chars": 3237,
+    "fetched_at": "2026-10-25T02:07:09"
+  },
+  "fastapi-background-tasks.md": {
+    "url": "https://raw.githubusercontent.com/fastapi/fastapi/master/docs/zh/docs/tutorial/background-tasks.md",
+    "origin": "FastAPI 官方文档（中文）· GitHub raw",
+    "lang": "zh",
+    "chars": 2111,
+    "fetched_at": "2026-10-25T02:07:30"
+  },
+  "fastapi-body-fields.md": {
+    "url": "https://raw.githubusercontent.com/fastapi/fastapi/master/docs/zh/docs/tutorial/body-fields.md",
+    "origin": "FastAPI 官方文档（中文）· GitHub raw",
+    "lang": "zh",
+    "chars": 1186,
+    "fetched_at": "2026-10-25T02:07:52"
+  },
+  "fastapi-request-files.md": {
+    "url": "https://raw.githubusercontent.com/fastapi/fastapi/master/docs/zh/docs/tutorial/request-files.md",
+    "origin": "FastAPI 官方文档（中文）· GitHub raw",
+    "lang": "zh",
+    "chars": 4014,
+    "fetched_at": "2026-10-25T02:08:14"
+  },
+  "fastapi-middleware.md": {
+    "url": "https://raw.githubusercontent.com/fastapi/fastapi/master/docs/zh/docs/tutorial/middleware.md",
+    "origin": "FastAPI 官方文档（中文）· GitHub raw",
+    "lang": "zh",
+    "chars": 1999,
+    "fetched_at": "2026-10-25T02:08:36"
+  },
+  "pgvector-README.md": {
+    "url": "https://raw.githubusercontent.com/pgvector/pgvector/master/README.md",
+    "origin": "pgvector · GitHub raw",
+    "lang": "en",
+    "chars": 42227,
+    "fetched_at": "2026-10-25T02:08:58"
+  },
+  "pydoc-pathlib.md": {
+    "url": "https://docs.python.org/zh-cn/3/library/pathlib.html",
+    "origin": "Python 官方文档（zh-cn）· HTML 转换",
+    "lang": "zh",
+    "chars": 37880,
+    "fetched_at": "2026-10-25T02:09:20"
+  },
+  "pydoc-json.md": {
+    "url": "https://docs.python.org/zh-cn/3/library/json.html",
+    "origin": "Python 官方文档（zh-cn）· HTML 转换",
+    "lang": "zh",
+    "chars": 16240,
+    "fetched_at": "2026-10-25T02:09:44"
+  }
+}
