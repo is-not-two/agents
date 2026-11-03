@@ -146,9 +146,10 @@ rag-tech-doc-retriever/
 - 2026-11-03 批次 D 后端收口：`/api/status` 的 node/done 计数改 JSONB 聚合（`RecordStore.plan_stats`，新增与内存统计的口径对照测试）；`protect` 请求体限长改按块计数（`api/request_guard.py`，已知超限不读正文、chunked 也不整包缓存，下游解析不受影响）；鉴权抽到 `api/auth.py`（`Authenticator` + 会话签发/校验，规则不变）。新增纯逻辑测试 9 项（鉴权 5、限长 4），本机 42 项纯逻辑 + ruff 全过。
 - 2026-11-03 前端批次 B+C（v107，已部署测试环境）：断点收敛为 639/1279/1280（保留 <960 环轨与 <420 漏斗子断点），S 档底部主导航（aria-current）、44px 触摸目标、安全区留白；首屏骨架屏；`back()` 改 `BACK_ROUTES` 回退表。Playwright 对预览做 7 宽度 × 2 页面矩阵：零横向溢出、导航仅在 <640 显示、零控制台错误，回退表落到 `#category/workspace`；截图在 `output/web/preview-v107/`。登录后真实交互仍需账号复验。
 - 2026-11-03 门禁补强（`3bc86c0`，已部署 preview `native-20261103-205133-3bc86c0`）：OpenAPI 契约漂移检查进入 `release_gate.py` quick/full 与 `local_gate.py` 阻塞链（此前只有独立脚本），门禁单元测试钉住「命令在链上 + 漂移即阻断」；本机 `release_gate --checks quick` GATE_PASS，服务器 release 内契约 `paths=114` 稳定、门禁测试 8 passed。顺带修复 `local_gate.py --report` 相对路径 `ValueError`。服务器隔离全量 926 passed 证据仍对应前一 HEAD，本轮未重跑。
+- 2026-11-03 本机全量基线：`pytest -q` → **760 passed / 5 skipped / 8 failed / 186 errors**（730s）；失败与错误全部因本机无 PostgreSQL（缺少 `SHILIE_QA_RUN_ID`/`POSTGRES_DB=regression` 前置或连接失败），非代码回归；实库覆盖仍以服务器隔离门禁为准。
 - `tools/` 三件（栈解析/协议查询/调试检索）与 MCP `/mcp` Streamable HTTP 端点均已接线
 - 配置 14 个 yaml（web/settings/prompts/mcp + 业务线）；测试 **59 文件**（本机收集 937 项，另有 QA 环境门禁）；scripts 含 `local_gate.py`、双环境 `deploy_release.py`、`set_login_password.py`
-- **双环境运行**：正式 `shilie.service` :8770 为 v103、测试 `shilie-preview.service` :8771 为 v108（`native-20261103-205133-3bc86c0`，2026-11-03 批次 D + 前端 B/C + 门禁补强部署），**各自独立 PostgreSQL**（正式 `shilie_native_20261027` / 测试 `shilie_preview_20261103`）；部署拓扑、systemd drop-in 与全部踩坑见 `docs/DEPLOYMENT_REALITY.md`
+- **双环境运行**：正式 `shilie.service` :8770 为 v103（release `native-20261103-124220-d131fc7`，111 paths / 145 ops）、测试 `shilie-preview.service` :8771 为 v108（`native-20261103-205133-3bc86c0`，2026-11-03 批次 D + 前端 B/C + 门禁补强部署），**各自独立 PostgreSQL**（正式 `shilie_native_20261027` / 测试 `shilie_preview_20261103`）；部署拓扑、systemd drop-in 与全部踩坑见 `docs/DEPLOYMENT_REALITY.md`
 
 ## Execution Plan
 严格按顺序执行，单变量迭代，不提前引入额外变量
