@@ -369,7 +369,12 @@ if [ ! -s "$DEST/data/local/encryption.key" ]; then
   (umask 077; openssl rand -base64 32 > "$DEST/data/local/encryption.key")
 fi
 
-cp -a /var/lib/shilie/config/. "$DEST/config/" 2>/dev/null || true
+# 共享配置与发布包默认值深合并：运维覆盖优先，发布包新增键自动补齐。
+# 不能直接 cp 覆盖，否则新版本新增的配置键会在服务器上永久缺失（静默漂移）。
+if [ -d /var/lib/shilie/config ]; then
+  PYTHONPATH="$DEST/src" "$DEST/.venv/bin/python" "$DEST/scripts/merge_deploy_config.py" \
+    --package "$DEST/config" --persistent /var/lib/shilie/config --dest "$DEST/config"
+fi
 chown -R root:shilie "$DEST"
 chmod 750 "$DEST"
 chown -R shilie:shilie "$DEST/data/local" "$DEST/output" 2>/dev/null || true
