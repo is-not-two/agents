@@ -56,3 +56,5 @@ output/web/runtime.json
 output/web/server-*.log
 output/web/_orbit-baseline/
 output/web/review/
+# 公开语料安装产物（由 scripts/public_corpus.py 生成，源与哈希在 config/ 审批中）
+data/public/
