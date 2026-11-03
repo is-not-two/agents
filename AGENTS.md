@@ -141,12 +141,13 @@ rag-tech-doc-retriever/
 
 上方结构树是 V2 规划时代的快照，实际磁盘已演进为工作台形态，主要差异：
 - `src/rag_tech_retriever/platform/`（27 模块：record_store/private_store/search_service/agent_capabilities/web_search/http_tools/resume_service 等）与 `domains/`（10 模块纯校验层）为现行核心，未在上方树中；`agent/` 现为 capability_runtime/graph_runner/collaboration/evaluation 等 12 模块
-- `api/routes/` **21 个路由模块**（OpenAPI 实测 111 paths / 145 endpoints，含检索评测 `/api/eval/*` 与能力目录）；前端 `api/static/shilie/` **28 个 JS 模块，静态版本 v106**（含 evaluation.js、company-capabilities.js）
+- `api/routes/` **21 个路由模块**（OpenAPI 实测 111 paths / 145 endpoints，含检索评测 `/api/eval/*` 与能力目录）；前端 `api/static/shilie/` **28 个 JS 模块，静态版本 v107**（含 evaluation.js、company-capabilities.js）
 - 2026-11-03 企业级补强（已提交 `6c973ed`，已部署测试环境，正式未动）：图工作流消费 `max_retries`，支持节点级 `retry`（仅 timeout/tool_error）、`timeout_s`、`on_error=fail|continue|fallback`、`join_policy=any_success`、跨波次动态补位、`node_attempts` 审计；`POST /api/workflow-runs/{id}/resume` 仅恢复只读节点，Agent 节点拒绝自动恢复。前端知识搜索 120ms 防抖 + `#knowledge-panel` 局部渲染、409 冲突对话框、相关笔记；`/api/query`、`/api/knowledge`、`/api/jobs` 增加 response_model；`/api/status` 与 `/api/admin/stats` 改用计数查询。本机纯逻辑测试 29 项通过（DAG 14、契约 4、其余既有），全量 800+ 未跑（缺隔离 PG）；preview 健康、数据基线、OpenAPI 契约已真实 HTTP 复核，登录后交互待人工。
-- 2026-11-03 批次 D 后端收口：`/api/status` 的 node/done 计数改 JSONB 聚合（`RecordStore.plan_stats`，新增与内存统计的口径对照测试）；`protect` 请求体限长改按块计数（`api/request_guard.py`，已知超限不读正文、chunked 也不整包缓存，下游解析不受影响）；鉴权抽到 `api/auth.py`（`Authenticator` + 会话签发/校验，规则不变）。新增纯逻辑测试 9 项（鉴权 5、限长 4），本机 42 项纯逻辑 + ruff 全过；无前端改动，静态版本仍 v106。
+- 2026-11-03 批次 D 后端收口：`/api/status` 的 node/done 计数改 JSONB 聚合（`RecordStore.plan_stats`，新增与内存统计的口径对照测试）；`protect` 请求体限长改按块计数（`api/request_guard.py`，已知超限不读正文、chunked 也不整包缓存，下游解析不受影响）；鉴权抽到 `api/auth.py`（`Authenticator` + 会话签发/校验，规则不变）。新增纯逻辑测试 9 项（鉴权 5、限长 4），本机 42 项纯逻辑 + ruff 全过。
+- 2026-11-03 前端批次 B+C（v107，已部署测试环境）：断点收敛为 639/1279/1280（保留 <960 环轨与 <420 漏斗子断点），S 档底部主导航（aria-current）、44px 触摸目标、安全区留白；首屏骨架屏；`back()` 改 `BACK_ROUTES` 回退表。Playwright 对预览做 7 宽度 × 2 页面矩阵：零横向溢出、导航仅在 <640 显示、零控制台错误，回退表落到 `#category/workspace`；截图在 `output/web/preview-v107/`。登录后真实交互仍需账号复验。
 - `tools/` 三件（栈解析/协议查询/调试检索）与 MCP `/mcp` Streamable HTTP 端点均已接线
-- 配置 14 个 yaml（web/settings/prompts/mcp + 业务线）；测试 **59 文件**（本机基线 796 项，另计 QA 环境门禁）；本轮新增 7 个测试文件；scripts 含 `local_gate.py`、双环境 `deploy_release.py`、`set_login_password.py`
-- **双环境运行**：正式 `shilie.service` :8770 为 v103、测试 `shilie-preview.service` :8771 为 v106（`native-20261103-174531-f12f7d5`，2026-11-03 批次 D 部署），**各自独立 PostgreSQL**（正式 `shilie_native_20261027` / 测试 `shilie_preview_20261103`）；部署拓扑、systemd drop-in 与全部踩坑见 `docs/DEPLOYMENT_REALITY.md`
+- 配置 14 个 yaml（web/settings/prompts/mcp + 业务线）；测试 **59 文件**（本机收集 937 项，另有 QA 环境门禁）；scripts 含 `local_gate.py`、双环境 `deploy_release.py`、`set_login_password.py`
+- **双环境运行**：正式 `shilie.service` :8770 为 v103、测试 `shilie-preview.service` :8771 为 v107（`native-20261103-175749-d1e9b7c`，2026-11-03 批次 D + 前端 B/C 部署），**各自独立 PostgreSQL**（正式 `shilie_native_20261027` / 测试 `shilie_preview_20261103`）；部署拓扑、systemd drop-in 与全部踩坑见 `docs/DEPLOYMENT_REALITY.md`
 
 ## Execution Plan
 严格按顺序执行，单变量迭代，不提前引入额外变量
