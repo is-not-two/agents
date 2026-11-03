@@ -7,11 +7,24 @@ import time
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
 from rag_tech_retriever.api.dependencies import WorkspaceContext
 from rag_tech_retriever.common.stage_journal import JournalError, write_json
 from rag_tech_retriever.domains.snapshot import preview_restore, snapshot_digest, validate_snapshot
 from rag_tech_retriever.platform.record_store import StorageError, records_revision
+
+
+def remove_export(path) -> None:
+    """下载结束后删除临时导出文件。
+
+    导出内容可随时重建，长期保留会让每次点击都堆一份 200KB+ 的文件；
+    FileResponse 的 background 在响应完成后调用，删除失败也不影响已发出的下载。
+    """
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        pass
 
 
 def markdown_snapshot(snapshot: dict) -> str:
@@ -110,15 +123,16 @@ def create_router(context: WorkspaceContext) -> APIRouter:
         snapshot["stages"] = journal.list()
         name = "workspace-" + time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(3)
         path = exports / (name + (".json" if format == "json" else ".md"))
+        path.parent.mkdir(parents=True, exist_ok=True)
         if format == "json":
             write_json(path, snapshot)
         else:
-            path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(markdown_snapshot(snapshot), encoding="utf-8")
         return FileResponse(
             path,
             filename=path.name,
             media_type="application/json" if format == "json" else "text/markdown",
+            background=BackgroundTask(remove_export, path),
         )
 
     @router.post("/api/import")
