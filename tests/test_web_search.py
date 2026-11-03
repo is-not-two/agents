@@ -68,6 +68,14 @@ def test_bing_results_are_normalized():
     assert result["results"][0]["snippet"] == "摘要 A"
 
 
+def test_web_search_uses_real_redirect_handler():
+    from urllib.request import HTTPRedirectHandler
+
+    from rag_tech_retriever.platform.web_search import _NoRedirect
+
+    assert issubclass(_NoRedirect, HTTPRedirectHandler)
+
+
 def test_disabled_and_invalid_config_fail_closed():
     with pytest.raises(SearchError, match="未启用"):
         WebSearch({"enabled": False}, lambda *args: None).search("x")

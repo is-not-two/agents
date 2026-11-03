@@ -16,7 +16,7 @@ from html import unescape
 from html.parser import HTMLParser
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, quote_plus, urlsplit, urlunsplit
-from urllib.request import Request, build_opener
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from rag_tech_retriever.domains.life_planning import DomainError
 from rag_tech_retriever.platform.http_tools import is_private_host
@@ -32,7 +32,7 @@ class SearchError(Exception):
     """Safe, user-facing failure without provider bodies or credentials."""
 
 
-class _NoRedirect:
+class _NoRedirect(HTTPRedirectHandler):
     """Do not follow redirects; a provider must stay on its fixed endpoint."""
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
