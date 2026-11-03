@@ -21,7 +21,7 @@
 
 **登录方式**：账号密码（`WORKSPACE_USER` + `WORKSPACE_PASSWORD_HASH`，scrypt 哈希，存 `/etc/shilie/workspace.env`；用 `scripts/set_login_password.py` 交互生成，明文密码不入任何文件）+ 可选「记住此账号 30 天」；访问令牌登录保留为备用通道。
 
-**部署流程**：`python scripts/deploy_release.py --target preview --apply --confirm HEAD` 推测试 → 浏览器验证 → `--target production` 推正式；失败自动回滚代码。真实拓扑与全部踩坑（ProtectSystem 只读、site-packages 非 editable、kind 约束 8→17 等）见 [docs/DEPLOYMENT_REALITY.md](docs/DEPLOYMENT_REALITY.md)。
+**部署流程**：`python scripts/deploy_release.py --target preview --apply --confirm HEAD` 推测试 → 浏览器验证 → `--target production` 推正式；失败自动回滚代码。CI 为 `.github/workflows/ci.yml`（全量门禁），测试环境可用 `Deploy preview`（workflow_dispatch，需配置 secrets `SHILIE_SSH_KEY` / `SHILIE_KNOWN_HOSTS`）；正式环境仍保持人工确认，不做 push-to-deploy。真实拓扑与全部踩坑（ProtectSystem 只读、site-packages 非 editable、kind 约束 8→17 等）见 [docs/DEPLOYMENT_REALITY.md](docs/DEPLOYMENT_REALITY.md)。
 
 **质量门禁**：`scripts/local_gate.py`（pre-push hook 自动运行：ruff / pytest / 静态版本一致 / 敏感文件 / kind 与库一致）；完整门禁 `scripts/release_gate.py --checks full --backend native`（Docker 后端仅限 GitHub CI 显式选择）。
 
