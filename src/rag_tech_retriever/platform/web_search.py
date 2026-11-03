@@ -12,6 +12,7 @@ import threading
 import time
 from collections import OrderedDict
 from collections.abc import Callable
+from html import unescape
 from html.parser import HTMLParser
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, quote_plus, urlsplit, urlunsplit
@@ -22,7 +23,8 @@ from rag_tech_retriever.platform.http_tools import is_private_host
 
 TAVILY_URL = "https://api.tavily.com/search"
 DUCKDUCKGO_URL = "https://html.duckduckgo.com/html/"
-USER_AGENT = "ShilieResearch/1.0 (+workspace; contact: local-operator)"
+BING_URL = "https://cn.bing.com/search"
+USER_AGENT = "Mozilla/5.0 (compatible; ShilieResearch/1.0; +local-operator)"
 MAX_RESPONSE_BYTES = 1_048_576
 
 
@@ -116,8 +118,8 @@ class WebSearch:
         self.max_results = config.get("max_results", 5)
         if not isinstance(self.enabled, bool):
             raise DomainError("联网搜索 enabled 必须为布尔值")
-        if self.provider not in {"duckduckgo", "tavily"}:
-            raise DomainError("联网搜索只支持 duckduckgo 或 tavily")
+        if self.provider not in {"duckduckgo", "tavily", "bing"}:
+            raise DomainError("联网搜索只支持 bing、duckduckgo 或 tavily")
         if type(self.timeout) is not int or not 3 <= self.timeout <= 30:
             raise DomainError("联网搜索超时必须在 3–30 秒")
         if type(self.max_results) is not int or not 1 <= self.max_results <= 10:
@@ -162,7 +164,11 @@ class WebSearch:
                 return {"query": query.strip(), "provider": self.provider,
                         "results": cached[1][:limit], "cached": True}
         try:
-            results = self._tavily(query.strip(), limit) if self.provider == "tavily" else self._duckduckgo(query.strip(), limit)
+            results = {
+                "tavily": self._tavily,
+                "duckduckgo": self._duckduckgo,
+                "bing": self._bing,
+            }[self.provider](query.strip(), limit)
         except SearchError:
             raise
         except (ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
@@ -215,6 +221,32 @@ class WebSearch:
             snippet = parser.snippets[index] if index < len(parser.snippets) else ""
             results.append({"title": link["title"][:300], "url": url,
                             "snippet": snippet[:1000], "score": None})
+        if not results:
+            raise SearchError("搜索服务未返回可解析结果")
+        return results
+
+    def _bing(self, query: str, limit: int) -> list[dict]:
+        """Bing CN is reachable from the deployment network; markup is bounded."""
+        raw = self._request(BING_URL + "?q=" + quote_plus(query) + "&setlang=zh-CN",
+                            headers={"Accept-Language": "zh-CN,zh;q=0.9"})
+        if len(raw) > MAX_RESPONSE_BYTES:
+            raise SearchError("搜索响应超过大小限制")
+        html = raw.decode("utf-8", "replace")
+        results = []
+        for block in re.findall(r'<li class="b_algo".*?</li>', html, re.DOTALL):
+            link = re.search(r'<h2[^>]*>.*?<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', block, re.DOTALL)
+            if not link:
+                continue
+            url = _safe_url(unescape(link.group(1)))
+            if not url:
+                continue
+            title = re.sub(r"<[^>]+>", "", unescape(link.group(2)))
+            snippet_match = re.search(r"<p[^>]*>(.*?)</p>", block, re.DOTALL)
+            snippet = re.sub(r"<[^>]+>", "", unescape(snippet_match.group(1))) if snippet_match else ""
+            results.append({"title": " ".join(title.split())[:300], "url": url,
+                            "snippet": " ".join(snippet.split())[:1000], "score": None})
+            if len(results) >= limit:
+                break
         if not results:
             raise SearchError("搜索服务未返回可解析结果")
         return results

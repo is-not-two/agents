@@ -57,11 +57,22 @@ def test_tavily_results_and_key_requirement():
     assert [row["url"] for row in result["results"]] == ["https://example.com/a"]
 
 
+def test_bing_results_are_normalized():
+    search = make("bing")
+    html = """<li class="b_algo"><h2><a href="https://example.com/a">标题 A</a></h2><p>摘要 A</p></li>
+    <li class="b_algo"><h2><a href="javascript:void(0)">危险</a></h2></li>
+    <li class="b_algo"><h2><a href="https://example.com/b">标题 B</a></h2><p>摘要 B</p></li>"""
+    search._request = lambda url, **kwargs: html.encode()
+    result = search.search("query", 2)
+    assert [row["url"] for row in result["results"]] == ["https://example.com/a", "https://example.com/b"]
+    assert result["results"][0]["snippet"] == "摘要 A"
+
+
 def test_disabled_and_invalid_config_fail_closed():
     with pytest.raises(SearchError, match="未启用"):
         WebSearch({"enabled": False}, lambda *args: None).search("x")
     with pytest.raises(DomainError):
-        WebSearch({"enabled": True, "provider": "bing"}, lambda *args: None)
+        WebSearch({"enabled": True, "provider": "google"}, lambda *args: None)
     with pytest.raises(DomainError):
         WebSearch({"enabled": True, "timeout_seconds": 1}, lambda *args: None)
     with pytest.raises(SearchError, match="密钥未配置"):

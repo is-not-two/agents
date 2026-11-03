@@ -24,11 +24,11 @@ limits:
 # Local stdio: command/args/env_refs are configured by the server administrator,
 # not accepted from API request bodies. Unknown/write tools require confirmation.
 servers: {}
-# 联网搜索：固定供应商端点，不接受用户 URL。duckduckgo 无需密钥；
-# tavily 需要 TAVILY_API_KEY（环境变量，不写入仓库）。
+# 联网搜索：固定供应商端点，不接受用户 URL。bing 适合当前服务器网络；
+# duckduckgo 无需密钥；tavily 需要 TAVILY_API_KEY（环境变量，不写入仓库）。
 web_search:
   enabled: true
-  provider: duckduckgo
+  provider: bing
   api_key_env: TAVILY_API_KEY
   timeout_seconds: 10
   max_results: 5
