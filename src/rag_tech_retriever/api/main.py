@@ -196,6 +196,17 @@ def create_app(
             response.headers["Cache-Control"] = "no-store"
         return response
 
+    @application.middleware("http")
+    async def mcp_path_alias(request: Request, call_next):
+        """MCP 客户端通常按挂载点 /mcp 连接；Starlette 对尾斜杠会 307，部分客户端不跟随。
+
+        在路由前把 /mcp 归一化为 /mcp/，使两种写法等价、不产生重定向。
+        """
+        if request.url.path == "/mcp":
+            request.scope["path"] = "/mcp/"
+            request.scope["raw_path"] = b"/mcp/"
+        return await call_next(request)
+
     error_log = get_logger("unhandled")
     http_error_codes = {
         400: ErrorCode.VALIDATION,

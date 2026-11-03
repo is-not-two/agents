@@ -108,6 +108,28 @@ def test_status_route_and_mcp_mount(tmp_path):
         assert handshake.status_code == 200
         assert "unit" not in handshake.text  # 挂的是真实 mcp.yaml 配置的服务名
         assert "jsonrpc" in handshake.text or "serverInfo" in handshake.text
+
+        # 客户端按挂载点 /mcp 连接时不得 307：部分 MCP 客户端不跟随重定向
+        alias = client.post(
+            "/mcp",
+            headers={
+                "Accept": "application/json, text/event-stream",
+                "Content-Type": "application/json",
+            },
+            json={
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2025-03-26",
+                    "capabilities": {},
+                    "clientInfo": {"name": "pytest", "version": "0"},
+                },
+            },
+            follow_redirects=False,
+        )
+        assert alias.status_code == 200, alias.headers
+        assert "serverInfo" in alias.text
     with store.transaction() as cur:
         cur.execute(f"DROP TABLE {store.versions}")
         cur.execute(f"DROP TABLE {store.records}")
