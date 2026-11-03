@@ -13,6 +13,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 
 from rag_tech_retriever.agent.capability_runtime import AgentRuntime
 from rag_tech_retriever.agent.collaboration import CollaborationService
@@ -150,6 +151,9 @@ def create_app(
         window_seconds=60,
     )
     application.add_middleware(TracerMiddleware)
+    # 静态资源与 JSON 响应压缩：app.css 约 177KB，自托管服务器上不压缩会明显拖慢首屏。
+    # Starlette 默认跳过 text/event-stream（MCP/SSE 不受影响）。
+    application.add_middleware(GZipMiddleware, minimum_size=1024)
     application.state.store = store
     application.state.journal = journal
     application.state.search = search
@@ -201,6 +205,7 @@ def create_app(
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer"
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
         return response
