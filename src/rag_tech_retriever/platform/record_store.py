@@ -15,6 +15,7 @@ from psycopg2.extras import Json, RealDictCursor
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
 from rag_tech_retriever.common.schema_policy import configured_schema_mode, schema_timeouts
+from rag_tech_retriever.platform.field_crypto import CryptoError, FieldCipher
 from rag_tech_retriever.platform.workspace_schema import (
     SchemaValidationError,
     managed_kind_check,
@@ -69,6 +70,10 @@ class RecordStore:
         self.records = prefix + "_records"
         self.versions = prefix + "_versions"
         self.config = config or ConfigLoader.load_default()
+        try:
+            self.cipher = FieldCipher.from_config(self.config, RECORD_KINDS)
+        except CryptoError as exc:
+            raise StorageError(str(exc)) from exc
 
     @contextmanager
     def transaction(self) -> Iterator[Any]:
@@ -197,9 +202,19 @@ class RecordStore:
                 )
             verify_workspace_schema(cur, self.records, self.versions, RECORD_KINDS)
 
-    @staticmethod
-    def _serialize(row: Any) -> dict:
+    def _open(self, kind: object, data: object) -> dict:
+        """读取时解密配置字段；旧明文记录与未配置类型原样返回。"""
+        if not self.cipher or not isinstance(kind, str) or not isinstance(data, dict):
+            return data
+        try:
+            return self.cipher.open(kind, data)
+        except CryptoError as exc:
+            raise StorageError(str(exc)) from exc
+
+    def _serialize(self, row: Any) -> dict:
         result = dict(row)
+        if isinstance(result.get("data"), dict):
+            result["data"] = self._open(result.get("kind"), result["data"])
         for key in ("created_at", "updated_at"):
             if key in result:
                 result[key] = result[key].isoformat()
@@ -246,6 +261,7 @@ class RecordStore:
     ) -> dict:
         cur.execute(f"SELECT * FROM {self.records} WHERE id=%s FOR UPDATE", (record_id,))
         old = cur.fetchone()
+        stored = self.cipher.seal(kind, data) if self.cipher else data
         if old:
             if version != old["version"] or kind != old["kind"]:
                 raise VersionConflict("内容已更新，请刷新后再修改，避免覆盖其他版本")
@@ -253,7 +269,7 @@ class RecordStore:
             cur.execute(
                 f"UPDATE {self.records} SET data=%s,version=%s,deleted=%s,"
                 "updated_at=NOW() WHERE id=%s RETURNING *",
-                (Json(data), next_version, deleted, record_id),
+                (Json(stored), next_version, deleted, record_id),
             )
         else:
             if version is not None:
@@ -262,13 +278,13 @@ class RecordStore:
             cur.execute(
                 f"INSERT INTO {self.records}(id,kind,version,data,deleted) "
                 "VALUES(%s,%s,%s,%s,%s) RETURNING *",
-                (record_id, kind, next_version, Json(data), deleted),
+                (record_id, kind, next_version, Json(stored), deleted),
             )
         row = cur.fetchone()
         cur.execute(
             f"INSERT INTO {self.versions}(record_id,version,data,deleted,action) "
             "VALUES(%s,%s,%s,%s,%s)",
-            (record_id, next_version, Json(data), deleted, action),
+            (record_id, next_version, Json(stored), deleted, action),
         )
         return self._serialize(row)
 
@@ -315,7 +331,8 @@ class RecordStore:
         """返回完整历史版本，包含删除和恢复操作。"""
         with self.transaction() as cur:
             cur.execute(
-                f"SELECT * FROM {self.versions} WHERE record_id=%s ORDER BY version DESC",
+                f"SELECT v.*,r.kind FROM {self.versions} v JOIN {self.records} r ON r.id=v.record_id "
+                "WHERE v.record_id=%s ORDER BY v.version DESC",
                 (record_id,),
             )
             return [self._serialize(row) for row in cur.fetchall()]
@@ -337,7 +354,7 @@ class RecordStore:
             return self._save(
                 cur,
                 row["kind"],
-                target["data"],
+                self._open(row["kind"], target["data"]),
                 record_id,
                 current_version,
                 f"restore:v{target_version}",
@@ -353,7 +370,7 @@ class RecordStore:
             )
             records = [self._serialize(row) for row in cur.fetchall()]
             cur.execute(
-                f"SELECT v.* FROM {self.versions} v JOIN {self.records} r ON r.id=v.record_id "
+                f"SELECT v.*,r.kind FROM {self.versions} v JOIN {self.records} r ON r.id=v.record_id "
                 "WHERE r.kind=ANY(%s) ORDER BY v.record_id,v.version",
                 (sorted(WORKSPACE_KINDS),),
             )
@@ -396,7 +413,7 @@ class RecordStore:
                 raise VersionConflict("预览后工作区内容已改变，请重新预览，避免覆盖新修改")
             if before_restore is not None:
                 cur.execute(
-                    f"SELECT v.* FROM {self.versions} v JOIN {self.records} r ON r.id=v.record_id "
+                    f"SELECT v.*,r.kind FROM {self.versions} v JOIN {self.records} r ON r.id=v.record_id "
                     "WHERE r.kind=ANY(%s) ORDER BY v.record_id,v.version",
                     (sorted(WORKSPACE_KINDS),),
                 )
@@ -416,7 +433,7 @@ class RecordStore:
                     self._save(
                         cur,
                         old["kind"],
-                        old["data"],
+                        self._open(old["kind"], old["data"]),
                         record_id,
                         old["version"],
                         "snapshot:remove",
@@ -426,7 +443,7 @@ class RecordStore:
                     if (
                         old
                         and old["kind"] == desired["kind"]
-                        and old["data"] == desired["data"]
+                        and self._open(old["kind"], old["data"]) == desired["data"]
                         and old["deleted"] == desired["deleted"]
                     ):
                         continue

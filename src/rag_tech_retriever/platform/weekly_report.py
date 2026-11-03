@@ -69,7 +69,10 @@ class WeeklyReport:
             plans = [row["id"] for row in rows if row["kind"] == "plan"]
             versions_limit = f" LIMIT {read_limits['max_versions'] + 1}" if read_limits is not None else ""
             cur.execute(
-                f"SELECT record_id,version,data,deleted,created_at FROM {self.store.versions} WHERE record_id=ANY(%s) AND created_at<%s AND created_at<=%s ORDER BY record_id,version" + versions_limit,
+                f"SELECT v.record_id,v.version,v.data,v.deleted,v.created_at,r.kind FROM {self.store.versions} v "
+                "JOIN " + self.store.records + " r ON r.id=v.record_id "
+                "WHERE v.record_id=ANY(%s) AND v.created_at<%s AND v.created_at<=%s "
+                "ORDER BY v.record_id,v.version" + versions_limit,
                 (plans, end, now),
             )
             versions = cur.fetchall()
@@ -254,7 +257,8 @@ class WeeklyReport:
                 "request_id": request_id,
             }
         )
-        run = PrivateJson(self.root / "data/local/weekly-report-runs" / (operation + ".json"))
+        run = PrivateJson(self.root / "data/local/weekly-report-runs" / (operation + ".json"),
+                          cipher=self.store.cipher)
         with run.lock():
             previous = run.read()
             if previous["data"]:
@@ -302,7 +306,8 @@ class WeeklyReport:
                     report["markdown"] = self.markdown(report)
                     run.write_locked(report, reserved["revision"])
         file = PrivateJson(
-            self.root / "data/local/weekly-reports" / (report["week_start"] + ".json")
+            self.root / "data/local/weekly-reports" / (report["week_start"] + ".json"),
+            cipher=self.store.cipher,
         )
         with file.lock():
             previous = file.read()
@@ -313,7 +318,8 @@ class WeeklyReport:
         """冻结结果与当前统计分开，报告变化时不静默覆盖历史文件。"""
         live = self.report(day)
         value = PrivateJson(
-            self.root / "data/local/weekly-reports" / (live["week_start"] + ".json")
+            self.root / "data/local/weekly-reports" / (live["week_start"] + ".json"),
+            cipher=self.store.cipher,
         ).read()
         return {
             "current": live,

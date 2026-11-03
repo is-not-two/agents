@@ -52,3 +52,14 @@ agent:                             # V2-d 起启用
   intent_confidence: 0.55
   max_turns: 6
   fallback_to_retrieval: true      # 工具调用失败自动降级回退纯检索
+
+# 应用层字段加密：AES-256-GCM，密钥不入库。仓库默认关闭（本地/CI 无密钥），
+# 服务器配置在 /var/lib/shilie/config/settings.yaml 开启并下发 data/local/encryption.key。
+encryption:
+  enabled: false
+  key_file: data/local/encryption.key
+  auto_generate: false             # 仅开发环境可开；生产密钥由部署脚本下发
+  fields:
+    knowledge: [content]
+    job_lead: [jd_text]
+    resume_version: [file_name]

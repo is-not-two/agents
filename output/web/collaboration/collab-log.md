@@ -158,3 +158,23 @@
 - **验证**：新增纯逻辑测试 31 项（DAG/简历/搜索/HTTP 工具）；隔离 PostgreSQL 集成测试 35 项（DAG/简历/求职）与 Agent 能力/可靠性回归 56 项通过；浏览器验收能力绑定、DAG 运行、真实简历上传、控制台 0 错误（截图 `output/web/preview-v103/`）。
 - **部署**：preview `native-20261103-124108-d131fc7`、production `native-20261103-124220-d131fc7`，正式备份 `/var/backups/shilie/deploy-20261103-124231`；正式数据仍 15 条记录 / 494 向量。双环境 venv 安装 `pypdf`、`python-docx`；`/var/lib/shilie/config/agent-tools.yaml` 已同步（备份 `/var/backups/shilie/agent-tools-20261103-122620.yaml`）。
 - **边界**：DAG 目前确定性顺序执行（`max_parallel` 预留）；简历扫描件不做 OCR；Bing 为网页解析，供应商反爬/条款需上线前复核；未做多用户隔离。
+
+## Round 12（2026-11-03）：多 Agent 并行调度（DeepSeek-V4.1-Flash 执行）
+
+- 目标：把 DAG 从“一次只推进一个节点”改成“同波次按 `max_parallel` 并发”，并保证节点级失败隔离与并行审批正确。
+- **调度语义**：每轮取所有前驱已完成的就绪节点，按“input 优先 + 声明顺序”排序后截取 `max_parallel`（1–4）组成波次；波次内用 `anyio.create_task_group` 并发执行，波次结束后按声明顺序统一合并结果并落盘，避开 `RecordStore` 乐观锁冲突。
+- **节点级隔离**：新增 `_run_node`，把 `_execute_node` 的 `DomainError`/`ToolError`/超时（`node_timeout_seconds`）统一收敛为节点失败；同波次其他节点继续完成，不再因单个节点异常取消整批。检索节点的同步 `search.query` 改走 `anyio.to_thread.run_sync`，避免阻塞事件循环。
+- **并行审批**：多个 Agent 节点同波次进入待确认时，运行记录新增 `pending_children`；`confirm` 逐个确认子运行，未完成的保留，全部完成后继续驱动。`pending_node`/`pending_child` 仍保留首个待确认，兼容旧前端。
+- **其他**：终止节点答案改为结束时按声明顺序汇总（暂停恢复后不会丢失早先完成的终态答案）；`domains/automation.py` 增加 `pending_children` 有界校验；前端运行详情显示并行度与同批待确认节点数。
+- **验证**：新增 `tests/test_graph_parallel.py` 7 项（波次重叠、`max_parallel=1` 串行、DomainError/ToolError 隔离、超时隔离、并行审批）；`tests/test_workflow_graph.py` 9 项通过；ruff 0；`check_static_version.py` 66 处统一 v104。集成用例 `test_graph_parallel_branches_complete` 已加入 `test_workflow_graph_api.py`，需隔离 PostgreSQL 门禁执行。
+- **静态版本**：v103 → v104（66 处）。
+- **边界（明确未做）**：仍是“波次内并发、波次间屏障”，一个慢节点会推迟下一波，未实现跨波次动态补位；`max_retries` 仍未消费；未部署到 8770/8771，服务器仍是 v103 release。
+
+## Round 13（2026-11-03）：OCR 与应用层加密（DeepSeek-V4.1-Flash 执行）
+
+- **OCR**：新增 `platform/ocr_service.py`（RapidOCR + pypdfium2）；简历支持 PNG/JPEG，PDF 文本层低于 `jobs.ocr.min_text_chars` 时自动回退 OCR，`max_pages` 限制页数；依赖缺失时文本版不受影响、图片上传明确报错，响应与私密文档带 `ocr_used`。依赖列为可选 `.[ocr]`。
+- **应用层加密**：新增 `platform/field_crypto.py`（AES-256-GCM，密钥来自 `SHILIE_ENCRYPTION_KEY`/密钥文件，令牌 `enc:v1:` 绑定 `记录类型|字段名`）。`RecordStore` 对配置字段透明加解密（`knowledge.content`、`job_lead.jd_text`、`resume_version.file_name`），历史/导出/备份/恢复路径同步解密；`PrivateJson` 支持整文件封装，简历解析文本、求职分析、周报使用同一密钥。仓库默认关闭，服务器配置开启。
+- **部署持久化修复**：部署脚本改为继承上一 release 的 `data/local`（此前只复制 skills/exports，简历正文会在每次部署后丢失），并把 `data/local` 整体加入 systemd `ReadWritePaths`；首次部署生成 `encryption.key`（0600），后续继承。
+- **配置**：`config/jobs.yaml` 增加 `ocr`；`config/settings.yaml` 增加 `encryption`（默认关闭）；`.env.example` 增加密钥变量。
+- **验证**：新增 `tests/test_field_crypto.py` 8 项、`tests/test_resume.py` 3 项 OCR 用例；`tests/test_encryption_store.py` 1 项隔离 PG 集成（待 QA 门禁）；本地 36 项相关测试通过，ruff 0，快速门禁 6/7 通过，静态版本统一 v105。
+- **边界**：加密暂无密钥轮换与离线恢复演练；OCR 未做版面还原/表格结构化；未部署生产。

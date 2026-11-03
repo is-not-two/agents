@@ -141,9 +141,9 @@ rag-tech-doc-retriever/
 
 上方结构树是 V2 规划时代的快照，实际磁盘已演进为工作台形态，主要差异：
 - `src/rag_tech_retriever/platform/`（27 模块：record_store/private_store/search_service/agent_capabilities/web_search/http_tools/resume_service 等）与 `domains/`（10 模块纯校验层）为现行核心，未在上方树中；`agent/` 现为 capability_runtime/graph_runner/collaboration/evaluation 等 12 模块
-- `api/routes/` **21 个路由模块**（OpenAPI 实测 111 paths / 145 endpoints，含检索评测 `/api/eval/*` 与能力目录）；前端 `api/static/shilie/` **28 个 JS 模块，静态版本 v103**（含 evaluation.js、company-capabilities.js）
+- `api/routes/` **21 个路由模块**（OpenAPI 实测 111 paths / 145 endpoints，含检索评测 `/api/eval/*` 与能力目录）；前端 `api/static/shilie/` **28 个 JS 模块，静态版本 v105**（含 evaluation.js、company-capabilities.js）
 - `tools/` 三件（栈解析/协议查询/调试检索）与 MCP `/mcp` Streamable HTTP 端点均已接线
-- 配置 14 个 yaml（web/settings/prompts/mcp + 业务线）；测试 **57 文件**（本机基线 767 项，另计 71 errors 为 QA 环境门禁）；本轮新增 5 个测试文件；scripts 含 `local_gate.py`、双环境 `deploy_release.py`、`set_login_password.py`
+- 配置 14 个 yaml（web/settings/prompts/mcp + 业务线）；测试 **59 文件**（本机基线 796 项，另计 QA 环境门禁）；本轮新增 7 个测试文件；scripts 含 `local_gate.py`、双环境 `deploy_release.py`、`set_login_password.py`
 - **双环境运行**：正式 `shilie.service` :8770 与测试 `shilie-preview.service` :8771 均为 v103（含账号密码登录+30天记住），**各自独立 PostgreSQL**（正式 `shilie_native_20261027` / 测试 `shilie_preview_20261103`）；部署拓扑、systemd drop-in 与全部踩坑见 `docs/DEPLOYMENT_REALITY.md`
 
 ## Execution Plan
@@ -271,6 +271,8 @@ rag-tech-doc-retriever/
 3. **切片策略无通用解**：必须根据目标文档结构调整标题层级和字数兜底，没有一套参数适配所有文档
 4. **单变量迭代原则**：每次优化只改一个变量，否则无法归因失败原因
 5. **重排的候选池边界（2026-10-10 V1.5 实测）**：CrossEncoder 重排只能对候选池（`retrieval.candidate_k`）内条目重排序，池外锚点无法触及——失败点若在池外，需扩大候选池或从切片/嵌入侧解决；实测候选池 20 + bge-reranker-base 使 top-5 召回率 90%→100%（+10pp，唯一失败题 #7→#1），且重排会改变 top-1 排序，下游生成引用须基于重排结果；详见`output/v1.5/v15_optimize_report.md`
+6. **应用层加密的边界（2026-11-03）**：`platform/field_crypto.py` 用 AES-256-GCM 做字段级封装，令牌 `enc:v1:` 绑定 `记录类型|字段名`；仓库 `settings.yaml` 默认 `enabled: false`（本地/CI 无密钥），服务器配置开启。密钥在 release 的 `data/local/encryption.key`，部署脚本从上一 release 继承并在缺失时生成；**密钥丢失=密文永久不可解**，不得用“自动生成新密钥”掩盖丢失。历史/导出/备份读取路径已透明解密。
+7. **OCR 是可选能力（2026-11-03）**：RapidOCR + pypdfium2 通过 `pip install -e ".[ocr]"` 安装；未安装时文本版简历不受影响，图片上传明确报错。PDF 文本层低于 `jobs.ocr.min_text_chars` 才回退 OCR，`max_pages` 限制资源占用；结果带 `ocr_used`，不改变“只做文本命中、不认定能力”的口径。
 
 ### 平台重构决策记录（2026-10-12，用户拍板）
 - **LLM 提供方**：OpenAI 兼容 API（DeepSeek/通义优先），密钥走 .env（LLM_API_KEY / LLM_BASE_URL / LLM_MODEL）；生成/拆分失败一律降级纯检索，系统可用性不以 LLM 为前提

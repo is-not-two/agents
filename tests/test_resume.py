@@ -107,3 +107,32 @@ def test_zip_without_word_document_is_rejected(service):
         archive.writestr("readme.txt", "not a resume")
     with pytest.raises(DomainError):
         resumes.upload("resume.docx", buffer.getvalue(), "坏压缩包")
+
+
+def test_image_upload_uses_ocr(service, monkeypatch):
+    resumes, _ = service
+    monkeypatch.setattr(resumes.ocr, "available", lambda: True)
+    monkeypatch.setattr(resumes.ocr, "image_text", lambda raw: TEXT)
+    row = resumes.upload("resume.png", b"\x89PNG\r\n\x1a\n" + b"0" * 32, "图片简历")
+    assert row["data"]["parse_status"] == "parsed" and row["ocr_used"] is True
+    assert resumes.document(row["id"])["ocr_used"] is True
+
+
+def test_scanned_pdf_falls_back_to_ocr(service, monkeypatch):
+    resumes, _ = service
+    from pypdf import PdfWriter
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=72, height=72)
+    buffer = io.BytesIO()
+    writer.write(buffer)
+    monkeypatch.setattr(resumes.ocr, "available", lambda: True)
+    monkeypatch.setattr(resumes.ocr, "pdf_text", lambda raw: TEXT)
+    row = resumes.upload("scan.pdf", buffer.getvalue(), "扫描件")
+    assert row["data"]["parse_status"] == "parsed" and row["ocr_used"] is True
+
+
+def test_image_without_ocr_fails_closed(service):
+    resumes, _ = service
+    with pytest.raises(DomainError, match="OCR"):
+        resumes.upload("resume.jpg", b"\xff\xd8\xff" + b"0" * 32, "无 OCR")

@@ -120,8 +120,10 @@ class JobInsights:
             + Path(domain_module.__file__).read_bytes()
             + Path(__file__).read_bytes()
         ).hexdigest()
+        self.cipher = getattr(store, "cipher", None)
         self.profile_file = PrivateJson(
-            root / "data/local/job-profile.json", self.policy["max_profile_bytes"], allow_plain=True
+            root / "data/local/job-profile.json", self.policy["max_profile_bytes"],
+            allow_plain=True, cipher=self.cipher,
         )
 
     def profile(self) -> dict:
@@ -149,7 +151,7 @@ class JobInsights:
             self.root
             / "data/local/job-analyses"
             / (hashlib.sha256(lead_id.encode()).hexdigest() + ".json"),
-            self.policy["max_analysis_bytes"],
+            self.policy["max_analysis_bytes"], cipher=self.cipher,
         )
 
     def gap(self, lead_id: str) -> dict:
@@ -216,7 +218,7 @@ class JobInsights:
         )
         file = PrivateJson(
             self.root / "data/local/job-analysis-runs" / (identity + ".json"),
-            self.policy["max_analysis_bytes"],
+            self.policy["max_analysis_bytes"], cipher=self.cipher,
         )
         with file.lock():
             current = file.read()

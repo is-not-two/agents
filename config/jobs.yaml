@@ -10,6 +10,11 @@ jobs:
   # 简历上传：文件仅存本机私密目录，公开记录只留元数据；正文以解析后文本为准。
   max_resume_bytes: 10485760
   max_resume_chars: 100000
+  # 扫描件/图片 OCR：依赖可选安装（pip install -e ".[ocr]"）；未安装时文本版仍可用。
+  ocr:
+    enabled: true
+    min_text_chars: 40      # PDF 文本层低于该长度时尝试 OCR
+    max_pages: 20           # 单次最多识别页数，防止超大 PDF 拖垮服务
   # 规则只辅助提取，不给出“满足岗位/具备能力”的自动结论。
   taxonomy:
     - {name: Python, aliases: [Python, Python3]}

@@ -1,7 +1,7 @@
-import { layoutStory, geometry } from "./story-layout.js?v=103";
-import { branchNotice, branchDialog } from "./branch-actions.js?v=103";
+import { layoutStory, geometry } from "./story-layout.js?v=105";
+import { branchNotice, branchDialog } from "./branch-actions.js?v=105";
 /* 主线向右分叉，支线向下展开；显示状态与服务端记录分离。 */
-import { state, read, write } from "./data.js?v=103";
+import { state, read, write } from "./data.js?v=105";
 export const esc = (x) =>
   String(x ?? "").replace(
     /[&<>"']/g,

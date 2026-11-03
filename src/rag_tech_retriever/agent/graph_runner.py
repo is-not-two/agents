@@ -1,6 +1,7 @@
-"""通用 DAG 工作流执行器：版本冻结、节点级重试、人工确认与多 Agent 串并行编排。"""
+"""通用 DAG 工作流执行器：版本冻结、并行调度、节点级隔离、人工确认与多 Agent 编排。"""
 from __future__ import annotations
 
+import asyncio
 import json
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -11,6 +12,7 @@ import anyio
 from rag_tech_retriever.domains.automation import validate_agent
 from rag_tech_retriever.domains.life_planning import DomainError
 from rag_tech_retriever.domains.workflow_graph import resolve, validate_graph_workflow
+from rag_tech_retriever.platform.mcp_client import ToolError
 from rag_tech_retriever.platform.record_store import RecordMissing, RecordStore, VersionConflict
 
 
@@ -64,7 +66,8 @@ class GraphWorkflowService:
             "status": "running", "started_at": _now(), "input": deepcopy(payload),
             "workflow": workflow, "agent_snapshots": snapshots,
             "steps": [], "node_outputs": {}, "node_status": {}, "pending_node": "",
-            "pending_kind": "", "pending_child": None, "approved_nodes": [],
+            "pending_kind": "", "pending_child": None, "pending_children": [],
+            "approved_nodes": [],
             "result": {"answer": "", "notes": []},
         })
         return await self._drive(row)
@@ -77,20 +80,33 @@ class GraphWorkflowService:
             raise VersionConflict("运行已处理或版本改变，请重新读取")
         data = deepcopy(row["data"])
         if data["pending_kind"] == "agent" and data.get("pending_child"):
-            child = data["pending_child"]
-            result = await self.runtime.confirm(child["run_id"], child["version"], approve)
-            if result["data"]["status"] == "awaiting_confirmation":
-                data["pending_child"] = {"run_id": child["run_id"], "version": result["version"]}
+            # 并行 Agent 可能同时进入待确认；逐个确认，未完成的保留在 pending_children。
+            children = data.get("pending_children") or [
+                {"node": data["pending_node"], **data["pending_child"]}
+            ]
+            remaining = []
+            for item in children:
+                node_id = item["node"]
+                result = await self.runtime.confirm(item["run_id"], item["version"], approve)
+                if result["data"]["status"] == "awaiting_confirmation":
+                    remaining.append({"node": node_id, "run_id": item["run_id"],
+                                      "version": result["version"]})
+                    continue
+                if not approve or result["data"]["status"] == "failed":
+                    data["node_status"][node_id] = "failed"
+                    data["result"]["notes"].append(f"节点 {node_id} 的子 Agent 未完成")
+                else:
+                    data["node_outputs"][node_id] = {
+                        "run_id": item["run_id"], "answer": result["data"]["result"].get("answer", ""),
+                        "notes": result["data"]["result"].get("notes", []),
+                    }
+                    data["node_status"][node_id] = "completed"
+            if remaining:
+                first = remaining[0]
+                data.update(status="awaiting_confirmation", pending_node=first["node"],
+                            pending_kind="agent", pending_children=remaining,
+                            pending_child={"run_id": first["run_id"], "version": first["version"]})
                 return self._save(row, data)
-            if not approve or result["data"]["status"] == "failed":
-                data["node_status"][data["pending_node"]] = "failed"
-                data["result"]["notes"].append(f"节点 {data['pending_node']} 的子 Agent 未完成")
-            else:
-                data["node_outputs"][data["pending_node"]] = {
-                    "run_id": child["run_id"], "answer": result["data"]["result"].get("answer", ""),
-                    "notes": result["data"]["result"].get("notes", []),
-                }
-                data["node_status"][data["pending_node"]] = "completed"
         else:
             node_id = data["pending_node"]
             if approve:
@@ -100,7 +116,8 @@ class GraphWorkflowService:
             else:
                 data["node_status"][node_id] = "failed"
                 data["result"]["notes"].append(f"用户拒绝了节点 {node_id}")
-        data.update(pending_node="", pending_kind="", pending_child=None, status="running")
+        data.update(pending_node="", pending_kind="", pending_child=None,
+                    pending_children=[], status="running")
         row = self._save(row, data)
         return await self._drive(row)
 
@@ -131,7 +148,9 @@ class GraphWorkflowService:
                 raise DomainError("检索节点查询不能为空")
             hits, notes = [], []
             for scope in agent["scopes"]:
-                found = self.search.query(query, scope, agent["mode"])
+                # 向量检索是同步阻塞调用；放到线程池，避免并行波次被单节点卡住事件循环。
+                found = await anyio.to_thread.run_sync(
+                    self.search.query, query, scope, agent["mode"])
                 hits.extend(found["hits"])
                 notes.extend(found["notes"])
             hits = hits[:node.get("limit", 5)]
@@ -169,54 +188,109 @@ class GraphWorkflowService:
     def _predecessors(self, data: dict, node_id: str) -> list[str]:
         return [source for source, target in data["workflow"]["data"]["edges"] if target == node_id]
 
+    async def _run_node(self, data: dict, node: dict) -> dict:
+        """执行单个节点并返回结果；异常与超时收敛为节点级失败，不影响同波次其他节点。"""
+        started = perf_counter()
+        try:
+            with anyio.fail_after(data["workflow"]["data"]["node_timeout_seconds"]):
+                output = await self._execute_node(data, node)
+            return {"status": "completed", "output": output,
+                    "duration_ms": round((perf_counter() - started) * 1000)}
+        except _Pause as pause:
+            return {"status": "paused", "pause": pause,
+                    "duration_ms": round((perf_counter() - started) * 1000)}
+        except (DomainError, ToolError) as exc:
+            return {"status": "failed", "error": str(exc),
+                    "duration_ms": round((perf_counter() - started) * 1000)}
+        except (TimeoutError, asyncio.TimeoutError):
+            return {"status": "failed", "error": f"节点 {node['id']} 执行超时",
+                    "duration_ms": round((perf_counter() - started) * 1000)}
+
+    async def _execute_batch(self, data: dict, batch: list[dict]) -> dict[str, dict]:
+        """同一波次并发执行，返回按节点 ID 索引的结果；共享状态只在波次结束后合并。"""
+        outcomes: dict[str, dict] = {}
+
+        async def execute(item: dict) -> None:
+            outcomes[item["id"]] = await self._run_node(data, item)
+
+        async with anyio.create_task_group() as group:
+            for node in batch:
+                group.start_soon(execute, node)
+        return outcomes
+
     async def _drive(self, row: dict) -> dict:
         data = deepcopy(row["data"])
         cfg = data["workflow"]["data"]
         nodes = {node["id"]: node for node in cfg["nodes"]}
-        terminal_answers: list[str] = []
+        order = {node["id"]: index for index, node in enumerate(cfg["nodes"])}
+        terminal_ids = [node["id"] for node in cfg["nodes"]
+                        if not any(edge[0] == node["id"] for edge in cfg["edges"])]
         while True:
-            done = {key for key, value in data["node_status"].items() if value in {"completed", "skipped", "failed"}}
+            done = {key for key, value in data["node_status"].items()
+                    if value in {"completed", "skipped", "failed"}}
             ready = []
             for node_id, node in nodes.items():
                 if node_id in done:
                     continue
                 predecessors = self._predecessors(data, node_id)
-                if all(data["node_status"].get(source) in {"completed", "skipped"} for source in predecessors):
+                if all(data["node_status"].get(source) in {"completed", "skipped"}
+                       for source in predecessors):
                     ready.append(node)
             if not ready:
                 break
-            # Deterministic order: input first, then declaration order.
-            ready.sort(key=lambda node: (node["type"] != "input", cfg["nodes"].index(node)))
-            node = ready[0]
-            if node["type"] == "approval" and node["id"] not in data["approved_nodes"]:
-                data.update(status="awaiting_confirmation", pending_node=node["id"], pending_kind="approval")
+            # 确定性顺序：input 优先，其次按声明顺序。
+            ready.sort(key=lambda node: (node["type"] != "input", order[node["id"]]))
+            approvals = [node for node in ready if node["type"] == "approval"]
+            runnable = [node for node in ready if node["type"] != "approval"]
+            if not runnable:
+                # 只差人工审批：暂停，确认后由 confirm 继续驱动。
+                gate = approvals[0]
+                data.update(status="awaiting_confirmation", pending_node=gate["id"],
+                            pending_kind="approval")
                 return self._save(row, data)
-            data["node_status"][node["id"]] = "running"
+            batch = runnable[: cfg["max_parallel"]]
+            for node in batch:
+                data["node_status"][node["id"]] = "running"
             row = self._save(row, data)
-            started = perf_counter()
-            try:
-                with anyio.fail_after(cfg["node_timeout_seconds"]):
-                    output = await self._execute_node(data, node)
-                data["node_outputs"][node["id"]] = output
-                data["node_status"][node["id"]] = "completed"
-                data["steps"].append({"key": node["id"], "title": node["id"], "status": "completed",
-                                      "detail": json.dumps(output, ensure_ascii=False)[:10000],
-                                      "duration_ms": round((perf_counter() - started) * 1000)})
-                terminal = not any(edge[0] == node["id"] for edge in cfg["edges"])
-                if terminal and isinstance(output.get("answer"), str):
-                    terminal_answers.append(output["answer"])
-            except _Pause as pause:
-                data.update(status="awaiting_confirmation", pending_node=pause.node,
-                            pending_kind=pause.kind, pending_child=pause.child)
+            outcomes = await self._execute_batch(data, batch)
+            pauses = []
+            # 按声明顺序落盘，保证并行波次的步骤与结果稳定可复现。
+            for node in batch:
+                outcome = outcomes[node["id"]]
+                if outcome["status"] == "paused":
+                    pauses.append(node)
+                    continue
+                if outcome["status"] == "completed":
+                    data["node_outputs"][node["id"]] = outcome["output"]
+                    data["node_status"][node["id"]] = "completed"
+                    data["steps"].append({"key": node["id"], "title": node["id"],
+                                          "status": "completed",
+                                          "detail": json.dumps(outcome["output"], ensure_ascii=False)[:10000],
+                                          "duration_ms": outcome["duration_ms"]})
+                else:
+                    data["node_status"][node["id"]] = "failed"
+                    data["result"]["notes"].append(outcome["error"])
+                    data["steps"].append({"key": node["id"], "title": node["id"],
+                                          "status": "failed", "detail": outcome["error"],
+                                          "duration_ms": outcome["duration_ms"]})
+            if pauses:
+                first = pauses[0]
+                pause = outcomes[first["id"]]["pause"]
+                children = [{"node": item["id"], **outcomes[item["id"]]["pause"].child}
+                            for item in pauses if outcomes[item["id"]]["pause"].child]
+                data.update(status="awaiting_confirmation", pending_node=first["id"],
+                            pending_kind=pause.kind, pending_child=pause.child,
+                            pending_children=children)
                 return self._save(row, data)
-            except DomainError as exc:
-                data["node_status"][node["id"]] = "failed"
-                data["result"]["notes"].append(str(exc))
-                data["steps"].append({"key": node["id"], "title": node["id"], "status": "failed",
-                                      "detail": str(exc), "duration_ms": round((perf_counter() - started) * 1000)})
             row = self._save(row, data)
         failed = any(value == "failed" for value in data["node_status"].values())
-        data["result"]["answer"] = "\n\n".join(terminal_answers) or data["result"].get("answer", "")
+        answers = []
+        for node_id in terminal_ids:
+            output = data["node_outputs"].get(node_id, {})
+            if isinstance(output.get("answer"), str) and output["answer"].strip():
+                answers.append(output["answer"])
+        data["result"]["answer"] = "\n\n".join(answers) or data["result"].get("answer", "")
         data["status"] = "failed" if failed else ("fallback" if data["result"]["notes"] else "completed")
         data["finished_at"] = _now()
+        data.update(pending_node="", pending_kind="", pending_child=None, pending_children=[])
         return self._save(row, data)

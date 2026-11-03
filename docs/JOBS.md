@@ -30,10 +30,11 @@
 
 ## 简历上传与解析
 
-- 求职记录页新增「上传简历」：支持 PDF / DOCX / TXT / Markdown，最大 10MB；上传即解析。
+- 求职记录页新增「上传简历」：支持 PDF / DOCX / TXT / Markdown / PNG / JPEG，最大 10MB；上传即解析。
 - 公开的 `resume_version` 只保存标题、文件名、SHA256、大小、解析状态等元数据；解析文本与结构化段落保存在服务器 `data/local/resumes` 私密目录，不进入公共备份。
+- 扫描版 PDF 与图片走 OCR（RapidOCR + PDFium）；依赖通过 `pip install -e ".[ocr]"` 安装，未安装时文本版仍可用，图片上传会明确报错。OCR 结果带 `ocr_used` 标记。
 - 详情可查看结构化段落、技能命中和版本差异；`POST /api/jobs/resumes/{id}/analyze` 把目标岗位 JD 与简历文本对照，只报告文本命中与缺口，不认定真实能力。
-- PDF 仅支持文本版；扫描图片版暂不做 OCR。
+- 开启应用层加密后，简历解析文本以 AES-256-GCM 封装写入私密目录；`resume_version.file_name` 等配置字段在数据库中以密文保存，读取时透明解密。
 
 ## API
 

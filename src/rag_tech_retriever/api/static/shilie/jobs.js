@@ -1,5 +1,5 @@
 /* 求职闭环：真实记录优先，业务内容不写 localStorage。 */
-import { api, escapeHtml as esc } from "./data.js?v=103";
+import { api, escapeHtml as esc } from "./data.js?v=105";
 
 const labels = { collected: "已收藏", applied: "已投递", following: "跟进中", interviewing: "面试中", offered: "已获 offer", rejected: "已结束" };
 const paths = { job_lead: "leads", application: "applications", interview_report: "reports", resume_version: "resumes" };
@@ -70,7 +70,7 @@ export function jobsView() {
 
 export function jobsDialog() {
   return '<dialog class="form-dialog jobs-dialog" data-form="jobs" aria-labelledby="jobs-dialog-title"><form class="edit-form" id="jobs-form"><header class="drawer-header"><h2 id="jobs-dialog-title">求职记录</h2><button type="button" class="icon-button" data-action="close-dialog" aria-label="关闭">×</button></header><div class="drawer-content" id="jobs-form-body"></div></form></dialog>'
-    + '<dialog class="form-dialog jobs-dialog" data-form="resume-upload" aria-labelledby="resume-upload-title"><form class="edit-form" id="resume-upload-form"><header class="drawer-header"><h2 id="resume-upload-title">上传简历</h2><button type="button" class="icon-button" data-action="close-dialog" aria-label="关闭">×</button></header><div class="drawer-content"><label class="form-field">简历文件<input name="file" type="file" accept=".pdf,.docx,.txt,.md" required></label><label class="form-field">版本名称（选填）<input name="title" maxlength="160" placeholder="例如：AI 应用工程师 v2"></label><p>支持 PDF / DOCX / TXT / Markdown，最大 10MB。原文件不进入公共备份，解析文本保存在服务器私密目录。</p><p id="resume-upload-error" class="error-text" role="alert" hidden></p><div class="form-actions"><button type="button" class="small-button" data-action="close-dialog">取消</button><button type="submit" class="primary-button">上传并解析</button></div></div></form></dialog>';
+    + '<dialog class="form-dialog jobs-dialog" data-form="resume-upload" aria-labelledby="resume-upload-title"><form class="edit-form" id="resume-upload-form"><header class="drawer-header"><h2 id="resume-upload-title">上传简历</h2><button type="button" class="icon-button" data-action="close-dialog" aria-label="关闭">×</button></header><div class="drawer-content"><label class="form-field">简历文件<input name="file" type="file" accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg" required></label><label class="form-field">版本名称（选填）<input name="title" maxlength="160" placeholder="例如：AI 应用工程师 v2"></label><p>支持 PDF / DOCX / TXT / Markdown / PNG / JPEG，最大 10MB。扫描件与图片会尝试 OCR；原文件不进入公共备份，解析文本加密保存在服务器私密目录。</p><p id="resume-upload-error" class="error-text" role="alert" hidden></p><div class="form-actions"><button type="button" class="small-button" data-action="close-dialog">取消</button><button type="submit" class="primary-button">上传并解析</button></div></div></form></dialog>';
 }
 
 function input(label, name, value = "", type = "text", maximum = 160, required = false) {
@@ -153,7 +153,7 @@ export function bindJobs({ renderPage, toast }) {
         const response = await fetch("/api/jobs/resumes/upload", { method: "POST", body: new FormData(form), cache: "no-store" });
         let value = null; try { value = await response.json(); } catch { value = null; }
         if (!response.ok) throw new Error(value?.detail || "上传失败");
-        form.closest("dialog").close(); await load(); toast("简历已上传并解析");
+        form.closest("dialog").close(); await load(); toast(value?.ocr_used ? "简历已上传并通过 OCR 解析" : "简历已上传并解析");
       } catch (error) { errorBox.textContent = error.message; errorBox.hidden = false; }
       finally { cache.busy = false; button.disabled = false; button.textContent = "上传并解析"; }
       return;

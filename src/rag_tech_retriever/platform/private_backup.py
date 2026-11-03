@@ -114,7 +114,7 @@ def capture(store: RecordStore, vault_file: Path) -> dict:
         cur.execute(f"SELECT * FROM {store.records} WHERE kind=ANY(%s) ORDER BY id", (PRIVATE_KINDS,))
         records = [store._serialize(row) for row in cur.fetchall()]
         cur.execute(
-            f"SELECT v.* FROM {store.versions} v JOIN {store.records} r ON r.id=v.record_id "
+            f"SELECT v.*,r.kind FROM {store.versions} v JOIN {store.records} r ON r.id=v.record_id "
             "WHERE r.kind=ANY(%s) ORDER BY v.record_id,v.version", (PRIVATE_KINDS,),
         )
         versions = [store._serialize(row) for row in cur.fetchall()]

@@ -49,6 +49,23 @@ def test_graph_workflow_pauses_for_approval_and_resumes(api):
     assert confirmed.json()["data"]["node_status"]["merge"] == "completed"
 
 
+def test_graph_parallel_branches_complete(api):
+    flow = api.post("/api/workflows", json={"data": {
+        "title": "并行分支", "kind": "graph", "max_parallel": 2,
+        "nodes": [{"id": "input", "type": "input"},
+                  {"id": "a", "type": "merge"}, {"id": "b", "type": "merge"},
+                  {"id": "final", "type": "merge"}],
+        "edges": [["input", "a"], ["input", "b"], ["a", "final"], ["b", "final"]],
+    }}).json()
+    run = api.post(f"/api/workflows/{flow['id']}/run",
+                   json={"version": flow["version"], "input": {"query": "x"}})
+    assert run.status_code == 200, run.text
+    data = run.json()["data"]
+    assert data["status"] == "completed"
+    assert data["node_status"] == {"input": "completed", "a": "completed",
+                                   "b": "completed", "final": "completed"}
+
+
 def test_invalid_graph_is_rejected_before_saving(api):
     response = api.post("/api/workflows", json={"data": {
         "title": "环", "kind": "graph",

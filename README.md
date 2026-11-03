@@ -25,20 +25,22 @@
 
 **质量门禁**：`scripts/local_gate.py`（pre-push hook 自动运行：ruff / pytest / 静态版本一致 / 敏感文件 / kind 与库一致）；完整门禁 `scripts/release_gate.py --checks full --backend native`（Docker 后端仅限 GitHub CI 显式选择）。
 
-### 企业级能力（2026-11-03，v103）
+### 企业级能力（2026-11-03，v105）
 
 - **统一能力目录**：`GET /api/capabilities/tools` 汇总内置工具、管理员 HTTP 工具与已启用 MCP 工具；Agent 工作室新增「能力绑定」，工具/技能/MCP 权限只来自保存的 Agent 配置。
 - **联网搜索**：内置 `web_search`，默认 Bing CN（服务器网络可达），可切 Tavily（`TAVILY_API_KEY`）或 DuckDuckGo；固定供应商端点、禁止跳转、结果上限与缓存，搜索结果不改变权限。
 - **管理员 HTTP 工具**：`config/agent-tools.yaml` 的 `http_tools` 只允许固定 HTTPS 主机与 JSON Schema 参数，模板不能改 URL/方法/请求头。
-- **通用 DAG 工作流**：工作流支持 `input / retrieve / tool / agent / merge / approval` 节点；版本冻结、节点状态持久化、人工审批、多 Agent 顺序协作与结果合并；工作流页可新建 JSON DAG、运行与审批。
+- **通用 DAG 工作流**：工作流支持 `input / retrieve / tool / agent / merge / approval` 节点；版本冻结、节点状态持久化、人工审批与结果合并。就绪节点按 `max_parallel`（1–4）并行执行，同波次失败/超时只影响本节点，多个并行 Agent 同时待确认时可一次批准，工作流页可新建 JSON DAG、运行与审批。
 - **简历模块**：上传 PDF/DOCX/TXT/Markdown 后自动解析，公开记录只存元数据，解析文本存本机私密目录；支持结构化段落、技能命中、版本 diff 与 JD 对照（只做文本命中，不认定能力）。
-- **验证**：新增纯逻辑测试 31 项；隔离 PostgreSQL 集成测试 35 项（DAG/求职/简历）与 Agent 回归 56 项通过；浏览器验收覆盖能力绑定、DAG 运行、真实简历上传与联网搜索。
+- **OCR**：扫描版 PDF 与 PNG/JPEG 图片走 RapidOCR + PDFium，文本层不足时自动回退；依赖可选安装（`pip install -e ".[ocr]"`），未安装时文本版不受影响，图片上传明确报错，结果带 `ocr_used` 标记。
+- **应用层加密**：AES-256-GCM（`platform/field_crypto.py`），密钥走 `SHILIE_ENCRYPTION_KEY` / 密钥文件，令牌绑定记录类型与字段名；开启后 `knowledge.content`、`job_lead.jd_text`、`resume_version.file_name` 与简历/周报私密文件在库里/磁盘为密文，读取透明解密，旧明文兼容。仓库默认关闭，服务器配置开启。
+- **验证**：新增纯逻辑测试 31 项（并行调度 7 项、OCR/加密 15 项）；隔离 PostgreSQL 集成测试 35 项（DAG/求职/简历）与 Agent 回归 56 项通过；浏览器验收覆盖能力绑定、DAG 运行、真实简历上传与联网搜索。
 
 ### 当前待办（2026-11-03）
 
 1. **真实 JD 人工确认**：10 份 AI/Agent JD 已完成执行方初核（10/10 合理，见协作记录）；10 份 AI 产品经理 JD 仅做学历/经验分析，尚未逐条人工签字。
 2. **真实模型质量与七天使用**：模型连接、真实供应商质量、真实收件箱送达和连续七天使用仍需独立验收。
-3. **后续演进**：DAG 当前为确定性顺序执行（`max_parallel` 预留）；简历扫描件暂不做 OCR；联网搜索供应商仍受目标站点反爬策略影响，生产使用前应核对供应商条款。
+3. **后续演进**：DAG 仍是“波次内并发、波次间屏障”，未做跨波次动态补位；加密尚未做密钥轮换/离线恢复演练；联网搜索供应商仍受目标站点反爬策略影响，生产使用前应核对供应商条款。
 
 下方本地启动、容器、旧测试数量及界面描述为按日期保留的历史/可选开发说明，不能替代上述当前使用方式或本轮验收。
 

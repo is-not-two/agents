@@ -110,7 +110,8 @@ class JobsService:
             target = cur.fetchone()
             if target is None:
                 raise RecordMissing("历史版本不存在")
-            data = self._prepare(cur, row["kind"], target["data"], row, restoring=True)
+            data = self._prepare(cur, row["kind"],
+                                 self.store._open(row["kind"], target["data"]), row, restoring=True)
             return self.store._save(cur, row["kind"], data, record_id, current_version, f"restore:v{target_version}")
 
     def overview(self, trash: bool = False) -> dict:

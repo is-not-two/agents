@@ -351,29 +351,38 @@ tar -xzf {remote_pkg} -C "$DEST"
 PREV=$(readlink -f {REMOTE_APP})
 cp -a "$PREV/.venv" "$DEST/.venv"
 
-# data/local 下四个目录必须是项目内实体且可写（代码会 resolve 校验）
+# data/local 必须是项目内实体且可写（代码会 resolve 校验）。
+# 先继承上一 release 的 data/local（简历正文、周报、加密密钥都在这里），
+# 再从共享目录补齐 canonical 的 vault/技能/导出，避免跨 release 丢用户数据。
 rm -rf "$DEST/data/local" "$DEST/output/stages"
 mkdir -p "$DEST/data/local/skills" \
          "$DEST/data/local/skill-imports" \
          "$DEST/data/local/exports" \
          "$DEST/output/stages"
+cp -a "$PREV/data/local/." "$DEST/data/local/" 2>/dev/null || true
 cp -a /var/lib/shilie/data/local/private-vault.json "$DEST/data/local/" 2>/dev/null || true
 # 已有技能与导出内容继承过来，不丢用户数据
 cp -a /var/lib/shilie/data/local/skills/. "$DEST/data/local/skills/" 2>/dev/null || true
 cp -a /var/lib/shilie/data/local/skill-imports/. "$DEST/data/local/skill-imports/" 2>/dev/null || true
+# 应用层加密密钥：首次部署生成，后续继承；密钥文件只对服务用户可读。
+if [ ! -s "$DEST/data/local/encryption.key" ]; then
+  (umask 077; openssl rand -base64 32 > "$DEST/data/local/encryption.key")
+fi
 
 cp -a /var/lib/shilie/config/. "$DEST/config/" 2>/dev/null || true
 chown -R root:shilie "$DEST"
 chmod 750 "$DEST"
 chown -R shilie:shilie "$DEST/data/local" "$DEST/output" 2>/dev/null || true
 chmod -R u+rwX,g+rwX "$DEST/data/local" "$DEST/output" 2>/dev/null || true
+chmod 600 "$DEST/data/local/encryption.key" 2>/dev/null || true
+chown shilie:shilie "$DEST/data/local/encryption.key" 2>/dev/null || true
 
 # 让 systemd 放行本 release 的可写子目录（drop-in，可随软链一起回退）。
 # 注意必须写到目标服务自己的 drop-in 目录，否则 preview 部署会改掉生产的放行路径。
 mkdir -p {DROPIN_DIR}
 cat > {DROPIN_DIR}/runtime-writable.conf <<EOF
 [Service]
-ReadWritePaths=$DEST/output/stages $DEST/data/local/skills $DEST/data/local/skill-imports $DEST/data/local/exports /var/lib/shilie
+ReadWritePaths=$DEST/output/stages $DEST/data/local $DEST/data/local/skills $DEST/data/local/skill-imports $DEST/data/local/exports /var/lib/shilie
 EOF
 systemctl daemon-reload
 

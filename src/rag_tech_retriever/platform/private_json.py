@@ -33,9 +33,12 @@ class PrivateJson:
     _path_mutexes: weakref.WeakValueDictionary[str, _MutexHolder] = weakref.WeakValueDictionary()
     _registry_lock = threading.Lock()
 
-    def __init__(self, path: Path, max_bytes: int = 1048576, allow_plain: bool = False) -> None:
+    def __init__(self, path: Path, max_bytes: int = 1048576, allow_plain: bool = False,
+                 cipher=None) -> None:
         self.path, self.max_bytes = path, max_bytes
         self.allow_plain = allow_plain
+        self.cipher = cipher
+        self._aad = b"v1|private-json"
         key = os.path.abspath(os.fspath(path))
         with PrivateJson._registry_lock:
             holder = PrivateJson._path_mutexes.get(key)
@@ -109,6 +112,18 @@ class PrivateJson:
                 return result
 
             value = json.loads(raw, object_pairs_hook=unique)
+            if isinstance(value, dict) and "sealed" in value:
+                if not self.cipher:
+                    raise ValueError
+                if (set(value) != {"revision", "sealed"}
+                        or not isinstance(value["sealed"], str)
+                        or not isinstance(value["revision"], str)):
+                    raise ValueError
+                plain = json.loads(self.cipher.open_text(value["sealed"], self._aad),
+                                   object_pairs_hook=unique)
+                if not isinstance(plain, dict) or value["revision"] != self.revision(plain):
+                    raise ValueError
+                return {"revision": value["revision"], "data": plain}
             if (
                 self.allow_plain
                 and isinstance(value, dict)
@@ -131,7 +146,12 @@ class PrivateJson:
         """调用方持有本文件锁，先比较版本，再原子替换，出错保留旧文件。"""
         if self.read()["revision"] != expected:
             raise VersionConflict("资料已更新，请保留本次输入并重新读取最新版本")
-        value = {"revision": self.revision(data), "data": data}
+        revision = self.revision(data)
+        if self.cipher:
+            payload = json.dumps(data, ensure_ascii=False, sort_keys=True, allow_nan=False)
+            value = {"revision": revision, "sealed": self.cipher.seal_text(payload, self._aad)}
+        else:
+            value = {"revision": revision, "data": data}
         raw = json.dumps(value, ensure_ascii=False, sort_keys=True, allow_nan=False).encode()
         if len(raw) > self.max_bytes:
             raise StorageError("私密资料超过文件大小限制，原文件未替换")

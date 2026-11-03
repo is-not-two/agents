@@ -18,6 +18,7 @@ from rag_tech_retriever.common.config_loader import ConfigLoader
 from rag_tech_retriever.domains.job_analysis import rules_analysis, validate_profile
 from rag_tech_retriever.domains.jobs import validate_resume
 from rag_tech_retriever.domains.life_planning import DomainError, text
+from rag_tech_retriever.platform.ocr_service import OcrService
 from rag_tech_retriever.platform.private_json import PrivateJson
 from rag_tech_retriever.platform.record_store import RecordMissing, RecordStore
 
@@ -48,6 +49,8 @@ class ResumeService:
         if not isinstance(taxonomy, list):
             raise DomainError("求职分析词表无效")
         self.taxonomy = taxonomy
+        self.cipher = getattr(store, "cipher", None)
+        self.ocr = OcrService(policy.get("ocr", {}))
         self.directory = (root / "data/local/resumes").resolve()
         if not self.directory.is_relative_to(root.resolve()):
             raise DomainError("简历目录必须位于项目内")
@@ -55,7 +58,8 @@ class ResumeService:
     def _file(self, document_id: str) -> PrivateJson:
         if not re.fullmatch(r"[a-f0-9]{64}", document_id):
             raise DomainError("简历文档 ID 格式错误")
-        return PrivateJson(self.directory / (document_id + ".json"), 2097152)
+        return PrivateJson(self.directory / (document_id + ".json"), 2097152,
+                           cipher=self.cipher)
 
     @staticmethod
     def _detect(filename: str, raw: bytes) -> tuple[str, str]:
@@ -71,12 +75,18 @@ class ResumeService:
                 raise DomainError("DOCX 文件已损坏或不是有效压缩包") from exc
             if "[Content_Types].xml" in names and "word/document.xml" in names:
                 return "docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            raise DomainError("只支持 PDF、DOCX、TXT、Markdown 简历")
+            raise DomainError("只支持 PDF、DOCX、TXT、Markdown、PNG、JPEG 简历")
+        if raw.startswith(b"\x89PNG\r\n\x1a\n"):
+            return "image", "image/png"
+        if raw.startswith(b"\xff\xd8\xff"):
+            return "image", "image/jpeg"
         if name.endswith((".txt", ".md", ".markdown")):
             return "text", "text/plain"
-        raise DomainError("只支持 PDF、DOCX、TXT、Markdown 简历")
+        raise DomainError("只支持 PDF、DOCX、TXT、Markdown、PNG、JPEG 简历")
 
-    def _extract(self, kind: str, raw: bytes) -> str:
+    def _extract(self, kind: str, raw: bytes) -> tuple[str, bool]:
+        """返回 (清洗后文本, 是否使用 OCR)；扫描件识别失败时明确报错。"""
+        ocr_used = False
         if kind == "pdf":
             try:
                 from pypdf import PdfReader
@@ -92,6 +102,14 @@ class ResumeService:
                 raise
             except Exception as exc:
                 raise DomainError("PDF 无法解析，请换用文本版或 DOCX") from exc
+            if len(content.strip()) < self.ocr.min_text_chars and self.ocr.available():
+                recognized = self.ocr.pdf_text(raw).strip()
+                if recognized:
+                    if len(recognized) >= len(content.strip()):
+                        content = recognized
+                    else:
+                        content = content + "\n" + recognized
+                    ocr_used = True
         elif kind == "docx":
             try:
                 from docx import Document
@@ -106,6 +124,9 @@ class ResumeService:
                 content = "\n".join(lines)
             except Exception as exc:
                 raise DomainError("DOCX 无法解析，请确认文件未损坏") from exc
+        elif kind == "image":
+            content = self.ocr.image_text(raw)
+            ocr_used = True
         else:
             try:
                 content = raw.decode("utf-8-sig")
@@ -114,10 +135,10 @@ class ResumeService:
         content = CONTROL.sub("", content).replace("\r\n", "\n").replace("\r", "\n")
         content = re.sub(r"\n{3,}", "\n\n", content).strip()
         if not content:
-            raise DomainError("简历中没有可提取的文字，可能是扫描图片版 PDF")
+            raise DomainError("简历中没有可提取的文字；扫描件请启用 OCR 或换用文本版")
         if len(content) > self.max_chars:
             raise DomainError("简历文本超过上限，请精简到 10 万字以内")
-        return content
+        return content, ocr_used
 
     @staticmethod
     def _sections(content: str) -> list[dict]:
@@ -163,21 +184,22 @@ class ResumeService:
         if not raw or len(raw) > self.max_bytes:
             raise DomainError("简历文件必须非空且不超过 10MB")
         kind, mime = self._detect(name, raw)
-        content = self._extract(kind, raw)
+        content, ocr_used = self._extract(kind, raw)
         sections = self._sections(content)
         skills = self._skills(content, sections)
         digest = hashlib.sha256(raw).hexdigest()
         document = {"document_id": digest, "text": content, "sections": sections,
                     "skills": skills, "file_name": Path(name).name,
-                    "mime": mime, "size": len(raw)}
+                    "mime": mime, "size": len(raw), "ocr_used": ocr_used}
         self._store_document(document)
         record = self.store.save("resume_version", validate_resume({
             "title": text(title or Path(name).stem, "简历版本名称", 160, True),
             "file_hash": digest, "document_id": digest, "file_name": Path(name).name,
             "mime": mime, "size": len(raw), "parse_status": "parsed",
         }))
-        return {**record, "document": {key: document[key] for key in ("document_id", "file_name", "mime", "size")},
-                "sections": len(sections), "skills": skills}
+        return {**record, "document": {key: document[key]
+                                       for key in ("document_id", "file_name", "mime", "size", "ocr_used")},
+                "sections": len(sections), "skills": skills, "ocr_used": ocr_used}
 
     def document(self, record_id: str) -> dict:
         row = self.store.get(record_id)

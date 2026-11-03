@@ -167,6 +167,14 @@ def validate_run(payload: dict) -> dict:
         for key in ("node_outputs", "node_status"):
             if not isinstance(payload.get(key, {}), dict):
                 raise DomainError("图工作流节点状态格式错误")
+        children = payload.get("pending_children", [])
+        if not isinstance(children, list) or len(children) > 30:
+            raise DomainError("图工作流待确认节点格式错误")
+        for child in children:
+            if (not isinstance(child, dict) or not isinstance(child.get("node"), str)
+                    or not isinstance(child.get("run_id"), str)
+                    or type(child.get("version")) is not int):
+                raise DomainError("图工作流待确认节点格式错误")
         text(result.get("answer", ""), "运行回答", 100000)
         if not isinstance(result.get("notes", []), list):
             raise DomainError("运行提示格式错误")

@@ -1,5 +1,5 @@
 /* 自动化纯视图：配置、实际运行与人工确认各自呈现。 */
-import { state } from "./data.js?v=103";
+import { state } from "./data.js?v=105";
 export const esc = (x) =>
   String(x ?? "").replace(
     /[&<>"']/g,
@@ -37,13 +37,15 @@ export function agentsPage() {
 function graphResult(row) {
   const d = row.data, res = d.result || {};
   const pending = d.status === "awaiting_confirmation";
-  return `<section class="run-result" data-run-id="${row.id}"><div class="run-result-head"><div><small>DAG 运行 · ${esc(row.id.slice(0, 8))}</small><h2>${esc(d.title)}</h2></div><span class="run-badge ${d.status}">${labels[d.status] || d.status}</span></div>
+  const parallel = d.workflow?.data?.max_parallel || 1;
+  const waiting = (d.pending_children || []).map((item) => item.node);
+  return `<section class="run-result" data-run-id="${row.id}"><div class="run-result-head"><div><small>DAG 运行 · ${esc(row.id.slice(0, 8))} · 并行度 ${parallel}</small><h2>${esc(d.title)}</h2></div><span class="run-badge ${d.status}">${labels[d.status] || d.status}</span></div>
     <p class="run-input-label">输入：${esc(JSON.stringify(d.input || {}))}</p>
     <ol class="run-steps">${(d.steps || []).map((s) => `<li><span class="step-indicator ${s.status}">${s.status === "completed" ? "✓" : "!"}</span><div><strong>${esc(s.title)}</strong><p>${esc(s.detail)}</p></div><small>${s.duration_ms} ms</small></li>`).join("")}</ol>
     <details class="run-context" open><summary>节点状态</summary><pre class="preserve-lines">${esc(JSON.stringify(d.node_status || {}, null, 2))}</pre></details>
     ${res.answer ? `<article class="answer-card preserve-lines">${esc(res.answer)}</article>` : ""}
     ${(res.notes || []).map((note) => `<p class="error-text">${esc(note)}</p>`).join("")}
-    ${pending ? `<p class="result-notice">等待确认节点：${esc(d.pending_node)}（${esc(d.pending_kind)}）。批准后继续执行后续节点。</p><div class="form-actions"><button class="primary-button" data-action="auto-confirm-graph" data-id="${row.id}" data-approve="true">批准继续</button><button class="small-button" data-action="auto-confirm-graph" data-id="${row.id}" data-approve="false">拒绝并停止</button></div>` : ""}</section>`;
+    ${pending ? `<p class="result-notice">等待确认节点：${esc(d.pending_node)}（${esc(d.pending_kind)}）${waiting.length > 1 ? `，同批 ${waiting.length} 个：${esc(waiting.join("、"))}` : ""}。批准后继续执行后续节点。</p><div class="form-actions"><button class="primary-button" data-action="auto-confirm-graph" data-id="${row.id}" data-approve="true">批准继续</button><button class="small-button" data-action="auto-confirm-graph" data-id="${row.id}" data-approve="false">拒绝并停止</button></div>` : ""}</section>`;
 }
 function result(row, confirmation = false) {
   if (!row) return "";
