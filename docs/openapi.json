@@ -6111,7 +6111,7 @@
         "summary": "Session Status"
       },
       "post": {
-        "description": "登录：账号密码（可记住 30 天）或访问令牌，签发同一 HMAC 会话 cookie。\n\n账号路径与令牌路径互不回退：账号密码错即 401，避免把枚举压力放到令牌上。",
+        "description": "登录：账号密码（可记住 30 天）或访问令牌，签发同一 HMAC 会话 cookie。\n\n账号路径与令牌路径互不回退：账号密码错即 401，避免把枚举压力放到令牌上。\n同一客户端地址连续失败达到上限会短暂进入 429，成功登录立即清零。",
         "operationId": "login_api_session_post",
         "requestBody": {
           "content": {

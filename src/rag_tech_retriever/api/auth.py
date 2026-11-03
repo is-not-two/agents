@@ -16,7 +16,7 @@ import hashlib
 import hmac
 import secrets
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from fastapi import Request
 
@@ -46,6 +46,45 @@ def verify_session(cookie: str, secret: str) -> bool:
     return expires > time.time() and secrets.compare_digest(
         signature, sign_message(secret, payload)
     )
+
+
+@dataclass
+class LoginThrottle:
+    """按客户端地址限制登录失败次数，成功登录清零；内存态，进程重启即清空。
+
+    通用 /api 限流按分钟放行 120 次，对撞库太宽松；账号/令牌登录单独按“失败次数”
+    限速，且只在失败时计数，正常使用不会被误伤。
+    """
+
+    max_failures: int = 10
+    window_seconds: float = 300.0
+    _failures: dict[str, list[float]] = field(default_factory=dict)
+
+    def blocked(self, key: str, now: float | None = None) -> int:
+        """返回还需等待的秒数；0 表示允许继续尝试。"""
+        moment = time.monotonic() if now is None else now
+        bucket = self._failures.get(key)
+        if not bucket:
+            return 0
+        recent = [item for item in bucket if moment - item <= self.window_seconds]
+        if not recent:
+            self._failures.pop(key, None)
+            return 0
+        self._failures[key] = recent
+        if len(recent) >= self.max_failures:
+            return max(1, int(self.window_seconds - (moment - recent[0])) + 1)
+        return 0
+
+    def fail(self, key: str, now: float | None = None) -> None:
+        """记录一次失败；仅保留窗口内的记录，避免无限增长。"""
+        moment = time.monotonic() if now is None else now
+        bucket = [item for item in self._failures.get(key, []) if moment - item <= self.window_seconds]
+        bucket.append(moment)
+        self._failures[key] = bucket
+
+    def reset(self, key: str) -> None:
+        """登录成功后清空该地址的失败计数。"""
+        self._failures.pop(key, None)
 
 
 @dataclass(frozen=True)
@@ -89,6 +128,7 @@ class Authenticator:
 __all__ = [
     "SESSION_COOKIE",
     "Authenticator",
+    "LoginThrottle",
     "issue_session",
     "sign_message",
     "verify_session",

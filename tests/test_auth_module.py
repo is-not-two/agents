@@ -9,6 +9,7 @@ from starlette.requests import Request
 from rag_tech_retriever.api.auth import (
     SESSION_COOKIE,
     Authenticator,
+    LoginThrottle,
     issue_session,
     sign_message,
     verify_session,
@@ -69,3 +70,26 @@ def test_authenticator_mcp_token_is_separate():
     assert not Authenticator("qa-workspace-token").is_mcp_token(
         make_request({"Authorization": "Bearer qa-workspace-token"})
     )
+
+
+def test_login_throttle_blocks_after_repeated_failures():
+    throttle = LoginThrottle(max_failures=3, window_seconds=60)
+    for offset in (0, 1, 2):
+        throttle.fail("1.2.3.4", now=100.0 + offset)
+    assert throttle.blocked("1.2.3.4", now=103.0) > 0
+    # 其他地址不受影响
+    assert throttle.blocked("5.6.7.8", now=103.0) == 0
+
+
+def test_login_throttle_success_resets_and_window_expires():
+    throttle = LoginThrottle(max_failures=2, window_seconds=10)
+    throttle.fail("1.2.3.4", now=100.0)
+    throttle.fail("1.2.3.4", now=101.0)
+    assert throttle.blocked("1.2.3.4", now=101.5) > 0
+    throttle.reset("1.2.3.4")
+    assert throttle.blocked("1.2.3.4", now=101.5) == 0
+    # 失败记录过期后自动放行，且不残留空桶
+    throttle.fail("9.9.9.9", now=200.0)
+    throttle.fail("9.9.9.9", now=201.0)
+    assert throttle.blocked("9.9.9.9", now=251.0) == 0
+    assert "9.9.9.9" not in throttle._failures

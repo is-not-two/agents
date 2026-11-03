@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 
 from rag_tech_retriever.agent.capability_runtime import AgentRuntime
 from rag_tech_retriever.agent.collaboration import CollaborationService
-from rag_tech_retriever.api.auth import SESSION_COOKIE, Authenticator, issue_session
+from rag_tech_retriever.api.auth import SESSION_COOKIE, Authenticator, LoginThrottle, issue_session
 from rag_tech_retriever.api.dependencies import WorkspaceContext
 from rag_tech_retriever.api.request_guard import body_within_limit
 from rag_tech_retriever.api.routes import admin as admin_routes
@@ -150,6 +150,10 @@ def create_app(
     application.state.search = search
 
     auth = Authenticator(secret, mcp_secret)
+    login_throttle = LoginThrottle(
+        max_failures=int(config.get("web.login_max_failures", 10)),
+        window_seconds=float(config.get("web.login_window_seconds", 300)),
+    )
 
     def guard_error(request: Request, detail: str, code: str, status: int) -> JSONResponse:
         """protect 早退响应：统一错误信封并回传请求 ID（与访问日志可关联）。"""
@@ -307,22 +311,36 @@ def create_app(
         """登录：账号密码（可记住 30 天）或访问令牌，签发同一 HMAC 会话 cookie。
 
         账号路径与令牌路径互不回退：账号密码错即 401，避免把枚举压力放到令牌上。
+        同一客户端地址连续失败达到上限会短暂进入 429，成功登录立即清零。
         """
+        client = request.client.host if request.client else "unknown"
+        wait = login_throttle.blocked(client)
+        if wait:
+            raise HTTPException(
+                429, f"登录失败次数过多，请 {wait} 秒后再试",
+                headers={"Retry-After": str(wait)},
+            )
+
+        def deny(message: str) -> None:
+            login_throttle.fail(client)
+            raise HTTPException(401, message)
+
         remember = bool(payload.get("remember"))
         if "username" in payload or "password" in payload:
             if not account_enabled:
-                raise HTTPException(401, "账号登录未配置，请改用访问令牌")
+                deny("账号登录未配置，请改用访问令牌")
             username, password = payload.get("username", ""), payload.get("password", "")
             if not isinstance(username, str) or not isinstance(password, str):
-                raise HTTPException(401, "账号或密码不正确")
+                deny("账号或密码不正确")
             if not verify_login(username, password, account_user, account_hash):
-                raise HTTPException(401, "账号或密码不正确")
+                deny("账号或密码不正确")
         else:
             supplied = payload.get("token", "")
             if not isinstance(supplied, str) or (
                 secret and not secrets.compare_digest(supplied, secret)
             ):
-                raise HTTPException(401, "访问令牌不正确")
+                deny("访问令牌不正确")
+        login_throttle.reset(client)
         response = JSONResponse({"authenticated": True})
         if remember:
             lifetime = int(config.get("web.remember_days", 30)) * 86400

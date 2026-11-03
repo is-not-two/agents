@@ -15,6 +15,9 @@ web:
   session_hours: 12
   remember_days: 30
   rate_limit_per_minute: 120
+  # 登录失败限速：同一客户端地址在窗口内失败达到上限后返回 429；成功登录清零。
+  login_max_failures: 10
+  login_window_seconds: 300
   chat:
     greeting: 你好，我可以检索知识与技术文档；需要写入时会引导你确认。
     write_hint: 尚未执行写入。请前往资料入库或Agent工作室，核对内容后人工确认。
