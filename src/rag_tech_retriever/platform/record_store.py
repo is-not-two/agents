@@ -269,6 +269,27 @@ class RecordStore:
             result[row["kind"]][bucket] = int(row["total"])
         return result
 
+    def plan_stats(self) -> dict[str, int]:
+        """聚合规划节点总数与完成数，避免状态接口把整份规划读进内存。
+
+        口径与 ``domains.life_planning`` 的内存统计一致：只计有效记录，
+        ``data.acts[].nodes[]`` 展开后按布尔 ``done`` 计数；缺失字段视为未完成。
+        """
+        with self.transaction() as cur:
+            cur.execute(
+                f"SELECT COUNT(*) AS node_count,"
+                f" COALESCE(SUM(CASE WHEN COALESCE((node->>'done')::boolean,false)"
+                f" THEN 1 ELSE 0 END),0) AS done_count"
+                f" FROM {self.records} AS r"
+                " CROSS JOIN LATERAL jsonb_array_elements("
+                "COALESCE(r.data->'acts','[]'::jsonb)) AS act"
+                " CROSS JOIN LATERAL jsonb_array_elements("
+                "COALESCE(act->'nodes','[]'::jsonb)) AS node"
+                " WHERE r.kind='plan' AND NOT r.deleted"
+            )
+            row = cur.fetchone()
+        return {"node_count": int(row["node_count"]), "done_count": int(row["done_count"])}
+
     def get(self, record_id: str, include_deleted: bool = False) -> dict:
         """读取记录，软删除默认隐藏。"""
         with self.transaction() as cur:

@@ -119,3 +119,22 @@ def test_invalid_dependency_rules_are_rejected(mutation) -> None:
         b["id"] = "a"
     with pytest.raises(DomainError):
         validate_plan(plan)
+
+
+def test_plan_stats_matches_in_memory_aggregation(store) -> None:
+    """SQL 聚合口径必须与内存统计一致（M5 切换前的对照测试）。"""
+    store.save("plan", validate_plan(sample_plan()))
+    done_plan = sample_plan()
+    done_plan["acts"][0]["nodes"][0]["done"] = True
+    store.save("plan", validate_plan(done_plan))
+    store.save("knowledge", {"title": "非规划记录", "content": "不计入"})
+    removed = store.save("plan", validate_plan(sample_plan()))
+    store.delete(removed["id"], removed["version"])
+
+    plans = store.list("plan")
+    nodes = [node for row in plans for act in row["data"]["acts"] for node in act["nodes"]]
+    expected = {"node_count": len(nodes), "done_count": sum(node["done"] for node in nodes)}
+
+    assert store.plan_stats() == expected
+    assert expected == {"node_count": 4, "done_count": 1}
+    assert store.count("plan") == len(plans) == 2

@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import os
 import secrets
-import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -18,7 +15,9 @@ from fastapi.staticfiles import StaticFiles
 
 from rag_tech_retriever.agent.capability_runtime import AgentRuntime
 from rag_tech_retriever.agent.collaboration import CollaborationService
+from rag_tech_retriever.api.auth import SESSION_COOKIE, Authenticator, issue_session
 from rag_tech_retriever.api.dependencies import WorkspaceContext
+from rag_tech_retriever.api.request_guard import body_within_limit
 from rag_tech_retriever.api.routes import admin as admin_routes
 from rag_tech_retriever.api.routes import automation, history, knowledge, planning
 from rag_tech_retriever.api.routes import capabilities as capability_routes
@@ -149,20 +148,7 @@ def create_app(
     application.state.journal = journal
     application.state.search = search
 
-    def authenticated(request: Request) -> bool:
-        if not secret:
-            return True
-        bearer = request.headers.get("Authorization", "")
-        if bearer.startswith("Bearer ") and secrets.compare_digest(bearer[7:], secret):
-            return True
-        try:
-            payload, signature = request.cookies.get("workspace_session", "").rsplit(".", 1)
-            expected = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
-            return int(payload.split(":")[0]) > time.time() and secrets.compare_digest(
-                signature, expected
-            )
-        except (ValueError, IndexError):
-            return False
+    auth = Authenticator(secret, mcp_secret)
 
     def guard_error(request: Request, detail: str, code: str, status: int) -> JSONResponse:
         """protect 早退响应：统一错误信封并回传请求 ID（与访问日志可关联）。"""
@@ -175,18 +161,17 @@ def create_app(
 
     @application.middleware("http")
     async def protect(request: Request, call_next):
-        bearer = request.headers.get("Authorization", "")
-        mcp_bearer = bool(mcp_secret and bearer.startswith("Bearer ") and secrets.compare_digest(bearer[7:], mcp_secret))
+        mcp_bearer = auth.is_mcp_token(request)
         mcp_path = request.url.path == "/mcp" or request.url.path.startswith("/mcp/")
         if mcp_bearer and request.url.path.startswith("/api/"):
             return guard_error(request, "MCP令牌只允许只读协议入口", ErrorCode.UNAUTHORIZED, 401)
         mcp_authorized = False
         if mcp_path and mcp_secret:
-            mcp_authorized = mcp_bearer or bool(secret and authenticated(request))
+            mcp_authorized = mcp_bearer or bool(secret and auth.authenticated(request))
         if (
             request.url.path.startswith(("/api/", "/mcp"))
             and request.url.path != "/api/session"
-            and not (mcp_authorized if mcp_path and mcp_secret else authenticated(request))
+            and not (mcp_authorized if mcp_path and mcp_secret else auth.authenticated(request))
         ):
             return guard_error(request, "请先登录", ErrorCode.UNAUTHORIZED, 401)
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
@@ -200,11 +185,8 @@ def create_app(
                 else "web.max_body_bytes"
             )
             limit = int(config.get(limit_key, 2097152))
-            declared = request.headers.get("content-length")
-            if declared and declared.isdigit() and int(declared) > limit:
-                # 已知超限时不读取正文，避免大导入整包进内存。
-                return guard_error(request, "提交内容超过大小限制", ErrorCode.PAYLOAD_TOO_LARGE, 413)
-            if len(await request.body()) > limit:
+            if not await body_within_limit(request, limit):
+                # 按块计数：已知或未知长度超限都不把整包读进内存。
                 return guard_error(request, "提交内容超过大小限制", ErrorCode.PAYLOAD_TOO_LARGE, 413)
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -304,7 +286,7 @@ def create_app(
     def session_status(request: Request) -> dict:
         return {
             "required": bool(secret),
-            "authenticated": authenticated(request),
+            "authenticated": auth.authenticated(request),
             "account_login": account_enabled,
         }
 
@@ -334,11 +316,9 @@ def create_app(
             lifetime = int(config.get("web.remember_days", 30)) * 86400
         else:
             lifetime = int(config.get("web.session_hours", 12)) * 3600
-        message = f"{int(time.time()) + lifetime}:{secrets.token_hex(16)}"
-        signature = hmac.new(secret.encode(), message.encode(), hashlib.sha256).hexdigest()
         response.set_cookie(
-            "workspace_session",
-            message + "." + signature,
+            SESSION_COOKIE,
+            issue_session(secret, lifetime),
             httponly=True,
             samesite="strict",
             secure=request.url.scheme == "https",
@@ -349,13 +329,13 @@ def create_app(
     @application.delete("/api/session")
     def logout():
         response = JSONResponse({"authenticated": False})
-        response.delete_cookie("workspace_session")
+        response.delete_cookie(SESSION_COOKIE)
         return response
 
     @application.get("/api/status")
     def status() -> dict:
-        plans = store.list("plan")
-        nodes = [n for p in plans for a in p["data"]["acts"] for n in a["nodes"]]
+        plans_total = store.count("plan")
+        nodes = store.plan_stats()
         try:
             llm_configured = search.connection.public(search.connection.load())["configured"]
         except StorageError:
@@ -363,9 +343,9 @@ def create_app(
         return {
             "storage": "PostgreSQL",
             "knowledge_count": store.count("knowledge"),
-            "plan_count": len(plans),
-            "node_count": len(nodes),
-            "done_count": sum(n["done"] for n in nodes),
+            "plan_count": plans_total,
+            "node_count": nodes["node_count"],
+            "done_count": nodes["done_count"],
             "lessons_count": store.count("lesson"),
             "stages_count": len(journal.list()),
             "export_directory": str(exports),

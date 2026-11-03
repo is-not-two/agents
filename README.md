@@ -34,7 +34,8 @@
 - **简历模块**：上传 PDF/DOCX/TXT/Markdown 后自动解析，公开记录只存元数据，解析文本存本机私密目录；支持结构化段落、技能命中、版本 diff 与 JD 对照（只做文本命中，不认定能力）。
 - **OCR**：扫描版 PDF 与 PNG/JPEG 图片走 RapidOCR + PDFium，文本层不足时自动回退；依赖可选安装（`pip install -e ".[ocr]"`），未安装时文本版不受影响，图片上传明确报错，结果带 `ocr_used` 标记。
 - **应用层加密**：AES-256-GCM（`platform/field_crypto.py`），密钥走 `SHILIE_ENCRYPTION_KEY` / 密钥文件，令牌绑定记录类型与字段名；开启后 `knowledge.content`、`job_lead.jd_text`、`resume_version.file_name` 与简历/周报私密文件在库里/磁盘为密文，读取透明解密，旧明文兼容。仓库默认关闭，服务器配置开启。
-- **验证**：v106 在本机通过 29 项纯逻辑测试（DAG 14 项、响应契约 4 项、其余既有），`ruff`、JS 语法、静态版本一致；已部署测试环境 `native-20261103-173305-6c973ed`，健康检查、数据基线 55 条/494 向量、OpenAPI 三主线响应模型与 resume 路由已用真实 HTTP 复核。隔离 PostgreSQL 全量 800+ 与浏览器登录后交互本轮未跑（需人工登录凭据），不能视为全量验收。
+- **后端内部收口（批次 D，对外行为不变）**：`/api/status` 的规划节点计数改为 PostgreSQL JSONB 聚合（不再把整份规划读进内存）；请求体限长按块计数，`Content-Length` 已知超限时不读正文、chunked 未知长度也不整包缓存，超限仍回 413；鉴权规则抽到 `api/auth.py`（令牌/会话 cookie/MCP 独立令牌同一套判定，`create_app` 只做装配）。
+- **验证**：v106 在本机通过 42 项纯逻辑测试（DAG 14、响应契约 4、鉴权 5、请求体限长 4、图 schema 等其他既有），`ruff`、JS 语法、静态版本一致；测试环境已部署 `native-20261103-173305-6c973ed`（批次 D 之后为下一 release），健康检查、数据基线 55 条/494 向量、OpenAPI 三主线响应模型与 resume 路由已用真实 HTTP 复核。隔离 PostgreSQL 全量 800+（含新增 `plan_stats` 口径对照）与浏览器登录后交互仍需在 CI/人工环境跑，不能视为全量验收。
 
 ### 当前待办（2026-11-03）
 
