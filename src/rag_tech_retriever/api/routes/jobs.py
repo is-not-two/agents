@@ -18,7 +18,7 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     """单用户求职，不抓取外部 URL、不读取本机简历原文件。"""
     router = APIRouter()
     service = JobsService(context.store, context.config)
-    resumes = ResumeService(context.store, context.journal.root)
+    resumes = ResumeService(context.store, context.journal.root, context.config)
 
     @router.get("/api/jobs", response_model=JobsOverviewOut)
     def overview(trash: bool = False) -> dict:

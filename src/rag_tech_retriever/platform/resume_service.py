@@ -33,13 +33,12 @@ CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 class ResumeService:
     """Single-user, authenticated resume pipeline; no model is required."""
 
-    def __init__(self, store: RecordStore, root: Path | None = None) -> None:
+    def __init__(self, store: RecordStore, root: Path | None = None,
+                 config: ConfigLoader | None = None) -> None:
         self.store = store
-        if root is None:
-            store_config = getattr(store, "config", None) or ConfigLoader.load_default()
-            root = Path(store_config.settings_path).parent.parent
-        root = Path(root).resolve()
-        policy = ConfigLoader(root / "config" / "jobs.yaml").get("jobs", {})
+        source = config or getattr(store, "config", None) or ConfigLoader.load_default()
+        root = Path(root or Path(source.settings_path).parent.parent).resolve()
+        policy = ConfigLoader(Path(source.settings_path).parent / "jobs.yaml").get("jobs", {})
         if not isinstance(policy, dict):
             raise DomainError("求职配置无效")
         self.max_bytes = policy.get("max_resume_bytes", 10485760)
