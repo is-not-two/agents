@@ -375,6 +375,12 @@ if [ -d /var/lib/shilie/config ]; then
   PYTHONPATH="$DEST/src" "$DEST/.venv/bin/python" "$DEST/scripts/merge_deploy_config.py" \
     --package "$DEST/config" --persistent /var/lib/shilie/config --dest "$DEST/config"
 fi
+# 公开语料放在共享目录，部署时复制进 release：语料目录要求位于工作区内，
+# 而 release 会被后续部署替换，因此共享目录才是持久来源。
+if [ -d /var/lib/shilie/data/public ]; then
+  mkdir -p "$DEST/data/public"
+  cp -a /var/lib/shilie/data/public/. "$DEST/data/public/"
+fi
 chown -R root:shilie "$DEST"
 chmod 750 "$DEST"
 chown -R shilie:shilie "$DEST/data/local" "$DEST/output" 2>/dev/null || true

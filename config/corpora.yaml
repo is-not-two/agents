@@ -1,6 +1,6 @@
 # Restart after review. A corpus selector is not permission to publish the workspace.
 default: tech_doc
-allowed: [tech_doc]
+allowed: [tech_doc, public_docs]
 corpora:
   tech_doc:
     label: 本机技术语料
