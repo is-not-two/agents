@@ -103,6 +103,7 @@ export const groups = [
 ];
 export const modules = [
   ["knowledge", "个人知识库", "workspace", "knowledge"],
+  ["bookmarks", "网页收藏", "workspace", "link"],
   ["jobs", "求职记录", "workspace", "task"],
   ["company-capabilities", "目标公司能力", "workspace", "task"],
   ["job-insights", "岗位证据对照", "workspace", "search"],
@@ -126,6 +127,8 @@ export const modules = [
 ].map(([id, title, group, icon]) => ({ id, title, group, icon }));
 export const state = {
   knowledge: [],
+  bookmarks: [],
+  bookmarkFilter: read("bookmarkFilter", "全部"),
   plans: [],
   stages: [],
   stageTime: "",
@@ -182,6 +185,8 @@ state.filter = ["all", "notes", "resources"].includes(state.filter)
   ? state.filter
   : "all";
 state.query = typeof state.query === "string" ? state.query : "";
+state.bookmarkFilter =
+  typeof state.bookmarkFilter === "string" ? state.bookmarkFilter : "全部";
 state.view = ["story", "tasks", "relations"].includes(state.view)
   ? state.view
   : "story";
@@ -223,8 +228,10 @@ export async function load() {
     Object.assign(state, { loading: false, error: "" });
     return;
   }
-  const [knowledge, plans, status, summary, corpusOptions] = await Promise.all([
+  const [knowledge, bookmarks, plans, status, summary, corpusOptions] = await Promise.all([
     api("knowledge"),
+    /* 收藏为独立集合，接口异常时不阻塞知识/规划等主视图。 */
+    api("bookmarks").catch(() => []),
     api("plans"),
     api("status"),
     api("stage-summary").catch((error) => ({
@@ -248,6 +255,7 @@ export async function load() {
     .catch((e) => ({ automationError: e.message }));
   Object.assign(state, automation, {
     knowledge,
+    bookmarks,
     plans,
     status,
     corpusOptions,

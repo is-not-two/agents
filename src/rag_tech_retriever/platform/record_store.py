@@ -24,6 +24,8 @@ from rag_tech_retriever.platform.workspace_schema import (
 
 RECORD_KINDS = {
     "knowledge",
+    # 网页收藏：独立分类与可点击外链（2026-11-03 起）。
+    "bookmark",
     "plan",
     "agent_profile",
     "workflow",

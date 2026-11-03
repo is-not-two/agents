@@ -15,6 +15,8 @@ export function icon(name) {
       '<path d="M2 4h16M2 10h16M2 16h16"/><circle cx="6" cy="4" r="2"/><circle cx="13" cy="10" r="2"/><circle cx="8" cy="16" r="2"/>',
     home: '<path d="m2 9 8-7 8 7M4 8v10h12V8M8 18v-6h4v6"/>',
     task: '<circle cx="10" cy="10" r="7"/><path d="m6 10 3 3 5-6"/>',
+    /* 网页收藏：两环相扣的链条，与「外链可点击」语义对应。 */
+    link: '<path d="M8 12a4 4 0 0 1 0-6l2-2a4 4 0 0 1 6 6l-1 1M12 8a4 4 0 0 1 0 6l-2 2a4 4 0 0 1-6-6l1-1"/>',
     /* 锁：data.js 里 private 模块的 icon 就写着 "lock"，缺这一条会静默兜底成知识库书本。 */
     lock: '<rect x="4" y="9" width="12" height="9" rx="2"/><path d="M7 9V6a3 3 0 0 1 6 0v3"/>',
   };

@@ -1,25 +1,25 @@
-import { bindCollaboration } from "./collaboration.js?v=107";
-import { bindAgentStudio } from "./agent-studio.js?v=107";
-import { bindBackup } from "./backup.js?v=107";
+import { bindCollaboration } from "./collaboration.js?v=108";
+import { bindAgentStudio } from "./agent-studio.js?v=108";
+import { bindBackup } from "./backup.js?v=108";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=107";
-import { bindModelConnection } from "./model-connection.js?v=107";
-import { bindTree } from "./tree-actions.js?v=107";
-import { bindAutomation } from "./automation-actions.js?v=107";
-import { bindLessons } from "./lessons.js?v=107";
-import { bindJobs } from "./jobs.js?v=107";
-import { bindCapabilities } from "./company-capabilities.js?v=107";
-import { bindLearning } from "./learning.js?v=107";
-import { bindJobInsights } from "./job-insights.js?v=107";
-import { bindServerStatus } from "./server-status.js?v=107";
-import { bindEvaluation } from "./evaluation.js?v=107";
-import { startTour } from "./tour.js?v=107";
-import { toggleDirector, directorActive } from "./director.js?v=107";
-import { initMotion } from "./motion.js?v=107";
-import { initOrbit } from "./orbit.js?v=107";
+} from "./private-view.js?v=108";
+import { bindModelConnection } from "./model-connection.js?v=108";
+import { bindTree } from "./tree-actions.js?v=108";
+import { bindAutomation } from "./automation-actions.js?v=108";
+import { bindLessons } from "./lessons.js?v=108";
+import { bindJobs } from "./jobs.js?v=108";
+import { bindCapabilities } from "./company-capabilities.js?v=108";
+import { bindLearning } from "./learning.js?v=108";
+import { bindJobInsights } from "./job-insights.js?v=108";
+import { bindServerStatus } from "./server-status.js?v=108";
+import { bindEvaluation } from "./evaluation.js?v=108";
+import { startTour } from "./tour.js?v=108";
+import { toggleDirector, directorActive } from "./director.js?v=108";
+import { initMotion } from "./motion.js?v=108";
+import { initOrbit } from "./orbit.js?v=108";
 import {
   api,
   state,
@@ -30,13 +30,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=107";
+} from "./data.js?v=108";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=107";
+} from "./views.js?v=108";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -237,6 +237,34 @@ async function refresh(keepScroll = true) {
     renderPage();
   }
 }
+async function refreshKnowledge() {
+  /* 知识写操作只刷新受影响集合与统计，不再重拉规划/求职/Agent 等 7 个接口。 */
+  const y = window.scrollY;
+  try {
+    const [knowledge, status] = await Promise.all([
+      api("knowledge"),
+      api("status"),
+    ]);
+    Object.assign(state, { knowledge, status });
+    renderPage({ restore: true });
+    window.scrollTo(0, y);
+  } catch (e) {
+    state.loading = false;
+    state.error = e.message;
+    renderPage();
+  }
+}
+async function refreshBookmarks() {
+  /* 收藏写操作只重拉收藏集合，分类 chips 与列表按新数据重算。 */
+  const y = window.scrollY;
+  try {
+    Object.assign(state, { bookmarks: await api("bookmarks") });
+    renderPage({ restore: true });
+    window.scrollTo(0, y);
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
 function restoreNote() {
   const row = currentNote();
   if (row)
@@ -317,7 +345,9 @@ async function saveForm(form) {
     const d = form.closest("dialog"),
       kind = d.dataset.form,
       fd = new FormData(form);
-    if (kind === "knowledge") {
+    const knowledgeOnly = kind === "knowledge";
+    const bookmarkOnly = kind === "bookmark";
+    if (knowledgeOnly) {
       const data = {
         title: fd.get("title"),
         content: fd.get("content"),
@@ -339,6 +369,26 @@ async function saveForm(form) {
       state.filter = "all";
       state.query = "";
       toast("笔记已保存");
+    } else if (bookmarkOnly) {
+      const data = {
+        title: fd.get("title"),
+        url: fd.get("url"),
+        category: fd.get("category"),
+        tags: String(fd.get("tags"))
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean),
+        note: fd.get("note"),
+      };
+      const row = editingId
+        ? state.bookmarks.find((b) => b.id === editingId)
+        : null;
+      await api(
+        editingId ? `bookmarks/${editingId}` : "bookmarks",
+        { data, ...(row ? { version: row.version } : {}) },
+        editingId ? "PUT" : "POST",
+      );
+      toast("收藏已保存");
     } else if (kind === "stage") {
       const created = await api("stages", {
         title: fd.get("title"),
@@ -346,7 +396,9 @@ async function saveForm(form) {
       });
       toast("阶段已创建，可以继续记录");
     }
-    await refresh();
+    if (knowledgeOnly) await refreshKnowledge();
+    else if (bookmarkOnly) await refreshBookmarks();
+    else await refresh();
     closeDialogs();
   } catch (e) {
     if (e.code === "VERSION_CONFLICT") {
@@ -453,7 +505,7 @@ async function restoreNoteVersion(version) {
       current_version: row.version,
     });
     $("#detail-dialog").close();
-    await refresh();
+    await refreshKnowledge();
     toast("已恢复此版本，旧历史已保留");
   } catch (e) {
     toast(e.message, true);
@@ -498,12 +550,60 @@ function handleAction(button) {
         api(`records/${row.id}?version=${row.version}`, undefined, "DELETE")
           .then(async () => {
             state.selectedNote = "";
-            await refresh();
+            await refreshKnowledge();
             toast("已移入回收站");
           })
           .catch((e) => toast(e.message, true));
       break;
     }
+    case "new-bookmark":
+      document.querySelector(
+        '.form-dialog[data-form="bookmark"] h2',
+      ).textContent = "新建收藏";
+      editingId = "";
+      showDialog("bookmark");
+      break;
+    case "edit-bookmark": {
+      const row = state.bookmarks.find((b) => b.id === id);
+      if (!row) break;
+      document.querySelector(
+        '.form-dialog[data-form="bookmark"] h2',
+      ).textContent = "编辑收藏";
+      showDialog(
+        "bookmark",
+        {
+          title: row.data.title,
+          url: row.data.url,
+          category: row.data.category === "未分类" ? "" : row.data.category,
+          tags: (row.data.tags || []).join(", "),
+          note: row.data.note || "",
+        },
+        row.id,
+      );
+      break;
+    }
+    case "delete-bookmark": {
+      const row = state.bookmarks.find((b) => b.id === id);
+      if (row && confirm(`将“${row.data.title}”移入回收站？`))
+        api(`records/${row.id}?version=${row.version}`, undefined, "DELETE")
+          .then(async () => {
+            await refreshBookmarks();
+            toast("已移入回收站");
+          })
+          .catch((e) => toast(e.message, true));
+      break;
+    }
+    case "bookmark-category":
+      state.bookmarkFilter = value || "全部";
+      write("bookmarkFilter", state.bookmarkFilter);
+      renderPage({ restore: true });
+      break;
+    case "bookmark-trash":
+      openBookmarkTrash();
+      break;
+    case "restore-bookmark-trash":
+      restoreBookmarkTrash(id);
+      break;
     case "filter":
       state.filter = value;
       renderPage({ restore: true });
@@ -842,8 +942,45 @@ async function restoreTrash(id) {
     });
     state.selectedNote = id;
     closeDialogs();
-    await refresh();
+    await refreshKnowledge();
     toast("笔记已恢复，历史仍保留");
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+let bookmarkTrashRows = [];
+async function openBookmarkTrash() {
+  try {
+    bookmarkTrashRows = await api("bookmarks?trash=true");
+    showDetail(
+      "收藏回收站",
+      bookmarkTrashRows.length
+        ? bookmarkTrashRows
+            .map(
+              (row) =>
+                `<section class="trash-entry"><h3>${escapeHtml(row.data.title)}</h3><p>${escapeHtml(row.data.url)}</p><button class="small-button" data-action="restore-bookmark-trash" data-id="${escapeHtml(row.id)}">恢复收藏</button></section>`,
+            )
+            .join("")
+        : "<p>回收站为空。</p>",
+    );
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+async function restoreBookmarkTrash(id) {
+  const row = bookmarkTrashRows.find((item) => item.id === id);
+  if (!row) return;
+  try {
+    const history = await api(`records/${id}/history`),
+      target = history.find((version) => !version.deleted);
+    if (!target) throw Error("没有可恢复的历史版本");
+    await api(`records/${id}/restore`, {
+      target_version: target.version,
+      current_version: row.version,
+    });
+    closeDialogs();
+    await refreshBookmarks();
+    toast("收藏已恢复");
   } catch (error) {
     toast(error.message, true);
   }

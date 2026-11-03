@@ -20,6 +20,7 @@ from rag_tech_retriever.api.dependencies import WorkspaceContext
 from rag_tech_retriever.api.request_guard import body_within_limit
 from rag_tech_retriever.api.routes import admin as admin_routes
 from rag_tech_retriever.api.routes import automation, history, knowledge, planning
+from rag_tech_retriever.api.routes import bookmarks as bookmark_routes
 from rag_tech_retriever.api.routes import capabilities as capability_routes
 from rag_tech_retriever.api.routes import chat as chat_routes
 from rag_tech_retriever.api.routes import collaboration as collaboration_routes
@@ -370,6 +371,7 @@ def create_app(
     for module in (
         collaboration_routes,
         knowledge,
+        bookmark_routes,
         planning,
         history,
         search_routes,

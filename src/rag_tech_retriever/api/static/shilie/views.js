@@ -1,35 +1,35 @@
-import { collaborationView } from "./collaboration.js?v=107";
-import { corpusSelect } from "./public-corpus.js?v=107";
-import { agentStudioView } from "./agent-studio.js?v=107";
-import { backupView } from "./backup.js?v=107";
-import { privateView } from "./private-view.js?v=107";
-import { modelConnectionView } from "./model-connection.js?v=107";
-import { treeView, treeDialog } from "./tree.js?v=107";
+import { collaborationView } from "./collaboration.js?v=108";
+import { corpusSelect } from "./public-corpus.js?v=108";
+import { agentStudioView } from "./agent-studio.js?v=108";
+import { backupView } from "./backup.js?v=108";
+import { privateView } from "./private-view.js?v=108";
+import { modelConnectionView } from "./model-connection.js?v=108";
+import { treeView, treeDialog } from "./tree.js?v=108";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=107";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=107";
-import { jobsView, jobsDialog } from "./jobs.js?v=107";
+} from "./automation-views.js?v=108";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=108";
+import { jobsView, jobsDialog } from "./jobs.js?v=108";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=107";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=107";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=107";
-import { serverStatusView } from "./server-status.js?v=107";
-import { evaluationView } from "./evaluation.js?v=107";
-import { directorActive } from "./director.js?v=107";
-import { icon, orbitIcon } from "./icons.js?v=107";
+} from "./company-capabilities.js?v=108";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=108";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=108";
+import { serverStatusView } from "./server-status.js?v=108";
+import { evaluationView } from "./evaluation.js?v=108";
+import { directorActive } from "./director.js?v=108";
+import { icon, orbitIcon } from "./icons.js?v=108";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=107";
+} from "./data.js?v=108";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -303,6 +303,60 @@ function knowledge() {
     }<div class="module-toolbar">${hasAny ? `<label class="search-field">${icon("search")}<input id="knowledge-search" type="search" placeholder="搜索标题、正文或标签" value="${esc(state.query)}"></label>` : ""}<div class="toolbar-actions">${btn("回收站", "trash-notes")}${btn("新建笔记", "new-note", "primary-button")}</div></div><div id="knowledge-panel">${knowledgePanelHtml()}</div>`,
   );
 }
+/* 网页收藏：分类 chips + 外链卡片；标题本身就是链接，点击直达原网页（新标签页、noopener）。 */
+function bookmarkCategories() {
+  return [
+    "全部",
+    ...new Set((state.bookmarks || []).map((b) => b.data.category || "未分类")),
+  ];
+}
+function bookmarkHost(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+function bookmarksEmpty() {
+  const demos = [
+    ["文档与教程", "官方文档、规范与参考手册"],
+    ["待读文章", "先存下来，读完再挪分类"],
+    ["工具与服务", "常用平台入口，一键直达"],
+  ];
+  return `<nav class="demo-grid" aria-label="收藏分类示意">${demos.map(([t, d]) => `<article class="demo-card"><h3>${t}</h3><p>${d}</p></article>`).join("")}</nav><section class="empty-panel"><h2>还没有网页收藏</h2><p>保存常用网址并按分类整理，点击标题即可跳转。</p>${btn("新建收藏", "new-bookmark", "primary-button")}</section>`;
+}
+export function bookmarksPanelHtml() {
+  const rows = (state.bookmarks || []).filter(
+    (b) =>
+      state.bookmarkFilter === "全部" ||
+      (b.data.category || "未分类") === state.bookmarkFilter,
+  );
+  if (!(state.bookmarks || []).length) return bookmarksEmpty();
+  if (!rows.length)
+    return `<section class="empty-panel"><h2>该分类下暂无收藏</h2><p>换个分类，或把新网址保存到这个分类。</p><button class="small-button" data-action="bookmark-category" data-value="全部">查看全部</button></section>`;
+  return `<div class="bookmark-grid">${rows
+    .map((b) => {
+      const tags = (b.data.tags || [])
+        .map((t) => `<span>${esc(t)}</span>`)
+        .join("");
+      return `<article class="bookmark-card"><header><a class="bookmark-title" href="${esc(b.data.url)}" target="_blank" rel="noopener noreferrer" title="${esc(b.data.url)}">${esc(b.data.title)}${icon("link")}</a><span class="bookmark-domain">${esc(bookmarkHost(b.data.url))}</span></header>${b.data.note ? `<p class="bookmark-note">${esc(b.data.note)}</p>` : ""}<footer><span class="bookmark-category">${esc(b.data.category)}</span>${tags ? `<span class="bookmark-tags">${tags}</span>` : ""}<span class="bookmark-actions">${btn("编辑", "edit-bookmark", "small-button", `data-id="${esc(b.id)}"`)}${btn("删除", "delete-bookmark", "text-button", `data-id="${esc(b.id)}"`)}</span></footer></article>`;
+    })
+    .join("")}</div>`;
+}
+function bookmarksView() {
+  const cats = bookmarkCategories();
+  /* 分类被删空或改名后，旧筛选回落到「全部」，避免停在不可见的空分类上。 */
+  if (!cats.includes(state.bookmarkFilter)) state.bookmarkFilter = "全部";
+  return frame(
+    "网页收藏",
+    `<div class="module-toolbar"><nav class="category-chips" aria-label="收藏分类">${cats
+      .map(
+        (c) =>
+          `<button class="category-chip" type="button" data-action="bookmark-category" data-value="${esc(c)}" aria-pressed="${c === state.bookmarkFilter}">${esc(c)}</button>`,
+      )
+      .join("")}</nav><div class="toolbar-actions">${btn("回收站", "bookmark-trash")}${btn("新建收藏", "new-bookmark", "primary-button")}</div></div><div id="bookmark-panel">${bookmarksPanelHtml()}</div>`,
+  );
+}
 function stagePage() {
   if (state.stageError)
     return frame(
@@ -412,6 +466,7 @@ export function render() {
     if (["all", "notes", "resources"].includes(tab)) state.filter = tab;
     return knowledge();
   }
+  if (id === "bookmarks") return bookmarksView();
   if (id === "planning") {
     if (["story", "tasks", "relations"].includes(tab)) state.view = tab;
     return treeView();
@@ -456,7 +511,7 @@ export function dialogs() {
     capabilitiesDialog() +
     learningDialogs() +
     jobProfileDialog() +
-    `${dialog("knowledge", "笔记", `${field("标题", "title")}${textarea("正文", "content")}<label class="form-field">标签（用逗号分隔）<input name="tags"></label>${field("来源", "source")}${actions()}`)}${dialog("stage", "阶段记录", `${field("阶段名称", "title")}${textarea("目标", "objective", "", 4)}${actions()}`)}`
+    `${dialog("knowledge", "笔记", `${field("标题", "title")}${textarea("正文", "content")}<label class="form-field">标签（用逗号分隔）<input name="tags"></label>${field("来源", "source")}${actions()}`)}${dialog("bookmark", "网页收藏", `${field("标题", "title")}<label class="form-field">网址<input name="url" type="url" inputmode="url" required maxlength="2048" placeholder="https://example.com"><small>只接受完整的 http/https 链接</small></label><label class="form-field">分类（留空为未分类）<input name="category" maxlength="24" placeholder="例如：文档与教程"></label><label class="form-field">标签（用逗号分隔）<input name="tags"></label>${textarea("备注", "note", "", 5)}${actions()}`)}${dialog("stage", "阶段记录", `${field("阶段名称", "title")}${textarea("目标", "objective", "", 4)}${actions()}`)}`
   );
 }
 export function detail(title, html) {
