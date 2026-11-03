@@ -113,16 +113,20 @@
 
 ## Round 10（2026-11-03）：求职漏斗看板 + 目标公司能力记录（GLM-5.3-FlashX 执行）
 
-- 范围按 WorkBuddy 选定：先做实习侧；上线侧后置。正式 8770、正式库与正式服务未改动。
+- 范围按 WorkBuddy 选定：先做实习侧；上线侧在测试环境验收通过后单独执行正式迁移（见下）。
 - 漏斗看板：`GET /api/jobs` 新增 `funnel`（收藏/投递/进面/offer 计数 + 三段转化率 + 本周投递/目标）。进面按已登记面试复盘计，offer 按当前状态计，页面注明两者不保证严格嵌套；空分母返回 null，显示“暂不计算”。周目标 `jobs.funnel.weekly_application_target` 配置化（当前 5），周窗口按 `notifications.yaml` 时区从周一起算。
 - 目标公司能力：新增记录类型 `company_capability`，字段 company/role/source/capabilities（name、must|nice、level 1–5、evidence|pending|missing、evidence）/notes；同名能力（大小写不敏感）拒绝；接入 `/api/jobs/capabilities` 五件套、历史/回收站、导出 Markdown。前端新增独立模块“目标公司能力”，复用求职主从布局，窄屏单列。
-- 记录类型约束：`RECORD_KINDS` 增加一种 kind；本地 local profile 由 `ensure_schema` 增量重建 CHECK 约束。测试库已迁移到 18 种；正式库仍为 17 种，生产 verify 模式需管理员另行迁移后才能升级，本轮未对正式库执行。
+- 记录类型约束：`RECORD_KINDS` 增加一种 kind；本地 local profile 由 `ensure_schema` 增量重建 CHECK 约束。测试库与正式库最终都迁移到 18 种（正式库迁移见下）。
 - 静态版本统一 v101 → v102（66 处），`check_static_version.py` 通过。
 - 已验证：求职纯逻辑 24 项 pytest 通过（能力清单正常/异常、漏斗复算与空分母）；ruff 0；全部 JS `node --check` 通过；`local_gate.py --quick` 6/7 通过（唯一跳过为 pytest 全量）。
-- 环境隔离（2026-11-03）：新建独立测试库 `shilie_preview_20261103`（正式库一次性副本：15 条记录 / 494 向量），preview 用 drop-in `EnvironmentFile=-/etc/shilie/preview-db.env` 指向该库；正式库 `shilie_native_20261027` 未迁移，仍为 17 种 kind，正式 8770 仍 v100。
+- 环境隔离（2026-11-03）：新建独立测试库 `shilie_preview_20261103`（正式库一次性副本：15 条记录 / 494 向量），preview 用 drop-in `EnvironmentFile=-/etc/shilie/preview-db.env` 指向该库；此步未动正式库，正式迁移随后单独执行（见下）。
 - 部署：v102 已部署测试环境（release `native-20261103-103817-d452b9d`），健康检查通过；测试库 kind 增量迁移 17→18（仅加 `company_capability`，未删数据），迁移前 dump 在 `/var/backups/shilie/preview-db-20261103-103522/`。
 - 浏览器验收（Edge + Playwright，ignoreHTTPS，预置会话）：漏斗空态显示“暂不计算”；造 1 岗位 / 1 投递 / 1 复盘后显示 1/1/1/0，三段转化 100%/100%/0%，本周投递 1/5；能力清单新增、详情、归档、回收站均正常；1440px 与 390px 均无横向溢出；控制台 0 错误。验收后测试数据已归档，有效漏斗回到空态。
-- 未执行：数据库集成 pytest（需 QA-owned disposable DB）与正式 8770 推送；真实 JD 人工核对见下表。
+- 正式迁移（2026-11-03，WorkBuddy 授权）：迁移前备份 `/var/backups/shilie/prod-pre-v102-20261103-104711`（db.dump、旧 17-kind 定义、src、config）；正式库 kind 17→18（仅追加 `company_capability`），记录 15 条 / 向量 494 条未变。
+- 正式部署：v102 已上线 8770（release `native-20261103-104739-1002a64`），部署脚本自动备份 `/var/backups/shilie/deploy-20261103-104748`；健康、版本、数据基线与 evaluation.js 均通过。
+- 正式只读验收：`/api/jobs` 漏斗结构与空分母正确、`/api/jobs/capabilities` 为空、`/api/status` 200；1440px 与 390px 页面均无横向溢出、控制台 0 错误；未写入任何正式业务数据。
+- 回滚提示：正式库已含新 kind，回退 v100 代码前须先恢复旧 17-kind 约束（旧定义见备份目录 `kind-before.txt`），否则服务拒绝启动。
+- 未执行：数据库集成 pytest（需 QA-owned disposable DB）；真实 JD 人工核对见下表（仍需 WorkBuddy 提供 10 份真实 JD）。
 
 ### 10 个真实 JD 人工核对表（等待 WorkBuddy 提供后逐条填写，不预填示例）
 

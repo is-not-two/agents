@@ -14,7 +14,7 @@
 
 | 环境 | 地址 | 服务 | 状态 |
 |---|---|---|---|
-| 正式 | `https://8.156.81.128:8770/` | `shilie.service` | v100 |
+| 正式 | `https://8.156.81.128:8770/` | `shilie.service` | v102 |
 | 测试 | `https://8.156.81.128:8771/` | `shilie-preview.service` | v102（新功能先在此验证，独立数据库） |
 
 两环境各自独立数据库（正式 `shilie_native_20261027`，测试 `shilie_preview_20261103`）并共用模型缓存，代码目录与 systemd drop-in 各自独立；数据库端口不对公网开放，ufw 仅放行本人 IP（云安全组需另行放行 8770/8771）。代码位于 `/opt/shilie/releases`，入口软链 `current`/`preview`，持久数据在 `/var/lib/shilie`，私密环境变量与证书在 `/etc/shilie`；代码切换不覆盖数据。
