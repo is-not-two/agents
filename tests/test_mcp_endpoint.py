@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -78,6 +79,19 @@ def test_call_tool_stacktrace_roundtrip(tmp_path):
     text = getattr(result, "content", None)
     rendered = "".join(getattr(block, "text", "") for block in text or [])
     assert "KeyError" in rendered and "possible_causes" in rendered or "KeyError" in rendered
+
+
+def test_corpus_resource_is_readable(tmp_path):
+    """回归：静态 Resource 只能被列出、读取必然报错；注册必须带 handler。"""
+    server = mcp_routes.build_mcp_server(FakeSearch(), _config(tmp_path))
+    uris = [str(item.uri) for item in asyncio.run(server.list_resources())]
+    assert "rag://corpus/chunks" in uris
+    items = asyncio.run(server.read_resource("rag://corpus/chunks"))
+    assert items, "资源必须能返回内容"
+    body = json.loads(items[0].content)
+    assert body["namespace"]
+    # 本机通常连不上语料库：此时必须如实标注不可用，而不是伪造数量
+    assert body.get("available") is False or body["total_chunks"] >= 0
 
 
 def test_status_route_and_mcp_mount(tmp_path):

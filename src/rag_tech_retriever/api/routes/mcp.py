@@ -134,14 +134,12 @@ def build_mcp_server(search, mcp_config: ConfigLoader | None = None) -> MCPServe
                 read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False))
 
     if config.get("permissions.readonly", True) and config.get("resources.corpus.enabled", False):
-        server.add_resource(_corpus_resource(catalog))
+        _register_corpus_resource(server, catalog)
     return server
 
 
-def _corpus_resource(catalog: CorpusCatalog | None = None):
-    """rag://corpus/chunks：语料清单快照（构建时生成；库不可用时明确标注）。"""
-    from mcp.types import Resource
-
+def _corpus_body(catalog: CorpusCatalog | None = None) -> dict:
+    """rag://corpus/chunks 的内容快照（构建时生成；库不可用时明确标注）。"""
     namespace = (catalog or CorpusCatalog()).select(None)
 
     try:
@@ -163,20 +161,29 @@ def _corpus_resource(catalog: CorpusCatalog | None = None):
             )
         finally:
             client.close()
-        body = {
+        return {
             "namespace": namespace,
             "total_chunks": total,
             "sample": sample,
         }
     except (VectorStoreError, OSError, ValueError):
         # 语料库属可选依赖：降级标注，不冒充可用
-        body = {"namespace": namespace, "available": False, "reason": "语料库暂不可用"}
-    return Resource(
-        uri="rag://corpus/chunks",
+        return {"namespace": namespace, "available": False, "reason": "语料库暂不可用"}
+
+
+def _register_corpus_resource(server: MCPServer, catalog: CorpusCatalog | None = None) -> None:
+    """注册语料资源。
+
+    注意：`add_resource` 只接受静态 Resource（能被 list_resources 列出，
+    但 resources/read 无处理函数、必然报错）；必须用 handler 形式注册。
+    内容仍是构建时快照（读取时不查库），不改变只读语义。
+    """
+    payload = json.dumps(_corpus_body(catalog), ensure_ascii=False)
+    server.resource(
+        "rag://corpus/chunks",
         name="技术语料 chunk 清单",
-        mimeType="application/json",
-        text=json.dumps(body, ensure_ascii=False),
-    )
+        mime_type="application/json",
+    )(lambda: payload)
 
 
 def streamable_app(search, mcp_config: ConfigLoader | None = None):
