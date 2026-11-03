@@ -30,8 +30,8 @@
 | 向量数据库 | PostgreSQL + pgvector | psycopg2驱动；当前精确扫描（历史 V1 用 IVFFlat）；建表维度读取配置生成 |
 | 后端框架 | FastAPI | 轻量REST接口封装 |
 | Agent编排 | LangGraph | 意图识别 + 工具路由 + 状态机流程 |
-| MCP协议 | 官方 Python SDK 2.3.0 客户端 | stdio/Streamable HTTP 工具发现与调用；对外MCP服务端仍待实现 |
-| 工程化 | Docker + docker-compose | 最简可运行部署，依赖检查 + 格式检查 |
+| MCP协议 | 官方 Python SDK 2.x | 客户端 stdio/Streamable HTTP；对外服务端 `/mcp` Streamable HTTP 已上线（只读工具三件+语料资源） |
+| 工程化 | 原生 systemd + PostgreSQL（服务器） | 双环境 8770/8771；Docker 仅限本机测试库与 GitHub CI（去 Docker 方案待执行） |
 
 ## Full Project Structure
 符合PEP 517标准src-layout结构，单向依赖分层：`common → rag → agent → mcp → api`
@@ -137,29 +137,14 @@ rag-tech-doc-retriever/
     └── v2/                      # V2各阶段测试报告、接口日志
 ```
 
-### 结构与磁盘的差异（2026-10-24 核对，权威视图见工作区根 DESIGN.md §2）
+### 结构与磁盘的差异（2026-11-03 核对，权威视图见工作区根 DESIGN.md §2）
 
 上方结构树是 V2 规划时代的快照，实际磁盘已演进为工作台形态，主要差异：
-- `src/rag_tech_retriever/platform/`（10 模块：record_store/private_store/private_backup/search_service/model_connection/agent_capabilities/skill_registry/mcp_client/github_skills/maintenance_results）与 `domains/`（knowledge/life_planning/automation/snapshot 纯校验层）为现行核心，未在上方树中
-- `api/routes/` 13 个文件全部有路由（2026-10-24 起 admin/chat/mcp 三占位已实现：/api/admin/stats、/api/chat、/api/mcp/status + /mcp Streamable HTTP 端点）；前端在 `api/static/shilie/`（14 个 JS 模块，v65）与 `/legacy`（15 模块）
-- `agent/` 现为 capability_runtime + workflow_service（原规划五模块 2026-10-24 删除）；`tools/`、`mcp/` 两包未接线（归 D-02）
-- 配置新增 `web.yaml`、`agent-tools.yaml`；测试 18 个文件 191 项；scripts 含 web_regression、verify-ui、check_static_version 等工程工具
-
-### 结构与磁盘的差异（2026-10-24 核对，权威视图见工作区根 DESIGN.md §2）
-
-上方结构树是 V2 规划时代的快照，实际磁盘已演进为工作台形态，主要差异：
-- `src/rag_tech_retriever/platform/`（10 模块：record_store/private_store/private_backup/search_service/model_connection/agent_capabilities/skill_registry/mcp_client/github_skills/maintenance_results）与 `domains/`（knowledge/life_planning/automation/snapshot 纯校验层）为现行核心，未在上方树中
-- `api/routes/` 13 个文件全部有路由（2026-10-24 起 admin/chat/mcp 三占位已实现：/api/admin/stats、/api/chat、/api/mcp/status + /mcp Streamable HTTP 端点）；前端在 `api/static/shilie/`（14 个 JS 模块，v65）与 `/legacy`（15 模块）
-- `agent/` 现为 capability_runtime + workflow_service（原规划五模块 2026-10-24 删除）；`tools/`、`mcp/` 两包未接线（归 D-02）
-- 配置新增 `web.yaml`、`agent-tools.yaml`；测试 18 个文件 191 项；scripts 含 web_regression、verify-ui、check_static_version 等工程工具
-
-### 结构与磁盘的差异（2026-10-24 核对，权威视图见工作区根 DESIGN.md §2）
-
-上方结构树是 V2 规划时代的快照，实际磁盘已演进为工作台形态，主要差异：
-- `src/rag_tech_retriever/platform/`（10 模块：record_store/private_store/private_backup/search_service/model_connection/agent_capabilities/skill_registry/mcp_client/github_skills/maintenance_results）与 `domains/`（knowledge/life_planning/automation/snapshot 纯校验层）为现行核心，未在上方树中
-- `api/routes/` 13 个文件全部有路由（2026-10-24 起 admin/chat/mcp 三占位已实现：/api/admin/stats、/api/chat、/api/mcp/status + /mcp Streamable HTTP 端点）；前端在 `api/static/shilie/`（14 个 JS 模块，v65）与 `/legacy`（15 模块）
-- `agent/` 现为 capability_runtime + workflow_service（原规划五模块 2026-10-24 删除）；`tools/`、`mcp/` 两包未接线（归 D-02）
-- 配置新增 `web.yaml`、`agent-tools.yaml`；测试 18 个文件 191 项；scripts 含 web_regression、verify-ui、check_static_version 等工程工具
+- `src/rag_tech_retriever/platform/`（22 模块：record_store/private_store/search_service/agent_capabilities/skill_registry/mcp_client 等）与 `domains/`（8 模块纯校验层）为现行核心，未在上方树中；`agent/` 现为 capability_runtime/collaboration/evaluation 等 10 模块
+- `api/routes/` **21 个路由模块**（OpenAPI 实测 102 paths / 133 endpoints，含检索评测 `/api/eval/*`）；前端 `api/static/shilie/` **27 个 JS 模块，静态版本 v101**（含检索质量评测页 evaluation.js）
+- `tools/` 三件（栈解析/协议查询/调试检索）与 MCP `/mcp` Streamable HTTP 端点均已接线
+- 配置 14 个 yaml（web/settings/prompts/mcp + 业务线）；测试 **53 文件 / 767 passed**（另计 71 errors 为 QA 环境门禁，非代码缺陷）；scripts 含 `local_gate.py`（pre-push 门禁）、`deploy_release.py --target preview|production`（双环境一键部署）、`set_login_password.py`（账号密码哈希生成）
+- **双环境运行**：正式 `shilie.service` :8770（v100）与测试 `shilie-preview.service` :8771（v101，含账号密码登录+30天记住），**共用同一个 PostgreSQL**；部署拓扑、systemd drop-in 与全部踩坑见 `docs/DEPLOYMENT_REALITY.md`
 
 ## Execution Plan
 严格按顺序执行，单变量迭代，不提前引入额外变量

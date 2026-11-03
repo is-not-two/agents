@@ -8,21 +8,34 @@
 
 运行诊断、发布门禁与 CI/发布包流程见 [运维说明](docs/OPERATIONS.md)。CI 定义未推送前不代表云端已执行；真实服务器 CD 尚未配置。
 
-### 当前有效使用方式（2026-11-01）
+### 当前有效使用方式（2026-11-03 更新）
 
-按用户确认，日常使用以**服务器为唯一后端与数据库**，不要求桌面启动 Docker 或本机网页进程。服务器采用 Ubuntu 原生 PostgreSQL/pgvector、Python venv 和 systemd，HTTPS 端口 8770；数据库端口不对公网开放。正式访问仍需证书信任、工作台令牌及获准的来源 IP。
+按用户确认，日常使用以**服务器为唯一后端与数据库**，不要求桌面启动 Docker 或本机网页进程。服务器采用 Ubuntu 原生 PostgreSQL/pgvector、Python venv 和 systemd，**双环境**：
 
-代码位于 `/opt/shilie/releases`，版本入口 `/opt/shilie/current`，持久数据与有效配置位于 `/var/lib/shilie`，私密环境变量/证书位于 `/etc/shilie`。代码切换不覆盖数据；运行账号 `shilie` 无 sudo，安装/升级仅在单次管理员授权内执行，不自动删库或降级数据库。
+| 环境 | 地址 | 服务 | 状态 |
+|---|---|---|---|
+| 正式 | `https://8.156.81.128:8770/` | `shilie.service` | v100 |
+| 测试 | `https://8.156.81.128:8771/` | `shilie-preview.service` | v101（新功能先在此验证） |
 
-旧版 `native-20261027-1` 已部署；截至本次记录，新功能候选仍在验证，**尚未切换正式版本**。原生 QA04 实测 659 passed、23 skipped 与 Ruff 通过，并清理自有测试集群；这不等于浏览器完整门禁或服务器升级完成。测试 skip、部署/迁移及对外访问的最终状态以逐轮部署回执为准。
+两环境共用一个 PostgreSQL 与模型缓存，代码目录与 systemd drop-in 各自独立；数据库端口不对公网开放，ufw 仅放行本人 IP（云安全组需另行放行 8770/8771）。代码位于 `/opt/shilie/releases`，入口软链 `current`/`preview`，持久数据在 `/var/lib/shilie`，私密环境变量与证书在 `/etc/shilie`；代码切换不覆盖数据。
 
-完整门禁新增原生后端：`scripts/release_gate.py --checks full --backend native --native-session OPERATOR_SESSION_JSON --report FRESH_GATE_JSON`，准备方法见 [原生发布](docs/NATIVE_RELEASE.md)。默认不隐式使用 Docker；未提供原生会话时完整门禁拒绝执行。GitHub 托管 CI 可显式选择 Docker 临时 QA，既不在本机自动启动引擎，也不在生产服务器安装 Docker。
+**登录方式**：账号密码（`WORKSPACE_USER` + `WORKSPACE_PASSWORD_HASH`，scrypt 哈希，存 `/etc/shilie/workspace.env`；用 `scripts/set_login_password.py` 交互生成，明文密码不入任何文件）+ 可选「记住此账号 30 天」；访问令牌登录保留为备用通道。
+
+**部署流程**：`python scripts/deploy_release.py --target preview --apply --confirm HEAD` 推测试 → 浏览器验证 → `--target production` 推正式；失败自动回滚代码。真实拓扑与全部踩坑（ProtectSystem 只读、site-packages 非 editable、kind 约束 8→17 等）见 [docs/DEPLOYMENT_REALITY.md](docs/DEPLOYMENT_REALITY.md)。
+
+**质量门禁**：`scripts/local_gate.py`（pre-push hook 自动运行：ruff / pytest / 静态版本一致 / 敏感文件 / kind 与库一致）；完整门禁 `scripts/release_gate.py --checks full --backend native`（Docker 后端仅限 GitHub CI 显式选择）。
+
+### 当前待办（2026-11-03）
+
+1. **v101 推正式环境**：账号密码登录已在测试环境（8771）验证通过（登录成功、错密码 401、30 天 cookie 生效），待确认后执行 `deploy_release.py --target production --apply --confirm HEAD`；推送后正式环境（8770）同版本同登录方式（两环境共用 env）。
+2. **彻底去 Docker（方案 B，待确认）**：服务器已全面脱离 Docker，本机仍用容器 `rag-pgvector` 跑测试库（23 表 / 15 记录 / 494 向量需迁移）。路径：本机装原生 PostgreSQL → `pg_dump` 迁移数据 → 改 `start-web.ps1`/测试脚本/CI → 删 `Dockerfile`/`docker-compose.yml`/`.dockerignore` → 改 README/AGENTS 中 Docker 说明。**阻塞点：本机未装 PG，装软件需用户点头**。
+3. **`output/v2/` 留档入库**：V2-a/V2-b 阶段报告（485 文件 11MB，AGENTS.md 引用了 `output/v2/v2a_compare_report.md`），需甄别报告类入库、中间数据类 ignore。
 
 下方本地启动、容器、旧测试数量及界面描述为按日期保留的历史/可选开发说明，不能替代上述当前使用方式或本轮验收。
 
 ## 时列 Web 工作台
 
-当前本机入口为 http://127.0.0.1:8770/。启动运行 `./start-web.ps1 -Background`，停止运行 `./stop-web.ps1`；数据库内容由 PostgreSQL volume 保留。以下更新按时间保留，较早的页面描述不代表最新界面。
+本机开发入口为 http://127.0.0.1:8770/（可选，`./start-web.ps1 -Background` 启动，`./stop-web.ps1` 停止；本机测试库当前由 Docker 容器 `rag-pgvector` 提供——彻底去 Docker 的方案见下方待办）。日常使用请走服务器双环境。以下更新按时间保留，较早的页面描述不代表最新界面。
 
 2026-10-19 已完成橙白主题、分叉规划树与私密滑块/表单修复；镜像构建和本机临时容器健康检查通过，真实服务器部署及实际模型供应商连通尚待验收。知识保存的阅读路径、用户练习 LEARN-001、模拟面试题及贡献边界集中在 [协作记录](output/web/collaboration/collab-log.md) 的“学习接手包”部分。自动任务负责检测和必要故障修复，用户练习不由它代写。
 
