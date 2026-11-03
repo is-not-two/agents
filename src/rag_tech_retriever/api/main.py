@@ -84,6 +84,7 @@ def create_app(
         str(config.get("web.table_prefix", "workspace")),
         config=config,
         pool_size=int(config.get("web.db_pool_size", 0)),
+        pool_wait_seconds=float(config.get("web.db_pool_wait_seconds", 5)),
     )
     secret = str(settings.env("WORKSPACE_ACCESS_TOKEN", "")) if token is None else token
     mcp_secret = str(settings.env("WORKSPACE_MCP_TOKEN", ""))

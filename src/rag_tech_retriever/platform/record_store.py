@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import threading
+import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import Any
@@ -67,7 +68,7 @@ class RecordStore:
     """单用户工作台记录存储，table_prefix 可隔离测试与生产数据。"""
 
     def __init__(self, prefix: str = "workspace", config: ConfigLoader | None = None,
-                 pool_size: int = 0) -> None:
+                 pool_size: int = 0, pool_wait_seconds: float = 5.0) -> None:
         """只保存配置；pool_size>0 时复用连接（默认 0 = 每事务新建，便于测试隔离）。"""
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,42}", prefix):
             raise StorageError("非法工作台表前缀")
@@ -76,6 +77,8 @@ class RecordStore:
         self.versions = prefix + "_versions"
         self.config = config or ConfigLoader.load_default()
         self.pool_size = max(0, int(pool_size))
+        # 池满时最多等这么久再报错；同步接口在工作线程里跑，瞬时并发高于池容量时不应直接 5xx。
+        self.pool_wait_seconds = max(0.0, float(pool_wait_seconds))
         self._pool: pg_pool.ThreadedConnectionPool | None = None
         self._pool_lock = threading.Lock()
         try:
@@ -114,23 +117,41 @@ class RecordStore:
                 self._pool.closeall()
                 self._pool = None
 
+    def _borrow(self, database: pg_pool.ThreadedConnectionPool) -> Any:
+        """借出连接；池满时短暂等待，避免瞬时并发直接失败。"""
+        deadline = time.monotonic() + self.pool_wait_seconds if self.pool_wait_seconds > 0 else None
+        while True:
+            try:
+                return database.getconn()
+            except pg_pool.PoolError:
+                if deadline is None or time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.02)
+
     @contextmanager
     def transaction(self) -> Iterator[Any]:
-        """借用连接执行一次事务：成功提交、异常回滚、连接归还池或关闭。"""
+        """借用连接执行一次事务：成功提交、异常回滚、连接归还池或关闭。
+
+        池化连接遇到连接级错误（OperationalError/InterfaceError）直接丢弃，
+        避免把已断开的连接放回池里、让后续请求连续失败。
+        """
         database = self._connection_pool()
         conn = None
-        borrowed = database is not None
+        broken = False
         try:
-            conn = database.getconn() if database is not None else psycopg2.connect(**self._dsn())
+            conn = self._borrow(database) if database is not None else psycopg2.connect(**self._dsn())
             with conn, conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 yield cursor
+        except pg_pool.PoolError as exc:
+            raise StorageError("数据库连接繁忙，请稍后重试") from exc
         except psycopg2.Error as exc:
+            broken = isinstance(exc, (psycopg2.OperationalError, psycopg2.InterfaceError))
             raise StorageError("数据库暂不可用，请检查 PostgreSQL 服务") from exc
         finally:
             if conn is not None:
-                if borrowed:
+                if database is not None:
                     try:
-                        database.putconn(conn, close=bool(conn.closed))
+                        database.putconn(conn, close=broken or bool(conn.closed))
                     except Exception:  # noqa: BLE001 - 归还失败不应掩盖原始异常
                         conn.close()
                 else:
