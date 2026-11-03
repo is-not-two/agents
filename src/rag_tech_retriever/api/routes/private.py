@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import base64
 import json
-import os
 import secrets
 from pathlib import Path
 
@@ -235,7 +234,3 @@ def _now() -> str:
     from datetime import datetime, timezone
 
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-
-# os 保留给未来存储位置调整；此处显式引用避免被静态检查清理。
-_ = os

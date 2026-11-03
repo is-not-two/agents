@@ -311,6 +311,9 @@ def main() -> int:
     # 契约快照不连数据库：端点或响应模型变化未同步 docs/openapi.json 时阻断。
     gate.run("OpenAPI 契约一致",
              [str(VENV_PY), "scripts/openapi_contract.py"], blocking=True)
+    # 前端引用的 /api 路径必须存在：页面指向已删端点时阻断。
+    gate.run("前端接口契约一致",
+             [str(VENV_PY), "scripts/frontend_api_contract.py"], blocking=True)
 
     # kind 一致性：连不上库时降级为跳过（CI 无库是正常的）
     gate.run("依赖完整性", [str(VENV_PY), "-m", "pip", "check"], blocking=False)
