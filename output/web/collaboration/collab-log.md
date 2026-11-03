@@ -146,3 +146,15 @@
 | 10 | 福建奇鹭物联网科技股份公司 | AI智能体应用工程师 | [原文](https://m.zhaopin.com/jobs/CC319716280J41001127104.htm) | Agent、LLM、Prompt Engineering、RAG、Function Calling、LangChain、ReAct、Python、FastAPI(要求)、Flask(要求)；硬条件：本科+1-3 年 | 合理 | 覆盖 To C Agent / RAG |
 
 验收口径：≥8 条初核“合理”；本次 **10/10 达线**。此前的通用 Python 后端样本已在测试环境归档，避免与 AI 岗位混在一起；10 条 AI 岗位保留在 `#module/job-insights` 可复核，证据截图 `output/web/preview-v102/jd-insight.png`；正式库未写入。
+
+## Round 11（2026-11-03）：企业级能力扩展（GLM-5.3-FlashX 执行）
+
+- 目标：Agent 可插拔接入工具/技能/MCP，统一格式；联网搜索；通用工作流与多 Agent 协调；简历模块；前后端、数据库、测试与部署全链路交付。
+- **统一能力目录**：`GET /api/capabilities/tools` 汇总内置工具、管理员 HTTP 工具、已启用 MCP 工具；新增 `web_search` 内置工具与 `HttpToolGateway`（固定 HTTPS 主机、JSON Schema、模板参数、禁止跳转、响应上限）。Agent 工作室新增「能力绑定」，支持勾选内置/HTTP/MCP 工具、技能与 MCP 服务；权限仍只来自保存的 Agent 配置。
+- **联网搜索**：新增 `platform/web_search.py`，支持 Bing CN（默认，服务器网络可达）、Tavily（`TAVILY_API_KEY`）、DuckDuckGo；固定供应商端点、禁止跳转、5 分钟有界缓存、结果条数与 URL 过滤。真实调用 Bing 返回 Python 官方结果，状态 completed。
+- **通用 DAG 工作流**：`domains/workflow_graph.py` + `agent/graph_runner.py`，节点 input/retrieve/tool/agent/merge/approval；保存时校验环、重复 ID、不可达节点、模板路径；运行冻结 Agent 版本、逐节点持久化、节点重试上限、人工审批暂停/恢复、子 Agent 运行审计；工作流页支持 JSON DAG 新建、运行与审批。
+- **简历模块**：`platform/resume_service.py`，支持 PDF/DOCX/TXT/Markdown（10MB），上传即解析；公开 `resume_version` 只存元数据，解析文本/段落/技能存 `data/local/resumes` 私密目录；提供结构化段落、技能命中、版本 diff、JD 对照（只做文本命中，不认定能力）。求职页支持上传、查看解析与对比。
+- **UI/静态版本**：agent-studio、automation-views/actions、jobs 页面更新；静态版本统一 v103（66 处）。
+- **验证**：新增纯逻辑测试 31 项（DAG/简历/搜索/HTTP 工具）；隔离 PostgreSQL 集成测试 35 项（DAG/简历/求职）与 Agent 能力/可靠性回归 56 项通过；浏览器验收能力绑定、DAG 运行、真实简历上传、控制台 0 错误（截图 `output/web/preview-v103/`）。
+- **部署**：preview `native-20261103-123106-fb25816`、production `native-20261103-123713-fb25816`，正式备份 `/var/backups/shilie/deploy-20261103-123726`；正式数据仍 15 条记录 / 494 向量。双环境 venv 安装 `pypdf`、`python-docx`；`/var/lib/shilie/config/agent-tools.yaml` 已同步（备份 `/var/backups/shilie/agent-tools-20261103-122620.yaml`）。
+- **边界**：DAG 目前确定性顺序执行（`max_parallel` 预留）；简历扫描件不做 OCR；Bing 为网页解析，供应商反爬/条款需上线前复核；未做多用户隔离。

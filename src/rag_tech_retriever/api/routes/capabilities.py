@@ -5,7 +5,9 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 
 from rag_tech_retriever.agent.memory import AgentMemory
 from rag_tech_retriever.api.dependencies import WorkspaceContext
+from rag_tech_retriever.domains.life_planning import DomainError
 from rag_tech_retriever.platform.agent_capabilities import BUILTINS
+from rag_tech_retriever.platform.mcp_client import ToolError
 
 
 class SkillInput(BaseModel):
@@ -89,15 +91,19 @@ def create_router(context: WorkspaceContext) -> APIRouter:
 
     @router.get("/api/capabilities/tools")
     async def tool_catalog() -> dict:
-        """统一目录：内置工具 + 管理员 HTTP 工具 + 已启用 MCP 服务（不触发调用）。"""
-        mcp = []
+        """统一目录：内置工具 + 管理员 HTTP 工具 + 已启用 MCP 服务（不触发写入）。"""
+        mcp, errors = [], []
         for server in caps.mcp.public():
-            if server["enabled"] and server["trusted"]:
+            if not (server["enabled"] and server["trusted"]):
+                continue
+            try:
                 for spec in await caps.mcp.discover(server["id"]):
                     mcp.append({**spec, "source": "mcp", "server_id": server["id"]})
+            except (ToolError, DomainError) as exc:
+                errors.append({"server_id": server["id"], "error": str(exc)})
         return {"builtin": [{"name": key, **value, "source": "builtin"} for key, value in BUILTINS.items()],
                 "http": [{**item, "source": "http"} for item in caps.http.public()],
-                "mcp": mcp}
+                "mcp": mcp, "mcp_errors": errors}
 
     @router.get("/api/agents/{record_id}/memory")
     def memory_list(record_id: str) -> list:

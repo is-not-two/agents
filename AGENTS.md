@@ -140,11 +140,11 @@ rag-tech-doc-retriever/
 ### 结构与磁盘的差异（2026-11-03 核对，权威视图见工作区根 DESIGN.md §2）
 
 上方结构树是 V2 规划时代的快照，实际磁盘已演进为工作台形态，主要差异：
-- `src/rag_tech_retriever/platform/`（22 模块：record_store/private_store/search_service/agent_capabilities/skill_registry/mcp_client 等）与 `domains/`（8 模块纯校验层）为现行核心，未在上方树中；`agent/` 现为 capability_runtime/collaboration/evaluation 等 10 模块
-- `api/routes/` **21 个路由模块**（OpenAPI 实测 106 paths / 140 endpoints，含检索评测 `/api/eval/*`）；前端 `api/static/shilie/` **28 个 JS 模块，静态版本 v102**（含检索质量评测页 evaluation.js、目标公司能力页 company-capabilities.js）
+- `src/rag_tech_retriever/platform/`（27 模块：record_store/private_store/search_service/agent_capabilities/web_search/http_tools/resume_service 等）与 `domains/`（10 模块纯校验层）为现行核心，未在上方树中；`agent/` 现为 capability_runtime/graph_runner/collaboration/evaluation 等 12 模块
+- `api/routes/` **21 个路由模块**（OpenAPI 实测 111 paths / 145 endpoints，含检索评测 `/api/eval/*` 与能力目录）；前端 `api/static/shilie/` **28 个 JS 模块，静态版本 v103**（含 evaluation.js、company-capabilities.js）
 - `tools/` 三件（栈解析/协议查询/调试检索）与 MCP `/mcp` Streamable HTTP 端点均已接线
-- 配置 14 个 yaml（web/settings/prompts/mcp + 业务线）；测试 **53 文件 / 767 passed**（另计 71 errors 为 QA 环境门禁，非代码缺陷）；scripts 含 `local_gate.py`（pre-push 门禁）、`deploy_release.py --target preview|production`（双环境一键部署）、`set_login_password.py`（账号密码哈希生成）
-- **双环境运行**：正式 `shilie.service` :8770 与测试 `shilie-preview.service` :8771 均为 v102（含账号密码登录+30天记住），**各自独立 PostgreSQL**（正式 `shilie_native_20261027` / 测试 `shilie_preview_20261103`）；部署拓扑、systemd drop-in 与全部踩坑见 `docs/DEPLOYMENT_REALITY.md`
+- 配置 14 个 yaml（web/settings/prompts/mcp + 业务线）；测试 **57 文件**（本机基线 767 项，另计 71 errors 为 QA 环境门禁）；本轮新增 5 个测试文件；scripts 含 `local_gate.py`、双环境 `deploy_release.py`、`set_login_password.py`
+- **双环境运行**：正式 `shilie.service` :8770 与测试 `shilie-preview.service` :8771 均为 v103（含账号密码登录+30天记住），**各自独立 PostgreSQL**（正式 `shilie_native_20261027` / 测试 `shilie_preview_20261103`）；部署拓扑、systemd drop-in 与全部踩坑见 `docs/DEPLOYMENT_REALITY.md`
 
 ## Execution Plan
 严格按顺序执行，单变量迭代，不提前引入额外变量

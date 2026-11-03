@@ -188,4 +188,4 @@ WORKSPACE_PASSWORD_HASH=scrypt$16384$8$1$<salt>$<hash>   # 由脚本生成
 | 错误文案 | 账号错与密码错同为「账号或密码不正确」（防枚举）；未配置回「账号登录未配置」 |
 | 令牌登录 | 仍可用（`POST /api/session {token}`），MCP/脚本不受影响 |
 
-**部署状态**：v102 已部署正式环境（8770，`native-20261103-104739-1002a64`）与测试环境（8771，`native-20261103-103817-d452b9d`）；两库均已迁移到 18 种 kind（正式库仅追加 `company_capability`，15 条记录 / 494 向量未变）。
+**部署状态**：v103 已部署正式环境（8770，`native-20261103-123713-fb25816`）与测试环境（8771，`native-20261103-123106-fb25816`）；两库均为 18 种 kind（正式库 15 条记录 / 494 向量未变）。双环境 venv 已安装 `pypdf`、`python-docx`；`/var/lib/shilie/config/agent-tools.yaml` 已同步 Bing 搜索配置。

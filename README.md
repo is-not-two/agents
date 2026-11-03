@@ -14,8 +14,8 @@
 
 | 环境 | 地址 | 服务 | 状态 |
 |---|---|---|---|
-| 正式 | `https://8.156.81.128:8770/` | `shilie.service` | v102 |
-| 测试 | `https://8.156.81.128:8771/` | `shilie-preview.service` | v102（新功能先在此验证，独立数据库） |
+| 正式 | `https://8.156.81.128:8770/` | `shilie.service` | v103 |
+| 测试 | `https://8.156.81.128:8771/` | `shilie-preview.service` | v103（新功能先在此验证，独立数据库） |
 
 两环境各自独立数据库（正式 `shilie_native_20261027`，测试 `shilie_preview_20261103`）并共用模型缓存，代码目录与 systemd drop-in 各自独立；数据库端口不对公网开放，ufw 仅放行本人 IP（云安全组需另行放行 8770/8771）。代码位于 `/opt/shilie/releases`，入口软链 `current`/`preview`，持久数据在 `/var/lib/shilie`，私密环境变量与证书在 `/etc/shilie`；代码切换不覆盖数据。
 
@@ -25,11 +25,20 @@
 
 **质量门禁**：`scripts/local_gate.py`（pre-push hook 自动运行：ruff / pytest / 静态版本一致 / 敏感文件 / kind 与库一致）；完整门禁 `scripts/release_gate.py --checks full --backend native`（Docker 后端仅限 GitHub CI 显式选择）。
 
+### 企业级能力（2026-11-03，v103）
+
+- **统一能力目录**：`GET /api/capabilities/tools` 汇总内置工具、管理员 HTTP 工具与已启用 MCP 工具；Agent 工作室新增「能力绑定」，工具/技能/MCP 权限只来自保存的 Agent 配置。
+- **联网搜索**：内置 `web_search`，默认 Bing CN（服务器网络可达），可切 Tavily（`TAVILY_API_KEY`）或 DuckDuckGo；固定供应商端点、禁止跳转、结果上限与缓存，搜索结果不改变权限。
+- **管理员 HTTP 工具**：`config/agent-tools.yaml` 的 `http_tools` 只允许固定 HTTPS 主机与 JSON Schema 参数，模板不能改 URL/方法/请求头。
+- **通用 DAG 工作流**：工作流支持 `input / retrieve / tool / agent / merge / approval` 节点；版本冻结、节点状态持久化、人工审批、多 Agent 顺序协作与结果合并；工作流页可新建 JSON DAG、运行与审批。
+- **简历模块**：上传 PDF/DOCX/TXT/Markdown 后自动解析，公开记录只存元数据，解析文本存本机私密目录；支持结构化段落、技能命中、版本 diff 与 JD 对照（只做文本命中，不认定能力）。
+- **验证**：新增纯逻辑测试 31 项；隔离 PostgreSQL 集成测试 35 项（DAG/求职/简历）与 Agent 回归 56 项通过；浏览器验收覆盖能力绑定、DAG 运行、真实简历上传与联网搜索。
+
 ### 当前待办（2026-11-03）
 
-1. **v101 推正式环境**：账号密码登录已在测试环境（8771）验证通过（登录成功、错密码 401、30 天 cookie 生效），待确认后执行 `deploy_release.py --target production --apply --confirm HEAD`；推送后正式环境（8770）同版本同登录方式（两环境共用 env）。
-2. **彻底去 Docker（方案 B，待确认）**：服务器已全面脱离 Docker，本机仍用容器 `rag-pgvector` 跑测试库（23 表 / 15 记录 / 494 向量需迁移）。路径：本机装原生 PostgreSQL → `pg_dump` 迁移数据 → 改 `start-web.ps1`/测试脚本/CI → 删 `Dockerfile`/`docker-compose.yml`/`.dockerignore` → 改 README/AGENTS 中 Docker 说明。**阻塞点：本机未装 PG，装软件需用户点头**。
-3. **`output/v2/` 留档入库**：V2-a/V2-b 阶段报告（485 文件 11MB，AGENTS.md 引用了 `output/v2/v2a_compare_report.md`），需甄别报告类入库、中间数据类 ignore。
+1. **真实 JD 人工确认**：10 份 AI/Agent JD 已完成执行方初核（10/10 合理，见协作记录）；10 份 AI 产品经理 JD 仅做学历/经验分析，尚未逐条人工签字。
+2. **真实模型质量与七天使用**：模型连接、真实供应商质量、真实收件箱送达和连续七天使用仍需独立验收。
+3. **后续演进**：DAG 当前为确定性顺序执行（`max_parallel` 预留）；简历扫描件暂不做 OCR；联网搜索供应商仍受目标站点反爬策略影响，生产使用前应核对供应商条款。
 
 下方本地启动、容器、旧测试数量及界面描述为按日期保留的历史/可选开发说明，不能替代上述当前使用方式或本轮验收。
 

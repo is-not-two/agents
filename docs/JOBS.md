@@ -28,6 +28,13 @@
 - 目标公司能力是独立记录类型 `company_capability`：公司、岗位、来源、能力清单（名称 / 硬性要求或加分项 / 重要度 1–5 / 证据状态 / 证据说明）与备注。页面不自动判定“满足/不满足”，只呈现用户填写的事实。
 - 入口：工作区 → 个人工作台 → 目标公司能力，或 `/#module/company-capabilities`。能力记录支持历史版本、回收站恢复与导出；同名能力重复会被拒绝。
 
+## 简历上传与解析
+
+- 求职记录页新增「上传简历」：支持 PDF / DOCX / TXT / Markdown，最大 10MB；上传即解析。
+- 公开的 `resume_version` 只保存标题、文件名、SHA256、大小、解析状态等元数据；解析文本与结构化段落保存在服务器 `data/local/resumes` 私密目录，不进入公共备份。
+- 详情可查看结构化段落、技能命中和版本差异；`POST /api/jobs/resumes/{id}/analyze` 把目标岗位 JD 与简历文本对照，只报告文本命中与缺口，不认定真实能力。
+- PDF 仅支持文本版；扫描图片版暂不做 OCR。
+
 ## API
 
 `GET /api/jobs?trash=false` 提供一致的业务列表、状态计数、到期投递 ID 与漏斗统计（`funnel`）；回收站模式下 `funnel` 为 null。
@@ -35,6 +42,8 @@
 `/api/jobs/leads`、`/api/jobs/applications`、`/api/jobs/reports`、`/api/jobs/resumes`、`/api/jobs/capabilities` 各支持 GET 列表、POST 创建、GET 单条、PUT 全量更新、PATCH 合并更新。写请求为 `{data: {...}, version?: N}`，编辑必须提供 version。
 
 `GET/POST /api/jobs/applications/{id}/reports` 可按所属投递读取/新增面试复盘；路径和正文所属投递不一致时拒绝。
+
+简历：`POST /api/jobs/resumes/upload`（multipart，字段 `file`、`title`）、`GET /api/jobs/resumes/{id}/document`、`GET /api/jobs/resumes/{id}/diff?against=...`、`POST /api/jobs/resumes/{id}/analyze`（`{lead_id}`）。
 
 软删除、历史和恢复复用 `/api/records/{id}`、`/{id}/history`、`/{id}/restore`，求职记录走关联保护服务。现有鉴权、同源检查、限流与错误脱敏保持适用，不增加外部写入权限。
 
