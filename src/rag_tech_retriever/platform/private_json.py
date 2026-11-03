@@ -10,6 +10,7 @@ import threading
 import weakref
 from contextlib import contextmanager
 from pathlib import Path
+from typing import ClassVar
 
 from rag_tech_retriever.platform.record_store import StorageError, VersionConflict
 
@@ -30,8 +31,8 @@ class PrivateJson:
     # 同进程第二线程不会阻塞而是直接失败（fcntl.flock 在 Linux 会阻塞，掩盖了该缺陷）。
     # 若互斥锁每实例各建一把，Windows 下并发双发必有一路拿到 503（2026-11-02 实测修复）。
     # 用弱引用表：实例全部释放后条目自动回收，长驻进程不会随分析次数无限增长。
-    _path_mutexes: weakref.WeakValueDictionary[str, _MutexHolder] = weakref.WeakValueDictionary()
-    _registry_lock = threading.Lock()
+    _path_mutexes: ClassVar[weakref.WeakValueDictionary[str, _MutexHolder]] = weakref.WeakValueDictionary()
+    _registry_lock: ClassVar[threading.Lock] = threading.Lock()
 
     def __init__(self, path: Path, max_bytes: int = 1048576, allow_plain: bool = False,
                  cipher=None) -> None:
