@@ -495,6 +495,36 @@ curl -sk -m 8 -o /dev/null -w "STATIC=%{{http_code}}\\n" {SCHEME}://127.0.0.1:{W
         ok(f"evaluation.js HTTP {static_code}")
 
 
+def prune_script(keep: int) -> str:
+    """生成旧 release 清理脚本：两个软链指向的版本永不删除，其余按时间保留最近 keep 个。"""
+    return f"""
+set -e
+cd {REMOTE_ROOT}/releases
+CUR=$(basename "$(readlink -f {REMOTE_ROOT}/current)")
+PRE=$(basename "$(readlink -f {REMOTE_ROOT}/preview)")
+COUNT=0
+for name in $(ls -1dt native-* 2>/dev/null); do
+  if [ "$name" = "$CUR" ] || [ "$name" = "$PRE" ]; then continue; fi
+  COUNT=$((COUNT+1))
+  if [ $COUNT -gt {keep} ]; then rm -rf -- "$name"; echo "PRUNED $name"; fi
+done
+"""
+
+
+def prune_releases(keep: int) -> None:
+    """清理被替换的旧 release，避免历史版本把磁盘占满（清理失败不阻断部署）。"""
+    try:
+        code, out = run_remote(prune_script(keep), timeout=180, label="清理旧 release")
+    except Exception as exc:  # noqa: BLE001 - 清理属于收尾，不能影响已成功的部署
+        warn(f"旧 release 清理异常，磁盘可能持续增长：{type(exc).__name__}: {exc}")
+        return
+    if code != 0:
+        warn("旧 release 清理失败，磁盘可能持续增长：" + out.strip()[-200:])
+        return
+    pruned = [line for line in out.splitlines() if line.startswith("PRUNED ")]
+    print(f"  已清理 {len(pruned)} 个旧 release" if pruned else "  无需清理旧 release")
+
+
 def rollback(prev_release: str, backup_dir: str | None) -> None:
     """把软链切回上一版并恢复 site-packages；不自动恢复数据库。"""
     step("自动回滚")
@@ -547,6 +577,8 @@ def main() -> int:
                         help="确认部署的 release 名，必须与生成的名称一致")
     parser.add_argument("--skip-backup", action="store_true",
                         help="跳过备份（preview 默认跳过；正式环境慎用）")
+    parser.add_argument("--keep-releases", type=int, default=2, metavar="N",
+                        help="部署成功后保留的旧 release 个数（默认 2，两个软链指向的版本永不删除）")
     args = parser.parse_args()
 
     try:
@@ -573,7 +605,7 @@ def main() -> int:
         print(f"  当前环境：v{info['running_version']}（{target['label']} :{target['port']}）")
         print(f"  数据基线：{info.get('records')} 条记录 / {info.get('vectors')} 条向量")
         print(f"  将要部署：{head_commit()}")
-        print("  将执行：打包 -> " + ("" if skip_backup else "备份 -> ") + "上传 -> 解包 -> 切换 -> 验证")
+        print("  将执行：打包 -> " + ("" if skip_backup else "备份 -> ") + "上传 -> 解包 -> 切换 -> 验证 -> 清理旧版本")
         print("  失败时自动回滚代码（数据库需人工处理）")
         print("\n确认无误后执行：")
         print(f"  python scripts/deploy_release.py --target {TARGET_NAME} --apply --confirm HEAD")
@@ -605,6 +637,9 @@ def main() -> int:
         fail(f"{type(exc).__name__}: {exc}")
         rollback(prev, backup_dir)
         return 1
+
+    # 部署已成功，清理旧版本属于收尾动作：失败只告警，不回滚健康的新版本。
+    prune_releases(args.keep_releases)
 
     step("完成")
     ok(f"{target['label']}已是 v{info['local_version']}（{release}）")
