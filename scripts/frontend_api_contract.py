@@ -15,8 +15,8 @@ PROJECT = Path(__file__).resolve().parents[1]
 SPEC = PROJECT / "docs" / "openapi.json"
 FRONTEND = PROJECT / "src" / "rag_tech_retriever" / "api" / "static" / "shilie"
 
-CALL_API = re.compile(r"""api\((["'`])([^"'`]+)\1""")
-CALL_FETCH = re.compile(r"""fetch\((["'`])(/api/[^"'`]*)\1""")
+CALL_API = re.compile(r"""api\(\s*(["'`])([^"'`\n]+)\1""")
+CALL_FETCH = re.compile(r"""fetch\(\s*(["'`])(/api/[^"'`\n]*)\1""")
 PARAM = re.compile(r"\{[^}]*\}")
 TEMPLATE = re.compile(r"\$\{[^}]*\}")
 
@@ -32,10 +32,13 @@ def segments(path: str) -> list[str]:
     return [part for part in shape(path).split("/") if part]
 
 
-def matches(call: str, spec_path: str) -> bool:
-    """按段比较；参数段可匹配任意值。"""
+def matches(call: str, spec_path: str, prefix: bool = False) -> bool:
+    """按段比较；参数段可匹配任意值；prefix=True 允许前端路径是更长端点的一段前缀。"""
     left, right = segments(call), segments(spec_path)
-    if len(left) != len(right):
+    if prefix:
+        if len(right) < len(left):
+            return False
+    elif len(left) != len(right):
         return False
     for call_part, spec_part in zip(left, right):
         if call_part == "{}" or spec_part == "{}":
@@ -45,24 +48,29 @@ def matches(call: str, spec_path: str) -> bool:
     return True
 
 
+def extract_calls(text: str) -> set[str]:
+    """从一段 JS 源码提取 /api 引用；支持跨行调用与字符串拼接出的前缀。"""
+    calls: set[str] = set()
+    for match in CALL_API.finditer(text):
+        calls.add("/api/" + match.group(2).lstrip("/"))
+    for match in CALL_FETCH.finditer(text):
+        calls.add(match.group(2))
+    # 前端 api() 帮助函数自身的 "/api/" + path 拼接不算接口引用
+    calls.discard("/api/")
+    return calls
+
+
 def main() -> int:
     spec = json.loads(SPEC.read_text(encoding="utf-8"))
     paths = spec["paths"]
     calls: set[str] = set()
     for file in FRONTEND.rglob("*.js"):
-        text = file.read_text(encoding="utf-8")
-        for match in CALL_API.finditer(text):
-            calls.add("/api/" + match.group(2).lstrip("/"))
-        for match in CALL_FETCH.finditer(text):
-            calls.add(match.group(2))
-    # 前端 api() 帮助函数自身的 "/api/" + path 拼接不算接口引用
-    calls.discard("/api/")
+        calls |= extract_calls(file.read_text(encoding="utf-8"))
     missing = []
     for url in sorted(calls):
         if url.endswith("/"):
-            # 动态拼接（如 api("workflow-runs/" + id)）：只要存在同前缀路径即可
-            prefix = shape(url)
-            if any(shape(path).startswith(prefix) for path in paths):
+            # 动态拼接（如 api("private/wish/" + id)）：按前缀段比较，允许参数段匹配字面量
+            if any(matches(url, path, prefix=True) for path in paths):
                 continue
         elif any(matches(url, path) for path in paths):
             continue
