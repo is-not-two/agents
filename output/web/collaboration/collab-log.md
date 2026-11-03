@@ -113,13 +113,16 @@
 
 ## Round 10（2026-11-03）：求职漏斗看板 + 目标公司能力记录（GLM-5.3-FlashX 执行）
 
-- 范围按 WorkBuddy 选定：先做实习侧；上线侧后置。未改正式 8770/生产数据，也未启动或迁移任何用户库。
+- 范围按 WorkBuddy 选定：先做实习侧；上线侧后置。正式 8770、正式库与正式服务未改动。
 - 漏斗看板：`GET /api/jobs` 新增 `funnel`（收藏/投递/进面/offer 计数 + 三段转化率 + 本周投递/目标）。进面按已登记面试复盘计，offer 按当前状态计，页面注明两者不保证严格嵌套；空分母返回 null，显示“暂不计算”。周目标 `jobs.funnel.weekly_application_target` 配置化（当前 5），周窗口按 `notifications.yaml` 时区从周一起算。
 - 目标公司能力：新增记录类型 `company_capability`，字段 company/role/source/capabilities（name、must|nice、level 1–5、evidence|pending|missing、evidence）/notes；同名能力（大小写不敏感）拒绝；接入 `/api/jobs/capabilities` 五件套、历史/回收站、导出 Markdown。前端新增独立模块“目标公司能力”，复用求职主从布局，窄屏单列。
-- 记录类型约束：`RECORD_KINDS` 增加一种 kind；本地 local profile 由 `ensure_schema` 增量重建 CHECK 约束。生产仍为 verify 模式，需管理员独立执行迁移后才能启动，本轮未执行。
+- 记录类型约束：`RECORD_KINDS` 增加一种 kind；本地 local profile 由 `ensure_schema` 增量重建 CHECK 约束。测试库已迁移到 18 种；正式库仍为 17 种，生产 verify 模式需管理员另行迁移后才能升级，本轮未对正式库执行。
 - 静态版本统一 v101 → v102（66 处），`check_static_version.py` 通过。
-- 已验证：求职纯逻辑 24 项 pytest 通过（能力清单正常/异常、漏斗复算与空分母）；ruff 0；全部 JS `node --check` 通过；`local_gate.py --quick` 6/7 通过（唯一跳过为 pytest 全量）。因 Docker Desktop 服务停止、本机 PostgreSQL 端口不可达，**数据库集成用例与浏览器实测本轮未执行**，不记为已通过。
-- 待办：启动隔离 PostgreSQL/预览实例后补跑 `test_funnel_reflects_current_records`、`test_company_capability_roundtrip_export_and_archive` 与 390px 浏览器验收；真实 JD 人工核对见下表。
+- 已验证：求职纯逻辑 24 项 pytest 通过（能力清单正常/异常、漏斗复算与空分母）；ruff 0；全部 JS `node --check` 通过；`local_gate.py --quick` 6/7 通过（唯一跳过为 pytest 全量）。
+- 环境隔离（2026-11-03）：新建独立测试库 `shilie_preview_20261103`（正式库一次性副本：15 条记录 / 494 向量），preview 用 drop-in `EnvironmentFile=-/etc/shilie/preview-db.env` 指向该库；正式库 `shilie_native_20261027` 未迁移，仍为 17 种 kind，正式 8770 仍 v100。
+- 部署：v102 已部署测试环境（release `native-20261103-103817-d452b9d`），健康检查通过；测试库 kind 增量迁移 17→18（仅加 `company_capability`，未删数据），迁移前 dump 在 `/var/backups/shilie/preview-db-20261103-103522/`。
+- 浏览器验收（Edge + Playwright，ignoreHTTPS，预置会话）：漏斗空态显示“暂不计算”；造 1 岗位 / 1 投递 / 1 复盘后显示 1/1/1/0，三段转化 100%/100%/0%，本周投递 1/5；能力清单新增、详情、归档、回收站均正常；1440px 与 390px 均无横向溢出；控制台 0 错误。验收后测试数据已归档，有效漏斗回到空态。
+- 未执行：数据库集成 pytest（需 QA-owned disposable DB）与正式 8770 推送；真实 JD 人工核对见下表。
 
 ### 10 个真实 JD 人工核对表（等待 WorkBuddy 提供后逐条填写，不预填示例）
 

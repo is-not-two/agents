@@ -30,6 +30,7 @@
 | 备份 | 每次部署前 pg_dump | 不自动备份（独立副本，可重建；需要时手动 dump） |
 
 - 两环境**各自独立数据库**（2026-11-03 起）；测试库为正式库的一次性副本，之后独立演进，可随时重建。共用模型缓存与 `data/local` 私密配置。
+- preview 独有 drop-in `database.conf` 通过 `EnvironmentFile=-/etc/shilie/preview-db.env`（仅一行 `POSTGRES_DB=shilie_preview_20261103`）指定测试库；`Environment=` 会被 `workspace.env` 覆盖，不要用前者。
 - 部署命令统一走 `deploy_release.py --target production|preview`，各自写自己的 drop-in（曾有硬编码污染生产的 bug，已修）。
 - 工作流：改代码 → `--target preview --apply --confirm HEAD` → 浏览器验证 → 确认后 `--target production --apply --confirm HEAD`。
 
@@ -187,4 +188,4 @@ WORKSPACE_PASSWORD_HASH=scrypt$16384$8$1$<salt>$<hash>   # 由脚本生成
 | 错误文案 | 账号错与密码错同为「账号或密码不正确」（防枚举）；未配置回「账号登录未配置」 |
 | 令牌登录 | 仍可用（`POST /api/session {token}`），MCP/脚本不受影响 |
 
-**部署状态**：v101 已部署测试环境（8771）；正式环境（8770）待测试环境验证后推送。
+**部署状态**：v102 已部署测试环境（8771，独立库 `shilie_preview_20261103`，kind 已迁移到 18）；正式环境（8770）仍为 v100，待测试环境验证后推送，推送前需单独迁移正式库 kind。
