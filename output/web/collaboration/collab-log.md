@@ -126,7 +126,8 @@
 - 正式部署：v102 已上线 8770（release `native-20261103-104739-1002a64`），部署脚本自动备份 `/var/backups/shilie/deploy-20261103-104748`；健康、版本、数据基线与 evaluation.js 均通过。
 - 正式只读验收：`/api/jobs` 漏斗结构与空分母正确、`/api/jobs/capabilities` 为空、`/api/status` 200；1440px 与 390px 页面均无横向溢出、控制台 0 错误；未写入任何正式业务数据。
 - 回滚提示：正式库已含新 kind，回退 v100 代码前须先恢复旧 17-kind 约束（旧定义见备份目录 `kind-before.txt`），否则服务拒绝启动。
-- 未执行：数据库集成 pytest（需 QA-owned disposable DB）；真实 JD 人工核对见下表（仍需 WorkBuddy 提供 10 份真实 JD）。
+- 集成测试（服务器一次性 `regression` 库 + 临时 QA 角色，跑完即删）：`tests/test_jobs.py` **32 passed**。期间发现“有投递但 0 进面”的断言误写成 null，实际应为 0%；已修正测试并单独提交（仅测试，不影响运行时）。
+- 未完成：真实 JD 人工核对见下表（需真实 JD 输入，未编造示例数据）。
 
 ### 10 个真实 JD 人工核对表（等待 WorkBuddy 提供后逐条填写，不预填示例）
 
