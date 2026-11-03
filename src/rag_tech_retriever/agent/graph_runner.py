@@ -192,7 +192,7 @@ class GraphWorkflowService:
                 data.update(status="awaiting_confirmation", pending_node=node["id"], pending_kind="approval")
                 return self._save(row, data)
             data["node_status"][node["id"]] = "running"
-            self._save(row, data)
+            row = self._save(row, data)
             started = perf_counter()
             try:
                 with anyio.fail_after(cfg["node_timeout_seconds"]):
