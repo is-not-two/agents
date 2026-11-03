@@ -62,6 +62,22 @@ def test_hard_condition_headers_are_not_requirements_and_at_least_years_are_dete
     assert "至少2年Python开发实战经验" in years["hard_conditions"][0]["quote"]
 
 
+def test_familiar_and_mastery_are_required_but_plus_is_preferred():
+    profile = validate_profile({"title": "验收用空资料"})
+    result = rules_analysis("熟悉 Python；熟悉 Redis 者优先。", profile, taxonomy())
+    values = {row["name"]: row["priority"] for row in result["requirements"]}
+    assert values["Python"] == "required" and values["Redis"] == "preferred"
+
+
+def test_react_framework_is_not_reasoning_framework():
+    profile = validate_profile({"title": "验收用空资料"})
+    reasoning = rules_analysis("理解 ReAct 与 CoT。", profile, taxonomy())
+    assert "React" not in {row["name"] for row in reasoning["requirements"]}
+    assert "ReAct" in {row["name"] for row in reasoning["requirements"]}
+    frontend = rules_analysis("熟悉 React 与 Vue。", profile, taxonomy())
+    assert "React" in {row["name"] for row in frontend["requirements"]}
+
+
 def test_word_boundaries_negation_and_evidence_not_keyword_absence():
     profile = validate_profile(
         {

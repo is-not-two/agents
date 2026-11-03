@@ -15,7 +15,7 @@ jobs:
     - {name: pgvector, aliases: [pgvector]}
     - {name: MySQL, aliases: [MySQL]}
     - {name: Redis, aliases: [Redis]}
-    - {name: Docker, aliases: [Docker]}
+    - {name: Docker, aliases: [Docker, Dockerfile]}
     - {name: Linux, aliases: [Linux]}
     - {name: RAG, aliases: [RAG, 检索增强生成]}
     - {name: LangGraph, aliases: [LangGraph]}
@@ -23,7 +23,34 @@ jobs:
     - {name: MCP, aliases: [MCP]}
     - {name: Agent, aliases: [Agent, 智能体]}
     - {name: Java, aliases: [Java]}
-    - {name: JavaScript, aliases: [JavaScript]}
-    - {name: TypeScript, aliases: [TypeScript]}
+    - {name: JavaScript, aliases: [JavaScript, JS]}
+    - {name: TypeScript, aliases: [TypeScript, TS]}
     - {name: Git, aliases: [Git]}
     - {name: CI/CD, aliases: [CI/CD, 持续集成]}
+    # 2026-11-03 真实 JD 初核补齐的高频技术词；别名只用于原文命中，不推断个人能力。
+    - {name: Django, aliases: [Django]}
+    - {name: Flask, aliases: [Flask]}
+    - {name: Celery, aliases: [Celery]}
+    - {name: LLM, aliases: [LLM, 大模型, 大语言模型]}
+    - {name: Kubernetes, aliases: [Kubernetes, K8s]}
+    - {name: SQLAlchemy, aliases: [SQLAlchemy]}
+    - {name: MongoDB, aliases: [MongoDB, Mongo]}
+    - {name: Kafka, aliases: [Kafka]}
+    - {name: RabbitMQ, aliases: [RabbitMQ]}
+    - {name: Nginx, aliases: [Nginx]}
+    - {name: PyTorch, aliases: [PyTorch, torch]}
+    - {name: Spring Boot, aliases: [Spring Boot, SpringBoot, Spring-Boot]}
+    - {name: React, aliases: [React, React.js, ReactJS]}
+    - {name: Vue, aliases: [Vue, Vue.js, VueJS, Vue3]}
+    - {name: Elasticsearch, aliases: [Elasticsearch, ElasticSearch, ES]}
+    - {name: ClickHouse, aliases: [ClickHouse, Clickhouse]}
+    - {name: Dify, aliases: [Dify]}
+    - {name: LlamaIndex, aliases: [LlamaIndex, Llama Index]}
+    - {name: Prompt Engineering, aliases: [Prompt Engineering, Prompt工程, 提示词工程]}
+    - {name: Context Engineering, aliases: [Context Engineering, 上下文工程]}
+    - {name: Function Calling, aliases: [Function Calling, Function Call, 函数调用, Tool Calling]}
+    - {name: ReAct, aliases: [ReAct]}
+    - {name: Neo4j, aliases: [Neo4j]}
+    - {name: FAISS, aliases: [FAISS]}
+    - {name: vLLM, aliases: [vLLM]}
+    - {name: Playwright, aliases: [Playwright]}

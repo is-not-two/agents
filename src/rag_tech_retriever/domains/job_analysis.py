@@ -72,7 +72,7 @@ def _priority(quote: str) -> str:
         return "not_required"
     if re.search(r"优先|加分|preferred|a plus", quote, re.IGNORECASE):
         return "preferred"
-    if re.search(r"必须|要求|熟练|掌握|需具备|required|must", quote, re.IGNORECASE):
+    if re.search(r"必须|要求|熟练|掌握|需具备|熟悉|精通|required|must", quote, re.IGNORECASE):
         return "required"
     return "mentioned"
 
@@ -134,7 +134,16 @@ def rules_analysis(jd: str, profile: dict, taxonomy: list[dict]) -> dict:
                 )
                 for alias in item["aliases"]
             ]
-            matched = next((match for match in matches if match is not None), None)
+            matched = next(
+                (
+                    match
+                    for match in matches
+                    # “ReAct”是推理框架，不是前端框架 React；大小写精确区分。
+                    if match is not None
+                    and not (item["name"] == "React" and match.group(0) == "ReAct")
+                ),
+                None,
+            )
             if matched:
                 quote = sentence[max(0, matched.start() - 500) :][:2000]
                 assessment, evidence = _evidence(item["name"], profile, taxonomy)
