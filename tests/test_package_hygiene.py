@@ -8,6 +8,7 @@ common/utils、rag/data_processor/*、rag/retrieval/base_retriever、level_match
 from __future__ import annotations
 
 import ast
+import re
 from pathlib import Path
 
 import rag_tech_retriever
@@ -35,5 +36,19 @@ def test_package_has_no_docstring_only_modules() -> None:
         if "__pycache__" not in path.parts
         and path.name != "__init__.py"
         and not _statements_without_docstring(ast.parse(path.read_text(encoding="utf-8")))
+    )
+    assert offenders == [], offenders
+
+
+JUNK_NAMES = re.compile(r"(\.bak(\.|$)|\.tmp$|\.orig$|~$|\.swp$)")
+
+
+def test_static_assets_have_no_editor_backup_files() -> None:
+    """静态目录随 release 发布，编辑器备份/临时文件不应出现在前端资源里。"""
+    static = Path(rag_tech_retriever.__file__).parent / "api" / "static"
+    offenders = sorted(
+        path.relative_to(static).as_posix()
+        for path in static.rglob("*")
+        if path.is_file() and JUNK_NAMES.search(path.name)
     )
     assert offenders == [], offenders
