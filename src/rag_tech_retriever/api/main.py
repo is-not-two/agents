@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import mimetypes
 import os
 import secrets
 from contextlib import asynccontextmanager
@@ -65,6 +66,10 @@ from rag_tech_retriever.platform.record_store import (
     VersionConflict,
 )
 from rag_tech_retriever.platform.search_service import SearchService
+
+# WebP 在部分系统的 mimetypes 库里没有登记，静态资源会以 application/octet-stream
+# 返回，浏览器可能下载而不是渲染；显式登记，保证图片按 image/webp 提供。
+mimetypes.add_type("image/webp", ".webp")
 
 
 def create_app(
