@@ -12,9 +12,11 @@ from rag_tech_retriever.platform.record_store import RecordMissing, RecordStore,
 class JobsService:
     """复用当前表及版本表；业务锁只串行化求职写入，不锁全站。"""
 
-    def __init__(self, store: RecordStore) -> None:
+    def __init__(self, store: RecordStore, config: ConfigLoader | None = None) -> None:
         self.store = store
-        root = store.config.settings_path.parent
+        # 路由传入应用配置；直接实例化（测试替身/脚本）时回退到存储配置或默认配置目录。
+        source = config or getattr(store, "config", None) or ConfigLoader.load_default()
+        root = source.settings_path.parent
         funnel = ConfigLoader(root / "jobs.yaml").get("jobs.funnel", {}) if (root / "jobs.yaml").exists() else {}
         target = funnel.get("weekly_application_target", 5) if isinstance(funnel, dict) else 5
         if type(target) is not int or not 1 <= target <= 100:

@@ -35,8 +35,11 @@ class ResumeService:
 
     def __init__(self, store: RecordStore, root: Path | None = None) -> None:
         self.store = store
-        root = (root or Path(store.config.settings_path).parent.parent).resolve()
-        policy = ConfigLoader(Path(store.config.settings_path).parent / "jobs.yaml").get("jobs", {})
+        if root is None:
+            store_config = getattr(store, "config", None) or ConfigLoader.load_default()
+            root = Path(store_config.settings_path).parent.parent
+        root = Path(root).resolve()
+        policy = ConfigLoader(root / "config" / "jobs.yaml").get("jobs", {})
         if not isinstance(policy, dict):
             raise DomainError("求职配置无效")
         self.max_bytes = policy.get("max_resume_bytes", 10485760)
