@@ -1,7 +1,7 @@
 /* Explicit memory decisions and versioned sessions. Business data is never localStorage. */
-import { api, escapeHtml as esc } from "./data.js?v=102";
+import { api, escapeHtml as esc } from "./data.js?v=103";
 
-const cache = { loaded: false, loading: false, busy: false, agents: [], memories: [], runs: [], selected: "", run: null, configured: false, error: "" };
+const cache = { loaded: false, loading: false, busy: false, agents: [], memories: [], runs: [], selected: "", run: null, configured: false, error: "", caps: null, skills: [], servers: [], toolCatalog: null };
 let generation = 0;
 let paint = () => {};
 function release(button) {
@@ -14,6 +14,24 @@ const owner = () => cache.agents.find((a) => a.id === cache.selected);
 const input = (label, name, value = "", attrs = 'type="number" min="1"') => `<label class="form-field">${label}<input name="${name}" value="${esc(value ?? "")}" ${attrs}></label>`;
 const stateNames = { pending: "待确认", confirmed: "已生效", rejected: "已拒绝", forgotten: "已遗忘" };
 
+function capabilityBinding(d) {
+  const catalog = cache.toolCatalog || {
+    builtin: cache.caps?.builtin_tools || [], http: cache.caps?.http_tools || [], mcp: [],
+  };
+  const tools = new Set(d.tool_ids || []), skills = new Set(d.skill_ids || []), servers = new Set(d.mcp_server_ids || []);
+  const web = cache.caps?.web_search;
+  const box = (name, value, label, checked, disabled = false) =>
+    `<label class="scope-checkboxes"><input type="checkbox" name="${name}" value="${esc(value)}" ${checked ? "checked" : ""} ${disabled ? "disabled" : ""}>${esc(label)}</label>`;
+  return `<form data-studio-form="tools"><h3>能力绑定</h3>
+    <p>联网搜索：${web?.enabled ? esc(web.provider) + (web.configured ? " 已配置" : " 未配置") : "未启用"}。工具权限只来自这里，模型和技能不能自行扩权。</p>
+    <fieldset class="scope-checkboxes"><legend>内置工具</legend>${catalog.builtin.map((tool) => box("tool_ids", tool.name, `${tool.name} · ${tool.description}`, tools.has(tool.name))).join("")}</fieldset>
+    ${catalog.http.length ? `<fieldset class="scope-checkboxes"><legend>管理员 HTTP 工具</legend>${catalog.http.map((tool) => box("tool_ids", tool.name, `${tool.name} · ${tool.description}`, tools.has(tool.name))).join("")}</fieldset>` : ""}
+    ${catalog.mcp.length ? `<fieldset class="scope-checkboxes"><legend>MCP 工具（勾选即同时授权所属服务）</legend>${catalog.mcp.map((tool) => box("tool_ids", tool.name, `${tool.name} · ${tool.description}`, tools.has(tool.name))).join("")}</fieldset>` : ""}
+    ${cache.servers.length ? `<fieldset class="scope-checkboxes"><legend>MCP 服务</legend>${cache.servers.map((server) => box("mcp_server_ids", server.id, `${server.id} · ${server.enabled && server.trusted ? "已信任" : "未启用/未信任"}`, servers.has(server.id))).join("")}</fieldset>` : ""}
+    ${cache.skills.length ? `<fieldset class="scope-checkboxes"><legend>技能</legend>${cache.skills.map((skill) => box("skill_ids", skill.name, `${skill.name} · ${skill.description}`, skills.has(skill.name))).join("")}</fieldset>` : "<p>还没有技能；可在工作台技能目录中导入 SKILL.md。</p>"}
+    <button type="submit">保存能力绑定</button><p class="studio-error error-text" role="alert"></p></form>`;
+}
+
 async function load() {
   const ticket = ++generation;
   cache.loading = true;
@@ -22,12 +40,16 @@ async function load() {
     const agents = await api("agents");
     const selected = agents.some((a) => a.id === cache.selected) ? cache.selected : agents[0]?.id || "";
     const cfg = await api("model-connection");
+    const [caps, skills, servers, toolCatalog] = await Promise.all([
+      api("capabilities"), api("skills"), api("mcp/servers"), api("capabilities/tools").catch(() => null),
+    ]);
     const memories = selected ? await api(`agents/${encodeURIComponent(selected)}/memory`) : [];
     const runs = (await api("agent-runs")).filter((r) => r.data.workflow_id === `agent:${selected}`);
     const id = runs.find((r) => r.id === cache.run?.id)?.id || runs[0]?.id;
     const run = id ? await api(`agent-runs/${encodeURIComponent(id)}`) : null;
     if (ticket !== generation) return;
-    Object.assign(cache, { agents, selected, memories, runs, run, configured: cfg.configured, error: "" });
+    Object.assign(cache, { agents, selected, memories, runs, run, configured: cfg.configured,
+      caps, skills, servers, toolCatalog, error: "" });
   } catch (error) { if (ticket === generation) cache.error = error.message; }
   finally { if (ticket === generation) { cache.loaded = true; cache.loading = false; paint(); } }
 }
@@ -69,6 +91,7 @@ export function agentStudioView() {
       <p>逐字折叠保留用户原文、减少消息数，不是语义摘要；旧回答/工具结果可能被移除，依赖旧回答时会提示重述。仍超字符预算就停止，不自动额外付费。</p>
       <label class="form-field">记忆范围<select name="scope" aria-label="记忆范围">${[["none", "不复用记忆（默认）"], ["session", "仅此会话"], ["persistent", "此会话＋已确认长期记忆"]].map(([v, label]) => `<option value="${v}" ${v === (d.memory?.scope || "none") ? "selected" : ""}>${label}</option>`).join("")}</select></label>
       <p>会话与长期记忆保存在服务器数据库，未做应用层加密；不进入公共工作区备份。不要填写密码、令牌或私密日记，需由数据库备份保护。</p><button type="submit">保存可靠性设置</button><p class="studio-error error-text" role="alert"></p></form>
+    ${capabilityBinding(d)}
     <h3>长期记忆候选与决定</h3><p>新候选不会自动生效。确认后仅供本 Agent 参考，不改变工具权限。遗忘停止未来使用，但审计正文不物理擦除；记忆改变后须新建会话。</p>
     <form data-studio-form="memory"><label class="form-field">拟记住的内容<textarea name="content" required maxlength="2000" rows="3"></textarea></label><button type="submit" ${d.memory?.scope !== "persistent" ? "disabled" : ""}>提出记忆候选（未生效）</button><p class="studio-error error-text" role="alert"></p></form>
     <div data-studio-memory>${cache.memories.map((m) => `<article class="record-detail"><p><strong>${stateNames[m.data.state] || esc(m.data.state)}</strong> · v${m.version}</p><div class="preserve-lines">${esc(m.data.content)}</div>${m.data.state === "pending" ? `<button type="button" data-studio-action="confirm" data-id="${esc(m.id)}" ${d.memory?.scope !== "persistent" ? "disabled" : ""}>确认保存长期记忆</button> <button type="button" data-studio-action="reject" data-id="${esc(m.id)}">拒绝记忆</button>` : m.data.state === "confirmed" ? `<button type="button" data-studio-action="forget" data-id="${esc(m.id)}">确认遗忘</button>` : ""}</article>`).join("") || '<p>没有记忆条目。</p>'}</div>
@@ -98,6 +121,15 @@ export function bindAgentStudio({ renderPage, toast }) {
         model: { alias: fd.get("alias"), temperature: number("temperature"), max_tokens: number("max_tokens") },
         budget: { max_rounds: number("max_rounds"), max_tool_calls: number("max_tool_calls"), max_context_chars: number("max_context_chars") },
         context: { strategy: fd.get("context_strategy"), max_messages: number("max_messages"), keep_recent_users: number("keep_recent_users") }, memory: { scope: fd.get("scope") } } }, "PUT");
+      if (kind === "tools") {
+        const toolIds = fd.getAll("tool_ids"), serverIds = new Set(fd.getAll("mcp_server_ids"));
+        for (const name of toolIds) {
+          const tool = (cache.toolCatalog?.mcp || []).find((item) => item.name === name);
+          if (tool) serverIds.add(tool.server_id);
+        }
+        await api(`agents/${encodeURIComponent(a.id)}`, { version: a.version, data: {
+          tool_ids: toolIds, skill_ids: fd.getAll("skill_ids"), mcp_server_ids: [...serverIds] } }, "PUT");
+      }
       if (kind === "memory") await api(`agents/${encodeURIComponent(a.id)}/memory`, { agent_version: a.version, content: fd.get("content"), request_id: form.dataset.requestId ||= crypto.randomUUID() });
       if (kind === "start") cache.run = await api(`agents/${encodeURIComponent(a.id)}/run`, { version: a.version, query: fd.get("query") });
       if (kind === "continue") cache.run = await api(`agent-runs/${encodeURIComponent(cache.run.id)}/continue`, { version: cache.run.version, query: fd.get("query") });

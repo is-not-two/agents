@@ -1,6 +1,6 @@
 /* 配置与执行控制器；请求锁、输入草稿和运行状态独立于视图。 */
-import { api, state, write } from "./data.js?v=102";
-import { flow } from "./automation-views.js?v=102";
+import { api, state, write } from "./data.js?v=103";
+import { flow } from "./automation-views.js?v=103";
 export function bindAutomation({ renderPage, refresh, toast }) {
   const dialog = (kind) => document.querySelector(`[data-auto-form="${kind}"]`);
   function openEditor(kind, row = null) {
@@ -57,15 +57,24 @@ export function bindAutomation({ renderPage, refresh, toast }) {
       else input.value = value;
     }
     if (kind === "workflow") toggleKind(f);
+    if (kind === "workflow" && values.kind === "graph") {
+      f.elements.graph_json.value = JSON.stringify({
+        agent_id: values.agent_id || "", nodes: values.nodes || [], edges: values.edges || [],
+        max_parallel: values.max_parallel || 1, max_retries: values.max_retries ?? 1,
+        node_timeout_seconds: values.node_timeout_seconds || 60,
+      }, null, 2);
+    }
     d.showModal();
     f.elements.title.focus();
   }
   function toggleKind(form) {
-    const answer = form.elements.kind.value === "answer";
+    const kind = form.elements.kind.value, answer = kind === "answer", graph = kind === "graph";
     form.querySelector("[data-answer-config]").hidden = !answer;
-    form.querySelector("[data-ingest-config]").hidden = answer;
+    form.querySelector("[data-ingest-config]").hidden = answer || graph;
+    form.querySelector("[data-graph-config]").hidden = !graph;
     form.elements.agent_id.required = answer;
-    form.elements.chunk_size.required = !answer;
+    form.elements.chunk_size.required = !answer && !graph;
+    form.elements.graph_json.required = graph;
   }
   async function execute(form) {
     if (state.autoBusy) return;
@@ -146,7 +155,17 @@ export function bindAutomation({ renderPage, refresh, toast }) {
         result_limit: Number(fd.get("result_limit")),
         generate: fd.has("generate"),
       };
-    else
+    else if (fd.get("kind") === "graph") {
+      try {
+        const parsed = JSON.parse(fd.get("graph_json") || "{}");
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("DAG 必须是 JSON 对象");
+        data = { title: fd.get("title"), kind: "graph", ...parsed };
+      } catch (parseError) {
+        error.textContent = "DAG JSON 格式不正确：" + parseError.message;
+        error.hidden = false;
+        return;
+      }
+    } else
       data = {
         title: fd.get("title"),
         kind: fd.get("kind"),
@@ -215,6 +234,18 @@ export function bindAutomation({ renderPage, refresh, toast }) {
         state.autoBusy = false;
         renderPage({ restore: true });
       }
+    }
+    if (action === "confirm-graph") {
+      const row = state.currentRun?.id === id ? state.currentRun : state.runDetail;
+      if (!row || !window.confirm(b.dataset.approve === "true" ? "批准该节点继续执行？" : "拒绝并停止该工作流？")) return;
+      b.disabled = true;
+      try {
+        const updated = await api(`workflow-runs/${id}/confirm`, { version: row.version, approve: b.dataset.approve === "true" });
+        state.currentRun = updated; state.runDetail = updated; await refresh();
+        toast(updated.data.status === "awaiting_confirmation" ? "仍有节点待确认" : "工作流已继续");
+      } catch (e) { toast(e.message, true); }
+      finally { b.disabled = false; }
+      return;
     }
     if (action === "open-run") {
       b.disabled = true;

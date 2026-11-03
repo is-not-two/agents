@@ -84,7 +84,20 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     def capabilities() -> dict:
         return {"skills": True, "mcp_client": True, "agent_runtime": True,
                 "model_tool_calling": "not_verified", "script_execution": False,
+                "web_search": caps.web.public(), "http_tools": caps.http.public(),
                 "limits": caps.limits, "builtin_tools": [{"name": key, **value} for key, value in BUILTINS.items()]}
+
+    @router.get("/api/capabilities/tools")
+    async def tool_catalog() -> dict:
+        """统一目录：内置工具 + 管理员 HTTP 工具 + 已启用 MCP 服务（不触发调用）。"""
+        mcp = []
+        for server in caps.mcp.public():
+            if server["enabled"] and server["trusted"]:
+                for spec in await caps.mcp.discover(server["id"]):
+                    mcp.append({**spec, "source": "mcp", "server_id": server["id"]})
+        return {"builtin": [{"name": key, **value, "source": "builtin"} for key, value in BUILTINS.items()],
+                "http": [{**item, "source": "http"} for item in caps.http.public()],
+                "mcp": mcp}
 
     @router.get("/api/agents/{record_id}/memory")
     def memory_list(record_id: str) -> list:

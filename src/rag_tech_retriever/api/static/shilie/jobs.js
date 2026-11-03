@@ -1,9 +1,9 @@
 /* 求职闭环：真实记录优先，业务内容不写 localStorage。 */
-import { api, escapeHtml as esc } from "./data.js?v=102";
+import { api, escapeHtml as esc } from "./data.js?v=103";
 
 const labels = { collected: "已收藏", applied: "已投递", following: "跟进中", interviewing: "面试中", offered: "已获 offer", rejected: "已结束" };
 const paths = { job_lead: "leads", application: "applications", interview_report: "reports", resume_version: "resumes" };
-const cache = { data: null, loading: false, busy: false, error: "", trash: false, selected: "", filter: "all", query: "", history: null };
+const cache = { data: null, loading: false, busy: false, error: "", trash: false, selected: "", filter: "all", query: "", history: null, resumeDoc: null, diff: null };
 let repaint = () => {};
 const date = (value) => value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "未设置";
 const rows = () => cache.data ? Object.keys(paths).flatMap((kind) => cache.data[kind] || []) : [];
@@ -31,7 +31,7 @@ function details(row) {
     ${!cache.trash && row.kind === "job_lead" ? button("添加投递", "application", row) : ""}${!cache.trash && row.kind === "application" ? button("记录面试复盘", "report", row) : ""}</div>
     ${lead ? `<p><a class="small-button" href="#module/job-insights/${encodeURIComponent(lead.id)}">查看岗位证据对照</a></p><p><strong>公司</strong> ${esc(lead.data.company)}</p>${lead.data.source_url ? `<a class="jobs-source" href="${esc(lead.data.source_url)}" target="_blank" rel="noopener noreferrer">打开岗位来源</a>` : ""}<details><summary>岗位原文</summary><pre class="jobs-prose">${esc(lead.data.jd_text || "尚未填写岗位原文")}</pre></details>` : ""}
     ${row.kind === "application" ? `<dl class="jobs-facts"><dt>投递渠道</dt><dd>${esc(data.channel || "未填写")}</dd><dt>投递时间</dt><dd>${esc(date(data.applied_at))}</dd><dt>下次跟进</dt><dd>${esc(date(data.follow_up_at))}</dd><dt>简历版本</dt><dd>${esc(rows().find((r) => r.id === data.resume_version_id)?.data.title || (data.resume_version_id ? "已归档版本" : "未关联"))}</dd></dl><h3>面试复盘</h3>${reports.length ? reports.map((r) => `<article class="jobs-report"><h4>${esc(r.data.title)}</h4>${reportBody(r.data, r)}${button("编辑复盘", "edit", r)}${button("复盘历史", "history", r)}${button("归档复盘", "archive", r)}</article>`).join("") : "<p>还没有面试复盘。推进到面试中后，可记录问题、卡壳点和下一步行动。</p>"}` : ""}
-    ${row.kind === "interview_report" ? reportBody(data, row) : ""}${row.kind === "resume_version" ? `<p>文件 SHA256：${esc(data.file_hash || "未登记")}</p><pre class="jobs-prose">${esc(data.highlights.join("\n"))}</pre><p>仅保存版本元数据，不读取或移动简历原文件。</p>` : ""}
+    ${row.kind === "interview_report" ? reportBody(data, row) : ""}${row.kind === "resume_version" ? `<p>文件：${esc(data.file_name || "仅登记元数据")} · ${data.size ? Math.round(data.size / 1024) + " KB" : "未上传"} · 解析：${esc(data.parse_status || "未解析")}</p><p>文件 SHA256：${esc(data.file_hash || "未登记")}</p><pre class="jobs-prose">${esc(data.highlights.join("\n"))}</pre>${data.document_id ? `<div class="jobs-actions">${button("查看解析", "resume-doc", row)}${cache.data.resume_version.some((r) => r.id !== row.id) ? button("对比上一版", "resume-diff", row) : ""}</div>` : "<p>仅保存版本元数据，可上传 PDF / DOCX / TXT 后自动解析。</p>"}${cache.resumeDoc?.record?.id === row.id ? `<h3>结构化段落</h3>${cache.resumeDoc.sections.map((section) => `<article class="jobs-report"><h4>${esc(section.title)}</h4><pre class="jobs-prose">${esc(section.content)}</pre></article>`).join("")}<p>技能命中：${esc((cache.resumeDoc.skills || []).join("、") || "未识别")}</p>` : ""}${cache.diff?.to === row.id ? `<h3>版本差异</h3><p>新增 ${cache.diff.added_lines} 行，删除 ${cache.diff.removed_lines} 行</p><pre class="jobs-prose">${esc(cache.diff.diff)}</pre>` : ""}` : ""}
     ${data.notes ? `<h3>备注</h3><pre class="jobs-prose">${esc(data.notes)}</pre>` : ""}
     ${cache.history?.id === row.id ? `<section class="jobs-history"><h3>版本历史</h3>${cache.history.rows.map((v) => `<p>v${v.version} ${esc(v.action)} ${esc(date(v.created_at))} ${button("恢复此版本", "restore", row, `data-target-version="${v.version}"`)}</p>`).join("")}</section>` : ""}</section>`;
 }
@@ -54,7 +54,7 @@ function funnel(f) {
 }
 
 export function jobsView() {
-  const head = `<div class="page-head"><h1>求职记录</h1></div><div class="jobs-toolbar">${button("添加岗位", "new")}${button("登记简历版本", "resume")}${button(cache.trash ? "返回有效记录" : "回收站", "trash")}${button("刷新", "reload")}<a class="small-button" href="#module/company-capabilities">目标公司能力</a></div>`;
+  const head = `<div class="page-head"><h1>求职记录</h1></div><div class="jobs-toolbar">${button("添加岗位", "new")}${button("登记简历版本", "resume")}${button("上传简历", "resume-upload")}${button(cache.trash ? "返回有效记录" : "回收站", "trash")}${button("刷新", "reload")}<a class="small-button" href="#module/company-capabilities">目标公司能力</a></div>`;
   if (!cache.data) return `${head}<section class="module-surface"><p role="${cache.error ? "alert" : "status"}">${esc(cache.error || "正在读取求职记录…")}</p></section>`;
   const all = rows();
   const applications = cache.data.application;
@@ -69,7 +69,8 @@ export function jobsView() {
 }
 
 export function jobsDialog() {
-  return '<dialog class="form-dialog jobs-dialog" data-form="jobs" aria-labelledby="jobs-dialog-title"><form class="edit-form" id="jobs-form"><header class="drawer-header"><h2 id="jobs-dialog-title">求职记录</h2><button type="button" class="icon-button" data-action="close-dialog" aria-label="关闭">×</button></header><div class="drawer-content" id="jobs-form-body"></div></form></dialog>';
+  return '<dialog class="form-dialog jobs-dialog" data-form="jobs" aria-labelledby="jobs-dialog-title"><form class="edit-form" id="jobs-form"><header class="drawer-header"><h2 id="jobs-dialog-title">求职记录</h2><button type="button" class="icon-button" data-action="close-dialog" aria-label="关闭">×</button></header><div class="drawer-content" id="jobs-form-body"></div></form></dialog>'
+    + '<dialog class="form-dialog jobs-dialog" data-form="resume-upload" aria-labelledby="resume-upload-title"><form class="edit-form" id="resume-upload-form"><header class="drawer-header"><h2 id="resume-upload-title">上传简历</h2><button type="button" class="icon-button" data-action="close-dialog" aria-label="关闭">×</button></header><div class="drawer-content"><label class="form-field">简历文件<input name="file" type="file" accept=".pdf,.docx,.txt,.md" required></label><label class="form-field">版本名称（选填）<input name="title" maxlength="160" placeholder="例如：AI 应用工程师 v2"></label><p>支持 PDF / DOCX / TXT / Markdown，最大 10MB。原文件不进入公共备份，解析文本保存在服务器私密目录。</p><p id="resume-upload-error" class="error-text" role="alert" hidden></p><div class="form-actions"><button type="button" class="small-button" data-action="close-dialog">取消</button><button type="submit" class="primary-button">上传并解析</button></div></div></form></dialog>';
 }
 
 function input(label, name, value = "", type = "text", maximum = 160, required = false) {
@@ -116,12 +117,19 @@ export function bindJobs({ renderPage, toast }) {
     if (action === "report" && row) return open("interview_report", null, row.id);
     if (action === "add-question") { document.getElementById("jobs-questions").insertAdjacentHTML("beforeend", questionField()); return; }
     if (action === "remove-question") { b.closest("fieldset").remove(); return; }
-    if (action === "select") { cache.selected = b.dataset.id; cache.history = null; repaint(); return; }
+    if (action === "select") { cache.selected = b.dataset.id; cache.history = null; cache.resumeDoc = null; cache.diff = null; repaint(); return; }
+    if (action === "resume-upload") { document.querySelector('dialog[data-form="resume-upload"]').showModal(); return; }
     if (action === "trash") { cache.trash = !cache.trash; cache.data = null; cache.selected = ""; cache.history = null; await load(); return; }
     if (action === "reload") { await load(); return; }
     if (!row) return;
     cache.busy = true;
     try {
+      if (action === "resume-doc") { cache.resumeDoc = await api(`jobs/resumes/${row.id}/document`); cache.diff = null; cache.selected = row.id; }
+      if (action === "resume-diff") {
+        const other = cache.data.resume_version.find((r) => r.id !== row.id);
+        if (!other) throw new Error("没有可对比的其他简历版本");
+        cache.diff = await api(`jobs/resumes/${row.id}/diff?against=${encodeURIComponent(other.id)}`); cache.resumeDoc = null; cache.selected = row.id;
+      }
       if (action === "history") cache.history = { id: row.id, rows: await api(`records/${row.id}/history`) };
       if (action === "archive" && confirm("移入回收站？有关联记录时会阻止归档，不会连带删除。")) {
         await api(`records/${row.id}?version=${row.version}`, undefined, "DELETE"); cache.history = null; await load(); toast("已移入回收站");
@@ -136,6 +144,20 @@ export function bindJobs({ renderPage, toast }) {
     finally { cache.busy = false; repaint(); }
   });
   document.addEventListener("submit", async (event) => {
+    if (event.target.id === "resume-upload-form") {
+      event.preventDefault();
+      if (cache.busy) return;
+      const form = event.target, button = form.querySelector('[type="submit"]'), errorBox = form.querySelector("#resume-upload-error");
+      cache.busy = true; button.disabled = true; button.textContent = "上传解析中…"; errorBox.hidden = true;
+      try {
+        const response = await fetch("/api/jobs/resumes/upload", { method: "POST", body: new FormData(form), cache: "no-store" });
+        let value = null; try { value = await response.json(); } catch { value = null; }
+        if (!response.ok) throw new Error(value?.detail || "上传失败");
+        form.closest("dialog").close(); await load(); toast("简历已上传并解析");
+      } catch (error) { errorBox.textContent = error.message; errorBox.hidden = false; }
+      finally { cache.busy = false; button.disabled = false; button.textContent = "上传并解析"; }
+      return;
+    }
     if (event.target.id === "jobs-filter") {
       event.preventDefault(); const data = new FormData(event.target); cache.query = String(data.get("query")); cache.filter = String(data.get("filter")); repaint(); return;
     }

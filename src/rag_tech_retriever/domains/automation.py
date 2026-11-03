@@ -88,10 +88,14 @@ def validate_agent(payload: dict) -> dict:
 
 
 def validate_workflow(payload: dict) -> dict:
-    """两个已实现的流程类型，配置版本与执行版本分离。"""
+    """固定流程仍只支持两种；graph 进入独立 DAG 契约。"""
     kind = payload.get("kind", "answer")
+    if isinstance(kind, str) and kind == "graph":
+        from rag_tech_retriever.domains.workflow_graph import validate_graph_workflow
+
+        return validate_graph_workflow(payload)
     if not isinstance(kind, str) or kind not in {"answer", "ingest"}:
-        raise DomainError("流程只支持检索回答或知识入库")
+        raise DomainError("流程只支持检索回答、知识入库或通用 DAG")
     return {
         "title": text(payload.get("title", ""), "流程名称", 160, True),
         "kind": kind,
@@ -104,7 +108,7 @@ def validate_run(payload: dict) -> dict:
     """恢复已存运行记录时验证必要结构，禁止伪造类型进入其他领域。"""
     if not isinstance(payload.get("kind"), str) or not isinstance(payload.get("status"), str):
         raise DomainError("运行类型与状态必须是文本")
-    if payload.get("kind") not in {"answer", "ingest", "agent"} or payload.get("status") not in {
+    if payload.get("kind") not in {"answer", "ingest", "agent", "graph"} or payload.get("status") not in {
         "running", "completed", "fallback", "awaiting_confirmation", "confirmed", "failed"
     }:
         raise DomainError("运行记录类型或状态错误")
@@ -156,7 +160,17 @@ def validate_run(payload: dict) -> dict:
         text(step.get("detail", ""), "步骤说明", 10000)
         integer(step.get("duration_ms", 0), "步骤耗时", 0, 86400000)
     result = payload.get("result", {})
-    if payload["kind"] == "ingest":
+    if payload["kind"] == "graph":
+        from rag_tech_retriever.domains.workflow_graph import validate_graph_workflow
+
+        validate_graph_workflow(payload.get("workflow", {}).get("data", payload.get("workflow", {})))
+        for key in ("node_outputs", "node_status"):
+            if not isinstance(payload.get(key, {}), dict):
+                raise DomainError("图工作流节点状态格式错误")
+        text(result.get("answer", ""), "运行回答", 100000)
+        if not isinstance(result.get("notes", []), list):
+            raise DomainError("运行提示格式错误")
+    elif payload["kind"] == "ingest":
         from rag_tech_retriever.domains.knowledge import validate_knowledge
 
         chunks = payload.get("result", {}).get("chunks", [])

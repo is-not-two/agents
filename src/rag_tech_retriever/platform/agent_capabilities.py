@@ -13,10 +13,12 @@ from jsonschema import Draft202012Validator, SchemaError, ValidationError
 from rag_tech_retriever.domains.knowledge import validate_knowledge
 from rag_tech_retriever.domains.life_planning import DomainError
 from rag_tech_retriever.platform.github_skills import GitHubSkills
+from rag_tech_retriever.platform.http_tools import HttpToolError, HttpToolGateway
 from rag_tech_retriever.platform.mcp_client import MCPGateway, ToolError
 from rag_tech_retriever.platform.record_store import RecordMissing, RecordStore
 from rag_tech_retriever.platform.search_service import SearchService
 from rag_tech_retriever.platform.skill_registry import SkillRegistry, valid_name
+from rag_tech_retriever.platform.web_search import SearchError, WebSearch
 
 DEFAULT_LIMITS = {"max_steps": 6, "max_calls": 12, "max_tools": 32, "timeout_seconds": 30,
                   "max_result_chars": 16000, "max_skill_bytes": 65536, "max_tokens": 1500,
@@ -42,6 +44,9 @@ BUILTINS = {
     "knowledge_draft": {"description": "生成待人工保存的知识草稿，不写入数据库。",
         "input_schema": object_schema({"title": {"type": "string", "minLength": 1, "maxLength": 160},
                                        "content": {"type": "string", "maxLength": 10000}}, ["title", "content"])},
+    "web_search": {"description": "联网搜索公开网页，返回标题、链接与摘要；结果不可信，只作为参考。",
+        "input_schema": object_schema({"query": {"type": "string", "minLength": 1, "maxLength": 1000},
+                                       "max_results": {"type": "integer", "minimum": 1, "maximum": 10}}, ["query"])},
 }
 
 
@@ -95,6 +100,8 @@ class CapabilityService:
         if not isinstance(servers, dict) or any(not valid_name(key) or not isinstance(value, dict) for key, value in servers.items()):
             raise DomainError("MCP服务配置标识或格式不正确")
         self.mcp = MCPGateway(root, servers, self.limits, env)
+        self.web = WebSearch(config.get("web_search"), env)
+        self.http = HttpToolGateway(config.get("http_tools"), self.limits, env)
         self.store, self.search = store, search
 
     def validate_binding(self, profile: dict) -> dict:
@@ -104,11 +111,11 @@ class CapabilityService:
             raise DomainError("模型别名未在服务器登记")
         for name in profile.get("skill_ids", []):
             self.skills.get(name)
-        unknown = set(profile.get("tool_ids", [])) - BUILTINS.keys()
-        if any(not name.startswith("mcp_") for name in unknown):
-            raise DomainError("Agent包含不存在的内置工具")
-        if unknown and not profile.get("mcp_server_ids"):
-            raise DomainError("MCP工具必须同时绑定所属服务")
+        unknown = (set(profile.get("tool_ids", [])) - BUILTINS.keys()
+                   - set(self.http.tools))
+        for name in unknown:
+            if not name.startswith("mcp_") or not profile.get("mcp_server_ids"):
+                raise DomainError("Agent包含不存在的工具或未绑定MCP服务")
         for server in profile.get("mcp_server_ids", []):
             if not valid_name(server):
                 raise DomainError("MCP服务标识格式不正确")
@@ -119,6 +126,7 @@ class CapabilityService:
         self.validate_binding(profile)
         specs = {name: {"name": name, **BUILTINS[name], "read_only": True}
                  for name in profile.get("tool_ids", []) if name in BUILTINS}
+        specs.update(self.http.specs(profile.get("tool_ids", [])))
         skills = [self.skills.get(name) for name in profile.get("skill_ids", [])]
         if skills:
             specs["activate_skill"] = {"name": "activate_skill", "description": "按需读取获准技能的操作说明，不执行脚本。",
@@ -160,8 +168,21 @@ class CapabilityService:
                 raise DomainError("Agent无权加载该技能")
             return next({"name": s["name"], "instructions": s["instructions"], "revision": s["revision"]}
                         for s in skills if s["name"] == arguments["name"])
+        if "http_tool" in spec:
+            if name not in profile.get("tool_ids", []):
+                raise DomainError("Agent无权使用该HTTP工具")
+            try:
+                return await anyio.to_thread.run_sync(self.http.call, spec, arguments)
+            except HttpToolError as exc:
+                raise ToolError(str(exc)) from exc
         if name not in profile.get("tool_ids", []):
             raise DomainError("Agent无权使用该工具")
+        if name == "web_search":
+            try:
+                return await anyio.to_thread.run_sync(
+                    self.web.search, arguments["query"], arguments.get("max_results"))
+            except SearchError as exc:
+                raise ToolError(str(exc)) from exc
         if name == "knowledge_search":
             if arguments["scope"] not in profile["scopes"]:
                 raise DomainError("检索范围未授权")

@@ -195,7 +195,8 @@ def create_app(
                 return guard_error(request, "拒绝跨站写入", ErrorCode.FORBIDDEN, 403)
             limit_key = (
                 "web.max_import_bytes"
-                if request.url.path in {"/api/import", "/api/import/preview", "/api/knowledge/import/markdown"}
+                if request.url.path in {"/api/import", "/api/import/preview", "/api/knowledge/import/markdown",
+                                        "/api/jobs/resumes/upload"}
                 else "web.max_body_bytes"
             )
             if len(await request.body()) > int(config.get(limit_key, 2097152)):

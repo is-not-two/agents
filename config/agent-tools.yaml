@@ -24,6 +24,32 @@ limits:
 # Local stdio: command/args/env_refs are configured by the server administrator,
 # not accepted from API request bodies. Unknown/write tools require confirmation.
 servers: {}
+# 联网搜索：固定供应商端点，不接受用户 URL。duckduckgo 无需密钥；
+# tavily 需要 TAVILY_API_KEY（环境变量，不写入仓库）。
+web_search:
+  enabled: true
+  provider: duckduckgo
+  api_key_env: TAVILY_API_KEY
+  timeout_seconds: 10
+  max_results: 5
+# 管理员定义的 HTTP 工具：固定 HTTPS 主机，参数只能填入模板，不能改 URL/方法/请求头。
+# http_tools:
+#   github_search:
+#     description: 搜索公开 GitHub 仓库
+#     url: https://api.github.com/search/repositories
+#     method: GET
+#     query: {q: "{query}", per_page: "{limit}"}
+#     headers_env: {Accept: GITHUB_ACCEPT, Authorization: GITHUB_TOKEN}
+#     read_only: true
+#     timeout_seconds: 10
+#     input_schema:
+#       type: object
+#       properties:
+#         query: {type: string, minLength: 1, maxLength: 200}
+#         limit: {type: integer, minimum: 1, maximum: 20}
+#       required: [query]
+#       additionalProperties: false
+http_tools: {}
 github:
   timeout_seconds: 60
   max_bytes: 52428800

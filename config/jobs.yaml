@@ -7,6 +7,9 @@ jobs:
   # 求职漏斗：本周投递目标；只做统计口径，不产生考核结论。
   funnel:
     weekly_application_target: 5
+  # 简历上传：文件仅存本机私密目录，公开记录只留元数据；正文以解析后文本为准。
+  max_resume_bytes: 10485760
+  max_resume_chars: 100000
   # 规则只辅助提取，不给出“满足岗位/具备能力”的自动结论。
   taxonomy:
     - {name: Python, aliases: [Python, Python3]}

@@ -1,17 +1,24 @@
 """求职路由：现有鉴权/错误语义下暴露业务闭环。"""
-from fastapi import APIRouter
+from fastapi import APIRouter, File, Form, UploadFile
+from pydantic import BaseModel, Field
 
 from rag_tech_retriever.api.dependencies import WorkspaceContext
 from rag_tech_retriever.api.models import RecordInput
 from rag_tech_retriever.domains.life_planning import DomainError
 from rag_tech_retriever.platform.jobs import JobsService
 from rag_tech_retriever.platform.record_store import RecordMissing
+from rag_tech_retriever.platform.resume_service import ResumeService
+
+
+class ResumeAnalyzeInput(BaseModel):
+    lead_id: str = Field(min_length=1, max_length=100)
 
 
 def create_router(context: WorkspaceContext) -> APIRouter:
     """单用户求职，不抓取外部 URL、不读取本机简历原文件。"""
     router = APIRouter()
     service = JobsService(context.store)
+    resumes = ResumeService(context.store, context.journal.root)
 
     @router.get("/api/jobs")
     def overview(trash: bool = False) -> dict:
@@ -60,5 +67,23 @@ def create_router(context: WorkspaceContext) -> APIRouter:
         if payload.data.get("application_id", application_id) != application_id:
             raise DomainError("路径与复盘所属投递不一致")
         return service.save("interview_report", {**payload.data, "application_id": application_id})
+
+    @router.post("/api/jobs/resumes/upload", status_code=201)
+    async def resume_upload(file: UploadFile = File(...), title: str = Form("")) -> dict:  # noqa: B008
+        """上传即解析；原文件不落公共库，只保留私密解析文本与公开元数据。"""
+        raw = await file.read()
+        return resumes.upload(file.filename or "", raw, title)
+
+    @router.get("/api/jobs/resumes/{record_id}/document")
+    def resume_document(record_id: str) -> dict:
+        return resumes.document(record_id)
+
+    @router.get("/api/jobs/resumes/{record_id}/diff")
+    def resume_diff(record_id: str, against: str) -> dict:
+        return resumes.diff(record_id, against)
+
+    @router.post("/api/jobs/resumes/{record_id}/analyze")
+    def resume_analyze(record_id: str, payload: ResumeAnalyzeInput) -> dict:
+        return resumes.analyze(record_id, payload.lead_id)
 
     return router

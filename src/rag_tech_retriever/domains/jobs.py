@@ -55,12 +55,25 @@ def validate_lead(payload: dict) -> dict:
 
 
 def validate_resume(payload: dict) -> dict:
-    """只留简历版本元数据，不读取或移动用户简历文件。"""
+    """简历版本：公开记录只留元数据，正文与结构化段落存本机私密文件。"""
     digest = text(payload.get("file_hash", ""), "文件 SHA256", 64)
     if digest and not re.fullmatch(r"[a-fA-F0-9]{64}", digest):
         raise DomainError("文件 SHA256 必须为 64 位十六进制")
+    document_id = text(payload.get("document_id", ""), "简历文档 ID", 64)
+    if document_id and not re.fullmatch(r"[a-f0-9]{64}", document_id):
+        raise DomainError("简历文档 ID 必须为 64 位十六进制")
+    size = payload.get("size", 0)
+    if type(size) is not int or not 0 <= size <= 20_000_000:
+        raise DomainError("简历文件大小必须为 0–20MB 的整数")
+    status = payload.get("parse_status", "")
+    if status not in {"", "pending", "parsed", "failed"}:
+        raise DomainError("简历解析状态不支持")
     return {"title": text(payload.get("title", ""), "简历版本名称", 160, True),
-            "file_hash": digest.lower(), "highlights": strings(payload.get("highlights", []), "简历亮点")}
+            "file_hash": digest.lower(), "highlights": strings(payload.get("highlights", []), "简历亮点"),
+            "document_id": document_id,
+            "file_name": text(payload.get("file_name", ""), "简历文件名", 200),
+            "mime": text(payload.get("mime", ""), "简历类型", 80),
+            "size": size, "parse_status": status}
 
 
 def validate_application(payload: dict) -> dict:
