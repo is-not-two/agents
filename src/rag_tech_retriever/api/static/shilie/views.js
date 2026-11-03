@@ -1,35 +1,35 @@
-import { collaborationView } from "./collaboration.js?v=106";
-import { corpusSelect } from "./public-corpus.js?v=106";
-import { agentStudioView } from "./agent-studio.js?v=106";
-import { backupView } from "./backup.js?v=106";
-import { privateView } from "./private-view.js?v=106";
-import { modelConnectionView } from "./model-connection.js?v=106";
-import { treeView, treeDialog } from "./tree.js?v=106";
+import { collaborationView } from "./collaboration.js?v=107";
+import { corpusSelect } from "./public-corpus.js?v=107";
+import { agentStudioView } from "./agent-studio.js?v=107";
+import { backupView } from "./backup.js?v=107";
+import { privateView } from "./private-view.js?v=107";
+import { modelConnectionView } from "./model-connection.js?v=107";
+import { treeView, treeDialog } from "./tree.js?v=107";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=106";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=106";
-import { jobsView, jobsDialog } from "./jobs.js?v=106";
+} from "./automation-views.js?v=107";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=107";
+import { jobsView, jobsDialog } from "./jobs.js?v=107";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=106";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=106";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=106";
-import { serverStatusView } from "./server-status.js?v=106";
-import { evaluationView } from "./evaluation.js?v=106";
-import { directorActive } from "./director.js?v=106";
-import { icon, orbitIcon } from "./icons.js?v=106";
+} from "./company-capabilities.js?v=107";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=107";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=107";
+import { serverStatusView } from "./server-status.js?v=107";
+import { evaluationView } from "./evaluation.js?v=107";
+import { directorActive } from "./director.js?v=107";
+import { icon, orbitIcon } from "./icons.js?v=107";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=106";
+} from "./data.js?v=107";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -401,7 +401,8 @@ export function render() {
         : ""
     }</form>`;
   }
-  if (state.loading) return '<p role="status">正在连接工作区…</p>';
+  if (state.loading)
+    return `<section class="loading-panel" role="status" aria-live="polite"><p>正在连接工作区…</p>${Array.from({ length: 3 }, () => '<div class="skeleton-row" aria-hidden="true"></div>').join("")}</section>`;
   if (state.error)
     return `<section class="empty-panel"><h2>工作区暂不可用</h2><p>${esc(state.error)}</p><button class="primary-button" data-action="retry">重试</button></section>`;
   const [kind, id, tab] = location.hash.slice(1).split("/");

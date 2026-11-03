@@ -1,25 +1,25 @@
-import { bindCollaboration } from "./collaboration.js?v=106";
-import { bindAgentStudio } from "./agent-studio.js?v=106";
-import { bindBackup } from "./backup.js?v=106";
+import { bindCollaboration } from "./collaboration.js?v=107";
+import { bindAgentStudio } from "./agent-studio.js?v=107";
+import { bindBackup } from "./backup.js?v=107";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=106";
-import { bindModelConnection } from "./model-connection.js?v=106";
-import { bindTree } from "./tree-actions.js?v=106";
-import { bindAutomation } from "./automation-actions.js?v=106";
-import { bindLessons } from "./lessons.js?v=106";
-import { bindJobs } from "./jobs.js?v=106";
-import { bindCapabilities } from "./company-capabilities.js?v=106";
-import { bindLearning } from "./learning.js?v=106";
-import { bindJobInsights } from "./job-insights.js?v=106";
-import { bindServerStatus } from "./server-status.js?v=106";
-import { bindEvaluation } from "./evaluation.js?v=106";
-import { startTour } from "./tour.js?v=106";
-import { toggleDirector, directorActive } from "./director.js?v=106";
-import { initMotion } from "./motion.js?v=106";
-import { initOrbit } from "./orbit.js?v=106";
+} from "./private-view.js?v=107";
+import { bindModelConnection } from "./model-connection.js?v=107";
+import { bindTree } from "./tree-actions.js?v=107";
+import { bindAutomation } from "./automation-actions.js?v=107";
+import { bindLessons } from "./lessons.js?v=107";
+import { bindJobs } from "./jobs.js?v=107";
+import { bindCapabilities } from "./company-capabilities.js?v=107";
+import { bindLearning } from "./learning.js?v=107";
+import { bindJobInsights } from "./job-insights.js?v=107";
+import { bindServerStatus } from "./server-status.js?v=107";
+import { bindEvaluation } from "./evaluation.js?v=107";
+import { startTour } from "./tour.js?v=107";
+import { toggleDirector, directorActive } from "./director.js?v=107";
+import { initMotion } from "./motion.js?v=107";
+import { initOrbit } from "./orbit.js?v=107";
 import {
   api,
   state,
@@ -30,13 +30,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=106";
+} from "./data.js?v=107";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=106";
+} from "./views.js?v=107";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -137,6 +137,14 @@ function renderPage({ restore = false } = {}) {
   evaluationController?.ensure();
   bindSlide();
   navigationStrip.hidden = !location.hash || location.hash === "#home";
+  /* 移动端底部导航高亮：模块子页（如 #module/knowledge/notes）也算命中父模块。 */
+  document.querySelectorAll(".mobile-nav a").forEach((a) => {
+    const target = a.getAttribute("href");
+    const current =
+      location.hash === target ||
+      (target.startsWith("#module/") && location.hash.startsWith(target + "/"));
+    a.setAttribute("aria-current", current ? "page" : "false");
+  });
   $("#sidebar").innerHTML = sidebar();
   document
     .querySelectorAll("button[data-mode]")
@@ -162,23 +170,24 @@ function go(route) {
   if (!route.startsWith("#")) route = "#" + route;
   location.hash = route;
 }
+/* 路由回退表：特殊模块只在此登记，back() 里不再散落 if 特判。 */
+const BACK_ROUTES = {
+  "module/planning": "#category/workspace",
+};
 function back() {
   const [kind, id, sub] = location.hash.slice(1).split("/");
-  if (kind === "module" && id === "planning") {
-    go("#category/workspace");
-    return;
-  }
   if (kind === "module" && sub) {
     go(`#module/${id}`);
     return;
   }
   if (kind === "module") {
+    const forced = BACK_ROUTES[`module/${id}`];
+    if (forced) {
+      go(forced);
+      return;
+    }
     const m = modules.find((x) => x.id === id);
     go(m ? `#category/${m.group}` : "#home");
-    return;
-  }
-  if (kind === "category") {
-    go("#home");
     return;
   }
   go("#home");

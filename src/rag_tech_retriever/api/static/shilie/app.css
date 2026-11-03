@@ -36,7 +36,7 @@
 .insight-requirement { padding-block: 16px; border-top: 1px solid #ede4dc; overflow-wrap: anywhere; }
 .insight-requirement blockquote { margin: 12px 0; border-left: 2px solid #874808; padding-left: 12px; white-space: pre-wrap; }
 .profile-skill, .profile-fact { min-width: 0; padding: 14px; margin-block: 18px; border: 1px solid #ede4dc; border-radius: 6px; }
-@media (max-width: 800px) { .jobs-layout { grid-template-columns: minmax(0, 1fr); } .jobs-filter label { width: 100%; } .jobs-detail { padding: 16px; } .jobs-facts { grid-template-columns: 85px minmax(0, 1fr); } }
+@media (max-width: 1279px) { .jobs-layout { grid-template-columns: minmax(0, 1fr); } .jobs-filter label { width: 100%; } .jobs-detail { padding: 16px; } .jobs-facts { grid-template-columns: 85px minmax(0, 1fr); } }
 /* 求职漏斗：四阶段统计条，窄屏改为两列 / 单列，不横向滚动。 */
 .jobs-funnel { padding: 20px; margin-block: 20px; }
 .jobs-funnel header { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: baseline; }
@@ -51,7 +51,7 @@
 .capability-item header { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: baseline; }
 .capability-item h4 { margin: 0; }
 .capability-row { min-width: 0; }
-@media (max-width: 800px) { .funnel-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .jobs-funnel { padding: 16px; } }
+@media (max-width: 1279px) { .funnel-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .jobs-funnel { padding: 16px; } }
 @media (max-width: 420px) { .funnel-steps { grid-template-columns: minmax(0, 1fr); } }
 
 /* ==================== 基础与布局（原 base.css） ==================== */
@@ -1169,7 +1169,7 @@ summary {
 [data-density="comfortable"] {
   --space: 32px;
 }
-@media (max-width: 1100px) {
+@media (max-width: 1279px) {
   .preview-label {
     display: none;
   }
@@ -1208,7 +1208,7 @@ summary {
     padding: 35px 26px;
   }
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .topbar {
     height: auto;
     min-height: 110px;
@@ -1486,7 +1486,7 @@ summary {
   min-height: calc(44px + var(--space));
 }
 
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .preview-label {
     display: block;
     order: 3;
@@ -1622,7 +1622,7 @@ kbd {
 .recent-section {
   margin-top: 30px;
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .preview-label {
     color: #776e65;
   }
@@ -2555,7 +2555,7 @@ body[data-layout="sidebar"] .sidebar {
   padding: 5px 9px;
   font-size: 11px;
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .topbar {
     height: auto;
     min-height: 108px;
@@ -2714,7 +2714,7 @@ body[data-layout="sidebar"] .sidebar {
   object-fit: cover;
   object-position: center 52%;
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .home-landscape picture img {
     object-position: 65% center;
   }
@@ -2759,7 +2759,7 @@ body[data-layout="sidebar"] .sidebar {
   gap: 8px;
   flex: none;
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .plan-actions {
     flex-direction: column;
     align-items: stretch;
@@ -2889,7 +2889,7 @@ mark {
 .graph-node span {
   font-size: 12px;
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   :root[data-density="compact"] {
     --panel-space: 12px;
     --document-space: 16px;
@@ -3523,7 +3523,7 @@ select:focus-visible {
   color: #a08366;
   background: #f7f2ed;
 }
-@media (min-width: 1500px) {
+@media (min-width: 1280px) {
   .tree-viewport {
     height: 580px;
   }
@@ -3531,7 +3531,7 @@ select:focus-visible {
     max-height: 580px;
   }
 }
-@media (max-width: 1050px) {
+@media (max-width: 1279px) {
   .tree-workspace {
     grid-template-columns: minmax(0, 1fr) 230px;
   }
@@ -3557,7 +3557,7 @@ select:focus-visible {
     display: none;
   }
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   #navigation-strip {
     top: 76px;
     padding: 8px 16px;
@@ -3785,7 +3785,7 @@ select:focus-visible {
 .tree-optional[open] {
   margin-bottom: 18px;
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .studio-heading {
     padding: 20px;
     min-height: 100px;
@@ -3804,7 +3804,7 @@ select:focus-visible {
 .tree-inspector {
   max-height: min(60vh, max(380px, var(--tree-content-height, 440px)));
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .tree-viewport {
     height: 420px;
   }
@@ -4091,7 +4091,7 @@ select:focus-visible {
 .backup-no-change {
   color: #6e4f30;
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .backup-export {
     align-items: flex-start;
     flex-direction: column;
@@ -4464,7 +4464,7 @@ select:focus-visible {
   font-size: 12px;
   color: #7a867c;
 }
-@media (max-width: 900px) {
+@media (max-width: 1279px) {
   .agent-grid {
     grid-template-columns: 1fr;
   }
@@ -4478,7 +4478,7 @@ select:focus-visible {
     padding: 15px;
   }
 }
-@media (max-width: 700px) {
+@media (max-width: 639px) {
   .workflow-workspace {
     padding: 16px;
   }
@@ -4867,7 +4867,7 @@ select:focus-visible {
 .tree-new {
   margin-left: auto;
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .tree-list {
     padding: 16px 14px 20px;
   }
@@ -5169,7 +5169,7 @@ select:focus-visible {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .private-gate {
     margin: 18px auto;
     padding: 22px;
@@ -7497,7 +7497,7 @@ body::before {
   background: rgba(232, 148, 74, 0.13);
   font-weight: 600;
 }
-@media (max-width: 760px) {
+@media (max-width: 639px) {
   .eval-question > header {
     grid-template-columns: 1fr;
     gap: 4px;
@@ -7574,4 +7574,84 @@ body::before {
 .related-note span {
   font-size: 11px;
   color: #8a7b6d;
+}
+
+/* ── 响应式断点表（v107 收敛，2026-11-03）────────────────────────
+   S 移动        <640px      底部主导航、侧栏隐藏、单列、触摸目标 ≥44px
+   M 平板/窄桌面  640–1279px  主从布局堆叠、紧凑间距、环轨强制列表
+   L 桌面        ≥1280px     完整双栏与宽屏规划画布
+   子断点：<960px 环轨强制列表（576 舞台 + 侧栏宽度）、<420px 漏斗单列。
+   新增规则只使用 639/1279/1280 三个边界，不再使用 700/760/800/900/1050/1100/1500。 */
+.mobile-nav {
+  display: none;
+}
+@media (max-width: 639px) {
+  body {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+  .mobile-nav {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 40;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
+    background: rgba(250, 250, 244, 0.96);
+    border-top: 1px solid #dce3dd;
+    backdrop-filter: blur(14px);
+  }
+  .mobile-nav a {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #504234;
+    text-decoration: none;
+  }
+  .mobile-nav a[aria-current="page"] {
+    background: #f2e9dd;
+    color: #7a4419;
+    font-weight: 600;
+  }
+  /* 移动端触摸目标不小于 44px（WCAG 2.5.8 最低 24px，这里按设计规范抬高） */
+  .primary-button,
+  .small-button,
+  .icon-button,
+  .segmented button {
+    min-height: 44px;
+  }
+}
+
+/* 首屏骨架：替换“正在连接”纯文字，列表区先给出结构（加载态三态之一） */
+.loading-panel {
+  display: grid;
+  gap: 12px;
+  padding: 28px;
+}
+.loading-panel > p {
+  color: #7a6e62;
+}
+.skeleton-row {
+  height: 56px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f1ece4 25%, #f8f4ee 37%, #f1ece4 63%);
+  background-size: 400% 100%;
+  animation: shilie-skeleton 1.4s ease-in-out infinite;
+}
+@keyframes shilie-skeleton {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-row {
+    animation: none;
+  }
 }
