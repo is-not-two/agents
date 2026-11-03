@@ -5,12 +5,14 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import Any
 from uuid import uuid4
 
 import psycopg2
+from psycopg2 import pool as pg_pool
 from psycopg2.extras import Json, RealDictCursor
 
 from rag_tech_retriever.common.config_loader import ConfigLoader
@@ -64,40 +66,75 @@ class VersionConflict(StorageError):
 class RecordStore:
     """单用户工作台记录存储，table_prefix 可隔离测试与生产数据。"""
 
-    def __init__(self, prefix: str = "workspace", config: ConfigLoader | None = None) -> None:
-        """只保存配置，连接按事务创建，适合 FastAPI 多线程。"""
+    def __init__(self, prefix: str = "workspace", config: ConfigLoader | None = None,
+                 pool_size: int = 0) -> None:
+        """只保存配置；pool_size>0 时复用连接（默认 0 = 每事务新建，便于测试隔离）。"""
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,42}", prefix):
             raise StorageError("非法工作台表前缀")
         self.prefix = prefix
         self.records = prefix + "_records"
         self.versions = prefix + "_versions"
         self.config = config or ConfigLoader.load_default()
+        self.pool_size = max(0, int(pool_size))
+        self._pool: pg_pool.ThreadedConnectionPool | None = None
+        self._pool_lock = threading.Lock()
         try:
             self.cipher = FieldCipher.from_config(self.config, RECORD_KINDS)
         except CryptoError as exc:
             raise StorageError(str(exc)) from exc
 
+    def _dsn(self) -> dict[str, Any]:
+        """连接参数；敏感值只从环境变量读取。"""
+        cfg = self.config
+        return {
+            "host": cfg.env("POSTGRES_HOST", "127.0.0.1"),
+            "port": cfg.env("POSTGRES_PORT", "5432"),
+            "dbname": cfg.env("POSTGRES_DB", "rag_tech_doc"),
+            "user": cfg.env("POSTGRES_USER", "rag"),
+            "password": cfg.env("POSTGRES_PASSWORD", ""),
+            "connect_timeout": 5,
+        }
+
+    def _connection_pool(self) -> pg_pool.ThreadedConnectionPool | None:
+        """惰性创建连接池；库不可用或未启用时返回 None，回退到直连。"""
+        if self.pool_size <= 0:
+            return None
+        with self._pool_lock:
+            if self._pool is None:
+                try:
+                    self._pool = pg_pool.ThreadedConnectionPool(1, self.pool_size, **self._dsn())
+                except psycopg2.Error:
+                    return None
+            return self._pool
+
+    def close(self) -> None:
+        """释放连接池（应用关闭或测试清理时调用；无池时为无操作）。"""
+        with self._pool_lock:
+            if self._pool is not None:
+                self._pool.closeall()
+                self._pool = None
+
     @contextmanager
     def transaction(self) -> Iterator[Any]:
-        """一操作一连接，成功提交、异常回滚并释放连接。"""
-        cfg = self.config
+        """借用连接执行一次事务：成功提交、异常回滚、连接归还池或关闭。"""
+        database = self._connection_pool()
         conn = None
+        borrowed = database is not None
         try:
-            conn = psycopg2.connect(
-                host=cfg.env("POSTGRES_HOST", "127.0.0.1"),
-                port=cfg.env("POSTGRES_PORT", "5432"),
-                dbname=cfg.env("POSTGRES_DB", "rag_tech_doc"),
-                user=cfg.env("POSTGRES_USER", "rag"),
-                password=cfg.env("POSTGRES_PASSWORD", ""),
-                connect_timeout=5,
-            )
+            conn = database.getconn() if database is not None else psycopg2.connect(**self._dsn())
             with conn, conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 yield cursor
         except psycopg2.Error as exc:
             raise StorageError("数据库暂不可用，请检查 PostgreSQL 服务") from exc
         finally:
             if conn is not None:
-                conn.close()
+                if borrowed:
+                    try:
+                        database.putconn(conn, close=bool(conn.closed))
+                    except Exception:  # noqa: BLE001 - 归还失败不应掩盖原始异常
+                        conn.close()
+                else:
+                    conn.close()
 
     def ping(self, timeout_seconds: int = 3) -> None:
         """Probe PostgreSQL with bounded connection/statement timeouts and no writes."""

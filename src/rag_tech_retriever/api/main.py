@@ -80,7 +80,11 @@ def create_app(
     """创建应用；测试可以注入隔离表、目录和令牌。"""
     settings = ConfigLoader.load_default()
     config = ConfigLoader(settings.settings_path.parent / "web.yaml")
-    store = store or RecordStore(str(config.get("web.table_prefix", "workspace")))
+    store = store or RecordStore(
+        str(config.get("web.table_prefix", "workspace")),
+        config=config,
+        pool_size=int(config.get("web.db_pool_size", 0)),
+    )
     secret = str(settings.env("WORKSPACE_ACCESS_TOKEN", "")) if token is None else token
     mcp_secret = str(settings.env("WORKSPACE_MCP_TOKEN", ""))
     # 账号密码登录（可选）：仅当账号与密码哈希都配置时启用；未配置则登录页回退令牌方式。
@@ -123,19 +127,23 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
-        if schema_mode == "verify":
-            store.verify_schema(require_runtime_role=profile == "production")
-        else:
-            store.ensure_schema()
-        if not mounted_lifespans:
-            yield
-            return
-        import contextlib
+        try:
+            if schema_mode == "verify":
+                store.verify_schema(require_runtime_role=profile == "production")
+            else:
+                store.ensure_schema()
+            if not mounted_lifespans:
+                yield
+                return
+            import contextlib
 
-        async with contextlib.AsyncExitStack() as stack:
-            for sub_app in mounted_lifespans:
-                await stack.enter_async_context(sub_app.router.lifespan_context(sub_app))
-            yield
+            async with contextlib.AsyncExitStack() as stack:
+                for sub_app in mounted_lifespans:
+                    await stack.enter_async_context(sub_app.router.lifespan_context(sub_app))
+                yield
+        finally:
+            # 释放连接池；注入的测试 store 没有池，close 为无操作。
+            store.close()
 
     application = FastAPI(title="时列 · 个人工作台", lifespan=lifespan)
     # 中间件：add 顺序越晚越靠外层——限流在内，追踪最外（访问日志覆盖限流响应）。

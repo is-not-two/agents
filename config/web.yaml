@@ -15,6 +15,8 @@ web:
   session_hours: 12
   remember_days: 30
   rate_limit_per_minute: 120
+  # 数据库连接池上限：默认 8；0 表示每事务新建连接（测试隔离用）。
+  db_pool_size: 8
   # 登录失败限速：同一客户端地址在窗口内失败达到上限后返回 429；成功登录清零。
   login_max_failures: 10
   login_window_seconds: 300
