@@ -217,7 +217,7 @@ def test_funnel_reflects_current_records(api):
     create(api, "applications", {"lead_id": job["id"], "status": "applied"})
     funnel = api.get("/api/jobs").json()["funnel"]
     assert funnel["stages"] == {"collected": 1, "applied": 1, "interviewed": 0, "offered": 0}
-    assert funnel["rates"]["interviewed_per_applied"] is None
+    assert funnel["rates"]["interviewed_per_applied"] == 0.0
     assert funnel["weekly"]["applications"] == 1 and funnel["weekly"]["target"] == 5
 
 
