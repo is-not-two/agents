@@ -8,7 +8,9 @@ from fastapi.testclient import TestClient
 
 from rag_tech_retriever.api.main import create_app
 from rag_tech_retriever.domains.jobs import (
+    funnel_stages,
     timestamp,
+    validate_capability,
     validate_lead,
     validate_report,
     validate_resume,
@@ -40,6 +42,57 @@ def test_timezone_or_type_cannot_be_guessed(value):
 def test_bad_report(payload):
     with pytest.raises(DomainError):
         validate_report({"application_id": "a", **payload})
+
+
+def test_capability_validation_keeps_user_input_and_rejects_duplicates():
+    data = validate_capability(
+        {
+            "company": " 示例公司 ",
+            "role": " Python 后端 ",
+            "source": "https://example.com/jd",
+            "capabilities": [
+                {"name": " PostgreSQL ", "requirement": "must", "level": 5, "status": "evidence", "evidence": "RAG 项目"},
+                {"name": "RAG", "requirement": "nice", "level": 3, "status": "pending"},
+            ],
+        }
+    )
+    assert data["title"] == "示例公司 / Python 后端"
+    assert data["capabilities"][0]["name"] == "PostgreSQL"
+    assert data["capabilities"][1]["evidence"] == ""
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"capabilities": []},
+        {"capabilities": [{"name": "PostgreSQL", "level": 6}]},
+        {"capabilities": [{"name": "PostgreSQL", "level": True}]},
+        {"capabilities": [{"name": "PostgreSQL", "requirement": "other"}]},
+        {"capabilities": [{"name": "PostgreSQL", "status": "unknown"}]},
+        {"capabilities": [{"name": "PostgreSQL"}, {"name": "postgresql"}]},
+        {"capabilities": [{"name": " "}]},
+    ],
+)
+def test_bad_capability_payload(payload):
+    with pytest.raises(DomainError):
+        validate_capability({"company": "示例公司", **payload})
+
+
+def test_funnel_counts_are_recomputable_and_empty_rates_are_null():
+    now, start, end = "2026-11-03T04:00:00+00:00", "2026-11-01T16:00:00+00:00", "2026-11-08T16:00:00+00:00"
+    leads = [{"id": "l1", "data": {}}, {"id": "l2", "data": {}}]
+    applications = [
+        {"id": "a1", "data": {"applied_at": "2026-11-02T02:00:00+00:00", "status": "interviewing"}},
+        {"id": "a2", "data": {"applied_at": "2026-10-20T02:00:00+00:00", "status": "offered"}},
+    ]
+    result = funnel_stages(leads, applications, [{"id": "r1", "data": {"application_id": "a1"}}],
+                           now=now, week_start=start, week_end=end, target=2)
+    assert result["stages"] == {"collected": 2, "applied": 2, "interviewed": 1, "offered": 1}
+    assert result["rates"]["offered_per_interviewed"] == 1.0
+    assert result["weekly"]["applications"] == 1 and result["weekly"]["met"] is False
+    empty = funnel_stages([], [], [], now=now, week_start=start, week_end=end, target=2)
+    assert empty["stages"]["collected"] == 0
+    assert set(empty["rates"].values()) == {None}
 
 
 @pytest.fixture
@@ -157,3 +210,31 @@ def test_terminal_states_do_not_generate_due_followups(api):
     application = patch(api, application, {"status": "offered"})
     assert api.get("/api/jobs").json()["due_application_ids"] == []
     assert api.patch(f"/api/jobs/applications/{application['id']}", json={"version": application["version"], "data": {"status": "applied"}}).status_code == 400
+
+
+def test_funnel_reflects_current_records(api):
+    job = lead(api)
+    create(api, "applications", {"lead_id": job["id"], "status": "applied"})
+    funnel = api.get("/api/jobs").json()["funnel"]
+    assert funnel["stages"] == {"collected": 1, "applied": 1, "interviewed": 0, "offered": 0}
+    assert funnel["rates"]["interviewed_per_applied"] is None
+    assert funnel["weekly"]["applications"] == 1 and funnel["weekly"]["target"] == 5
+
+
+def test_company_capability_roundtrip_export_and_archive(api):
+    row = create(api, "capabilities", {
+        "company": "真实场景测试公司", "role": "Python 后端", "source": "https://example.com/jd",
+        "capabilities": [{"name": "PostgreSQL", "requirement": "must", "level": 5, "status": "evidence", "evidence": "本地 RAG 项目"}],
+    })
+    assert row["data"]["title"] == "真实场景测试公司 / Python 后端"
+    overview = api.get("/api/jobs").json()
+    assert len(overview["company_capability"]) == 1
+    assert api.post("/api/jobs/capabilities", json={"data": {"company": "示例", "capabilities": []}}).status_code == 400
+    duplicate = {"company": "示例", "capabilities": [{"name": "Docker"}, {"name": "docker"}]}
+    assert api.post("/api/jobs/capabilities", json={"data": duplicate}).status_code == 400
+    updated = api.put(f"/api/jobs/capabilities/{row['id']}", json={"version": row["version"], "data": {**row["data"], "notes": "人工核对"}}).json()
+    assert updated["version"] == 2
+    assert "company_capability" in {item["kind"] for item in api.get("/api/export").json()["records"]}
+    assert api.delete(f"/api/records/{row['id']}?version=2").status_code == 200
+    trash = api.get("/api/jobs?trash=true").json()
+    assert len(trash["company_capability"]) == 1 and trash["funnel"] is None

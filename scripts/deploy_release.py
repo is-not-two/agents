@@ -38,22 +38,22 @@ KEY = Path(os.path.expanduser("~")) / ".ssh" / "selfstock_8_156_81_128_rsa"
 KNOWN_HOSTS = PROJECT / "output/playwright/review-001-gpt/fix-v84/enterprise-ops-v85/native-server-access/known_hosts"
 REMOTE_ROOT = "/opt/shilie"
 SITE_PKG = "lib/python3.10/site-packages/rag_tech_retriever"
-DB = "shilie_native_20261027"
 
-#: 部署目标：两套环境共用一个数据库与模型缓存，仅代码目录/服务/端口不同。
-#: preview 默认不备份（部署不碰数据库，回滚靠 releases 目录切回）。
+#: 部署目标：两套环境各自独立数据库与代码目录，仅共用模型缓存。
+#: 测试库用于预览验证，写操作不再进入正式数据；preview 部署不自动备份生产库。
 TARGETS: dict[str, dict] = {
     "production": {
         "app": f"{REMOTE_ROOT}/current", "port": 8770, "service": "shilie",
         "scheme": "https", "dropin": "/etc/systemd/system/shilie.service.d",
-        "backup": True, "label": "正式环境",
+        "db": "shilie_native_20261027", "backup": True, "label": "正式环境",
     },
     "preview": {
         "app": f"{REMOTE_ROOT}/preview", "port": 8771, "service": "shilie-preview",
         "scheme": "http", "dropin": "/etc/systemd/system/shilie-preview.service.d",
-        "backup": False, "label": "测试环境",
+        "db": "shilie_preview_20261103", "backup": False, "label": "测试环境",
     },
 }
+DB = TARGETS["production"]["db"]
 
 # 当前目标（set_target 切换；函数在调用时读取模块全局，f-string 求值即生效）
 REMOTE_APP = TARGETS["production"]["app"]
@@ -65,8 +65,8 @@ TARGET_NAME = "production"
 
 
 def set_target(name: str) -> dict:
-    """切换部署目标，返回其配置。"""
-    global REMOTE_APP, WEB_PORT, SERVICE, SCHEME, DROPIN_DIR, TARGET_NAME
+    """切换部署目标，返回其配置；数据库也随之切换，预检只查目标库。"""
+    global REMOTE_APP, WEB_PORT, SERVICE, SCHEME, DROPIN_DIR, TARGET_NAME, DB
     if name not in TARGETS:
         raise DeployError(f"未知部署目标：{name}")
     target = TARGETS[name]
@@ -75,6 +75,7 @@ def set_target(name: str) -> dict:
     SERVICE = target["service"]
     SCHEME = target["scheme"]
     DROPIN_DIR = target["dropin"]
+    DB = target["db"]
     TARGET_NAME = name
     return target
 

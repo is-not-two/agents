@@ -110,3 +110,30 @@
 - 恢复范围明确：条目数据与回收站状态，保留当前历史，不导入备份旧历史或覆盖阶段文件，不影响data/local的模型密钥。private file不变已测试。
 - 验证：76项pytest通过（本轮新增8项）；实际Chrome+隔离PostgreSQL从文件选择到保护快照还原整链通过。刻意并发修改得到409且未覆盖，未勾选无法提交；JS异常0。390px无溢出、截图目检通过，正式8770备份、模型连接和规划只读确认正常。
 - 修改集中在backup.js、视图绑定及样式、快照校验/预览、RecordStore恢复事务和exports/stages路由；README同步。阶段20261015-151944-1c3c213b，回滚预检通过。生产用户数据仅执行必要阶段快照，未用于导入验收。测试实例/专用表收尾清理，协作记录仍仅本文件。
+
+## Round 10（2026-11-03）：求职漏斗看板 + 目标公司能力记录（GLM-5.3-FlashX 执行）
+
+- 范围按 WorkBuddy 选定：先做实习侧；上线侧后置。未改正式 8770/生产数据，也未启动或迁移任何用户库。
+- 漏斗看板：`GET /api/jobs` 新增 `funnel`（收藏/投递/进面/offer 计数 + 三段转化率 + 本周投递/目标）。进面按已登记面试复盘计，offer 按当前状态计，页面注明两者不保证严格嵌套；空分母返回 null，显示“暂不计算”。周目标 `jobs.funnel.weekly_application_target` 配置化（当前 5），周窗口按 `notifications.yaml` 时区从周一起算。
+- 目标公司能力：新增记录类型 `company_capability`，字段 company/role/source/capabilities（name、must|nice、level 1–5、evidence|pending|missing、evidence）/notes；同名能力（大小写不敏感）拒绝；接入 `/api/jobs/capabilities` 五件套、历史/回收站、导出 Markdown。前端新增独立模块“目标公司能力”，复用求职主从布局，窄屏单列。
+- 记录类型约束：`RECORD_KINDS` 增加一种 kind；本地 local profile 由 `ensure_schema` 增量重建 CHECK 约束。生产仍为 verify 模式，需管理员独立执行迁移后才能启动，本轮未执行。
+- 静态版本统一 v101 → v102（66 处），`check_static_version.py` 通过。
+- 已验证：求职纯逻辑 24 项 pytest 通过（能力清单正常/异常、漏斗复算与空分母）；ruff 0；全部 JS `node --check` 通过；`local_gate.py --quick` 6/7 通过（唯一跳过为 pytest 全量）。因 Docker Desktop 服务停止、本机 PostgreSQL 端口不可达，**数据库集成用例与浏览器实测本轮未执行**，不记为已通过。
+- 待办：启动隔离 PostgreSQL/预览实例后补跑 `test_funnel_reflects_current_records`、`test_company_capability_roundtrip_export_and_archive` 与 390px 浏览器验收；真实 JD 人工核对见下表。
+
+### 10 个真实 JD 人工核对表（等待 WorkBuddy 提供后逐条填写，不预填示例）
+
+| # | 公司 | 岗位 | JD 来源（用户提供） | 规则提取的条件 | 人工结论（合理/需修正/不合理） | 备注 |
+|---|------|------|---------------------|----------------|--------------------------------|------|
+| 1 |  |  |  |  |  |  |
+| 2 |  |  |  |  |  |  |
+| 3 |  |  |  |  |  |  |
+| 4 |  |  |  |  |  |  |
+| 5 |  |  |  |  |  |  |
+| 6 |  |  |  |  |  |  |
+| 7 |  |  |  |  |  |  |
+| 8 |  |  |  |  |  |  |
+| 9 |  |  |  |  |  |  |
+| 10 |  |  |  |  |  |  |
+
+验收口径：≥8 条人工判定“合理”；未达到时只记录问题，不改结论凑数。

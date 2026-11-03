@@ -57,7 +57,7 @@ def markdown_snapshot(snapshot: dict) -> str:
                 "对策：" + (data.get("remedy") or "（未填）"),
                 "",
             ]
-        elif row["kind"] in {"job_lead", "application", "interview_report", "resume_version", "learning_card", "learning_review"}:
+        elif row["kind"] in {"job_lead", "application", "interview_report", "resume_version", "company_capability", "learning_card", "learning_review"}:
             lines += ["求职记录：" + row["kind"], "", "```json", json.dumps(data, ensure_ascii=False, indent=2), "```", ""]
         else:
             lines += ["运行状态：" + data["status"], ""]

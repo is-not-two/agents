@@ -1,24 +1,25 @@
-import { bindCollaboration } from "./collaboration.js?v=101";
-import { bindAgentStudio } from "./agent-studio.js?v=101";
-import { bindBackup } from "./backup.js?v=101";
+import { bindCollaboration } from "./collaboration.js?v=102";
+import { bindAgentStudio } from "./agent-studio.js?v=102";
+import { bindBackup } from "./backup.js?v=102";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=101";
-import { bindModelConnection } from "./model-connection.js?v=101";
-import { bindTree } from "./tree-actions.js?v=101";
-import { bindAutomation } from "./automation-actions.js?v=101";
-import { bindLessons } from "./lessons.js?v=101";
-import { bindJobs } from "./jobs.js?v=101";
-import { bindLearning } from "./learning.js?v=101";
-import { bindJobInsights } from "./job-insights.js?v=101";
-import { bindServerStatus } from "./server-status.js?v=101";
-import { bindEvaluation } from "./evaluation.js?v=101";
-import { startTour } from "./tour.js?v=101";
-import { toggleDirector, directorActive } from "./director.js?v=101";
-import { initMotion } from "./motion.js?v=101";
-import { initOrbit } from "./orbit.js?v=101";
+} from "./private-view.js?v=102";
+import { bindModelConnection } from "./model-connection.js?v=102";
+import { bindTree } from "./tree-actions.js?v=102";
+import { bindAutomation } from "./automation-actions.js?v=102";
+import { bindLessons } from "./lessons.js?v=102";
+import { bindJobs } from "./jobs.js?v=102";
+import { bindCapabilities } from "./company-capabilities.js?v=102";
+import { bindLearning } from "./learning.js?v=102";
+import { bindJobInsights } from "./job-insights.js?v=102";
+import { bindServerStatus } from "./server-status.js?v=102";
+import { bindEvaluation } from "./evaluation.js?v=102";
+import { startTour } from "./tour.js?v=102";
+import { toggleDirector, directorActive } from "./director.js?v=102";
+import { initMotion } from "./motion.js?v=102";
+import { initOrbit } from "./orbit.js?v=102";
 import {
   api,
   state,
@@ -29,8 +30,8 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=101";
-import { render, sidebar, dialogs } from "./views.js?v=101";
+} from "./data.js?v=102";
+import { render, sidebar, dialogs } from "./views.js?v=102";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -49,6 +50,7 @@ let modelConnectionController,
   backupController,
   lessonsController,
   jobsController,
+  capabilitiesController,
   learningController,
   jobInsightsController,
   serverStatusController,
@@ -123,6 +125,7 @@ function renderPage({ restore = false } = {}) {
   backupController?.ensure();
   lessonsController?.ensure();
   jobsController?.ensure();
+  capabilitiesController?.ensure();
   learningController?.ensure();
   jobInsightsController?.ensure();
   serverStatusController?.ensure();
@@ -830,6 +833,7 @@ setPrivateRepaint(() => renderPage({ restore: true }));
 bindPrivate(toast);
 lessonsController = bindLessons({ renderPage, toast });
 jobsController = bindJobs({ renderPage, toast });
+capabilitiesController = bindCapabilities({ renderPage, toast });
 learningController = bindLearning({ renderPage, toast });
 jobInsightsController = bindJobInsights({ renderPage, toast });
 bindAgentStudio({ renderPage, toast });

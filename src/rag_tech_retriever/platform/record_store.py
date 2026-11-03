@@ -29,7 +29,7 @@ RECORD_KINDS = {
     "workflow_run",
     # 谨记名单：个人错题/教训，按类型分类（2026-10-24 起）。
     "lesson",
-    "job_lead", "application", "interview_report", "resume_version",
+    "job_lead", "application", "interview_report", "resume_version", "company_capability",
     "learning_card", "learning_review", "notification_outbox", "agent_memory", "agent_session",
     # 私密管理：愿望清单与日记。加密在应用层完成，这里只存密文，
     # 因此不与普通内容混用同一字段语义。

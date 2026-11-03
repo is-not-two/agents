@@ -104,6 +104,7 @@ export const groups = [
 export const modules = [
   ["knowledge", "个人知识库", "workspace", "knowledge"],
   ["jobs", "求职记录", "workspace", "task"],
+  ["company-capabilities", "目标公司能力", "workspace", "task"],
   ["job-insights", "岗位证据对照", "workspace", "search"],
   ["job-weekly", "求职周报", "workspace", "stages"],
   ["learning", "到期复习", "workspace", "task"],

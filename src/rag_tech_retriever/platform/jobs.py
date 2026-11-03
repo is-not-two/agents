@@ -1,9 +1,10 @@
 """求职服务：单事务引用/状态校验、乐观锁、关联归档保护。"""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, time, timedelta, timezone
 
-from rag_tech_retriever.domains.jobs import TRANSITIONS, VALIDATORS
+from rag_tech_retriever.common.config_loader import ConfigLoader
+from rag_tech_retriever.domains.jobs import TRANSITIONS, VALIDATORS, funnel_stages
 from rag_tech_retriever.domains.life_planning import DomainError
 from rag_tech_retriever.platform.record_store import RecordMissing, RecordStore, VersionConflict
 
@@ -13,6 +14,25 @@ class JobsService:
 
     def __init__(self, store: RecordStore) -> None:
         self.store = store
+        root = store.config.settings_path.parent
+        funnel = ConfigLoader(root / "jobs.yaml").get("jobs.funnel", {}) if (root / "jobs.yaml").exists() else {}
+        target = funnel.get("weekly_application_target", 5) if isinstance(funnel, dict) else 5
+        if type(target) is not int or not 1 <= target <= 100:
+            raise DomainError("求职漏斗的每周投递目标配置无效")
+        self.weekly_target = target
+        offset = ConfigLoader(root / "notifications.yaml").get(
+            "notifications.timezone_offset_minutes", 480
+        ) if (root / "notifications.yaml").exists() else 480
+        if type(offset) is not int or not -720 <= offset <= 840:
+            raise DomainError("求职漏斗时区配置无效")
+        self.tz = timezone(timedelta(minutes=offset))
+
+    def _week_window(self, now: datetime) -> tuple[str, str]:
+        """周窗口按配置时区的周一起算，统一转 UTC 后用于字符串比较。"""
+        local = now.astimezone(self.tz)
+        monday = local.date() - timedelta(days=local.weekday())
+        start = datetime.combine(monday, time(), self.tz).astimezone(timezone.utc)
+        return start.isoformat(), (start + timedelta(days=7)).isoformat()
 
     def _row(self, cur, record_id: str, kind: str | None = None, deleted: bool = False) -> dict:
         cur.execute(f"SELECT * FROM {self.store.records} WHERE id=%s FOR UPDATE", (record_id,))
@@ -102,5 +122,12 @@ class JobsService:
         now = datetime.now(timezone.utc).isoformat()
         applications = grouped["application"]
         due = [row["id"] for row in applications if row["data"]["follow_up_at"] and row["data"]["follow_up_at"] <= now and row["data"]["status"] not in {"offered", "rejected"}]
-        return {**grouped, "due_application_ids": due, "as_of": now,
+        funnel = None
+        if not trash:
+            week_start, week_end = self._week_window(datetime.now(timezone.utc))
+            funnel = funnel_stages(
+                grouped["job_lead"], applications, grouped["interview_report"],
+                now=now, week_start=week_start, week_end=week_end, target=self.weekly_target,
+            )
+        return {**grouped, "due_application_ids": due, "as_of": now, "funnel": funnel,
                 "counts": {status: sum(row["data"]["status"] == status for row in applications) for status in TRANSITIONS}}

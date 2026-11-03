@@ -37,6 +37,22 @@
 .insight-requirement blockquote { margin: 12px 0; border-left: 2px solid #874808; padding-left: 12px; white-space: pre-wrap; }
 .profile-skill, .profile-fact { min-width: 0; padding: 14px; margin-block: 18px; border: 1px solid #ede4dc; border-radius: 6px; }
 @media (max-width: 800px) { .jobs-layout { grid-template-columns: minmax(0, 1fr); } .jobs-filter label { width: 100%; } .jobs-detail { padding: 16px; } .jobs-facts { grid-template-columns: 85px minmax(0, 1fr); } }
+/* 求职漏斗：四阶段统计条，窄屏改为两列 / 单列，不横向滚动。 */
+.jobs-funnel { padding: 20px; margin-block: 20px; }
+.jobs-funnel header { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: baseline; }
+.jobs-funnel header span { color: #68594b; }
+.funnel-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; list-style: none; padding: 0; margin: 16px 0 0; }
+.funnel-steps li { display: grid; gap: 4px; padding: 14px; border: 1px solid #ede4dc; border-radius: 6px; background: #fff; min-width: 0; }
+.funnel-steps strong { font-size: 13px; color: #68594b; }
+.funnel-steps b { font-size: 24px; line-height: 1.1; }
+.funnel-steps small { color: #68594b; overflow-wrap: anywhere; }
+.capability-list { display: grid; gap: 12px; list-style: none; padding: 0; margin-block: 16px; }
+.capability-item { border: 1px solid #ede4dc; border-radius: 6px; padding: 14px; background: #fff; overflow-wrap: anywhere; }
+.capability-item header { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: baseline; }
+.capability-item h4 { margin: 0; }
+.capability-row { min-width: 0; }
+@media (max-width: 800px) { .funnel-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .jobs-funnel { padding: 16px; } }
+@media (max-width: 420px) { .funnel-steps { grid-template-columns: minmax(0, 1fr); } }
 
 /* ==================== 基础与布局（原 base.css） ==================== */
 

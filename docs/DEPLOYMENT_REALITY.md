@@ -25,11 +25,11 @@
 | 代码软链 | `/opt/shilie/current` | `/opt/shilie/preview` |
 | 代码目录 | `releases/native-<stamp>-<sha>` | `releases/native-<stamp>-<sha>`（独立） |
 | drop-in | `shilie.service.d/runtime-writable.conf` | `shilie-preview.service.d/runtime-writable.conf` |
-| 数据库 | `shilie_native_20261027`（**共用**） | 同左——预览写操作会进真实数据表 |
+| 数据库 | `shilie_native_20261027` | `shilie_preview_20261103`（独立测试副本，写操作不影响正式） |
 | 防火墙 | ufw: 8770 ← 125.70.13.156 | ufw: 8771 ← 125.70.13.156 + 云安全组 |
-| 备份 | 每次部署前 pg_dump | 不备份（不碰库，回滚切软链） |
+| 备份 | 每次部署前 pg_dump | 不自动备份（独立副本，可重建；需要时手动 dump） |
 
-- 两环境**共用一个数据库与模型缓存**，只隔离代码与进程；预览环境的增删改会写真实数据（单人使用按只读验证使用）。
+- 两环境**各自独立数据库**（2026-11-03 起）；测试库为正式库的一次性副本，之后独立演进，可随时重建。共用模型缓存与 `data/local` 私密配置。
 - 部署命令统一走 `deploy_release.py --target production|preview`，各自写自己的 drop-in（曾有硬编码污染生产的 bug，已修）。
 - 工作流：改代码 → `--target preview --apply --confirm HEAD` → 浏览器验证 → 确认后 `--target production --apply --confirm HEAD`。
 

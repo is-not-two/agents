@@ -17,7 +17,7 @@
 | 正式 | `https://8.156.81.128:8770/` | `shilie.service` | v100 |
 | 测试 | `https://8.156.81.128:8771/` | `shilie-preview.service` | v101（新功能先在此验证） |
 
-两环境共用一个 PostgreSQL 与模型缓存，代码目录与 systemd drop-in 各自独立；数据库端口不对公网开放，ufw 仅放行本人 IP（云安全组需另行放行 8770/8771）。代码位于 `/opt/shilie/releases`，入口软链 `current`/`preview`，持久数据在 `/var/lib/shilie`，私密环境变量与证书在 `/etc/shilie`；代码切换不覆盖数据。
+两环境各自独立数据库（正式 `shilie_native_20261027`，测试 `shilie_preview_20261103`）并共用模型缓存，代码目录与 systemd drop-in 各自独立；数据库端口不对公网开放，ufw 仅放行本人 IP（云安全组需另行放行 8770/8771）。代码位于 `/opt/shilie/releases`，入口软链 `current`/`preview`，持久数据在 `/var/lib/shilie`，私密环境变量与证书在 `/etc/shilie`；代码切换不覆盖数据。
 
 **登录方式**：账号密码（`WORKSPACE_USER` + `WORKSPACE_PASSWORD_HASH`，scrypt 哈希，存 `/etc/shilie/workspace.env`；用 `scripts/set_login_password.py` 交互生成，明文密码不入任何文件）+ 可选「记住此账号 30 天」；访问令牌登录保留为备用通道。
 

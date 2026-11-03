@@ -46,6 +46,7 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     endpoints("/api/jobs/applications", "application")
     endpoints("/api/jobs/reports", "interview_report")
     endpoints("/api/jobs/resumes", "resume_version")
+    endpoints("/api/jobs/capabilities", "company_capability")
 
     @router.get("/api/jobs/applications/{application_id}/reports")
     def reports(application_id: str) -> list:

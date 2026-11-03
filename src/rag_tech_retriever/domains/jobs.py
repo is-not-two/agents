@@ -100,8 +100,102 @@ def validate_report(payload: dict) -> dict:
             "notes": text(payload.get("notes", ""), "复盘备注", 10000)}
 
 
+CAPABILITY_REQUIREMENTS = ("must", "nice")
+CAPABILITY_STATUSES = ("evidence", "pending", "missing")
+
+
+def validate_capability(payload: dict) -> dict:
+    """目标公司能力清单：只记录用户提供或 JD 摘录，不自动判定个人是否具备。"""
+    company = text(payload.get("company", ""), "公司", 160, True)
+    role = text(payload.get("role", ""), "岗位", 160)
+    items = payload.get("capabilities", [])
+    if not isinstance(items, list) or not 1 <= len(items) <= 30:
+        raise DomainError("请记录 1–30 条目标能力")
+    clean: list[dict] = []
+    names: list[str] = []
+    for item in items:
+        if not isinstance(item, dict):
+            raise DomainError("能力条目格式错误")
+        name = text(item.get("name", ""), "能力名称", 120, True)
+        key = name.casefold()
+        if key in names:
+            raise DomainError("能力名称重复：" + name)
+        names.append(key)
+        requirement = item.get("requirement", "must")
+        if requirement not in CAPABILITY_REQUIREMENTS:
+            raise DomainError("能力要求只能是 must 或 nice")
+        level = item.get("level", 3)
+        if type(level) is not int or not 1 <= level <= 5:
+            raise DomainError("能力重要度必须为 1–5 的整数")
+        status = item.get("status", "pending")
+        if status not in CAPABILITY_STATUSES:
+            raise DomainError("证据状态不支持")
+        clean.append(
+            {
+                "name": name,
+                "requirement": requirement,
+                "level": level,
+                "status": status,
+                "evidence": text(item.get("evidence", ""), "能力证据", 1000),
+            }
+        )
+    return {
+        "title": company + (" / " + role if role else ""),
+        "company": company,
+        "role": role,
+        "source": text(payload.get("source", ""), "来源", 2000),
+        "capabilities": clean,
+        "notes": text(payload.get("notes", ""), "能力备注", 10000),
+    }
+
+
+def funnel_stages(
+    leads: list[dict], applications: list[dict], reports: list[dict], *,
+    now: str, week_start: str, week_end: str, target: int,
+) -> dict:
+    """漏斗只统计当前有效记录；进面按已登记复盘计，offer 按当前状态计。
+
+    进面集合不强制包含在 offer 集合内：业务状态可以在未写复盘时直接推进，
+    因此各阶段只保证口径可复算，不保证严格嵌套；前端需注明这一点。
+    """
+    applied = [row for row in applications if row["data"].get("applied_at")]
+    interviewed_ids = {row["data"].get("application_id") for row in reports}
+    interviewed = [row for row in applied if row["id"] in interviewed_ids]
+    offered = [row for row in applications if row["data"]["status"] == "offered"]
+    weekly = sum(
+        week_start <= row["data"]["applied_at"] < week_end for row in applied
+    )
+
+    def rate(part: int, whole: int) -> float | None:
+        """空分母返回 null，页面显示“暂不计算”，不伪装成 0%。"""
+        return round(part / whole, 4) if whole else None
+
+    return {
+        "stages": {
+            "collected": len(leads),
+            "applied": len(applied),
+            "interviewed": len(interviewed),
+            "offered": len(offered),
+        },
+        "rates": {
+            "applied_per_collected": rate(len(applied), len(leads)),
+            "interviewed_per_applied": rate(len(interviewed), len(applied)),
+            "offered_per_interviewed": rate(len(offered), len(interviewed)),
+        },
+        "weekly": {
+            "applications": weekly,
+            "target": target,
+            "week_start": week_start,
+            "week_end": week_end,
+            "met": weekly >= target,
+        },
+        "as_of": now,
+    }
+
+
 VALIDATORS = {"job_lead": validate_lead, "application": validate_application,
-              "interview_report": validate_report, "resume_version": validate_resume}
+              "interview_report": validate_report, "resume_version": validate_resume,
+              "company_capability": validate_capability}
 
 
 def validate_references(records: list[dict]) -> None:

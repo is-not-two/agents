@@ -4,6 +4,9 @@ jobs:
   max_model_context_chars: 30000
   model_timeout_seconds: 25
   max_tokens: 1800
+  # 求职漏斗：本周投递目标；只做统计口径，不产生考核结论。
+  funnel:
+    weekly_application_target: 5
   # 规则只辅助提取，不给出“满足岗位/具备能力”的自动结论。
   taxonomy:
     - {name: Python, aliases: [Python, Python3]}

@@ -1,31 +1,35 @@
-import { collaborationView } from "./collaboration.js?v=101";
-import { corpusSelect } from "./public-corpus.js?v=101";
-import { agentStudioView } from "./agent-studio.js?v=101";
-import { backupView } from "./backup.js?v=101";
-import { privateView } from "./private-view.js?v=101";
-import { modelConnectionView } from "./model-connection.js?v=101";
-import { treeView, treeDialog } from "./tree.js?v=101";
+import { collaborationView } from "./collaboration.js?v=102";
+import { corpusSelect } from "./public-corpus.js?v=102";
+import { agentStudioView } from "./agent-studio.js?v=102";
+import { backupView } from "./backup.js?v=102";
+import { privateView } from "./private-view.js?v=102";
+import { modelConnectionView } from "./model-connection.js?v=102";
+import { treeView, treeDialog } from "./tree.js?v=102";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=101";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=101";
-import { jobsView, jobsDialog } from "./jobs.js?v=101";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=101";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=101";
-import { serverStatusView } from "./server-status.js?v=101";
-import { evaluationView } from "./evaluation.js?v=101";
-import { directorActive } from "./director.js?v=101";
-import { icon, orbitIcon } from "./icons.js?v=101";
+} from "./automation-views.js?v=102";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=102";
+import { jobsView, jobsDialog } from "./jobs.js?v=102";
+import {
+  capabilitiesView,
+  capabilitiesDialog,
+} from "./company-capabilities.js?v=102";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=102";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=102";
+import { serverStatusView } from "./server-status.js?v=102";
+import { evaluationView } from "./evaluation.js?v=102";
+import { directorActive } from "./director.js?v=102";
+import { icon, orbitIcon } from "./icons.js?v=102";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=101";
+} from "./data.js?v=102";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -202,7 +206,7 @@ function category(id) {
       .filter((m) => m.group === id)
       .map(
         (m) =>
-          `<a class="module-option" href="#module/${m.id}"><span class="module-icon">${icon(m.icon)}</span><span><h3>${m.title}</h3><p>${m.id === "knowledge" ? "记录、检索和整理个人知识" : m.id === "jobs" ? "岗位、投递、跟进与面试复盘" : m.id === "lessons" ? "记录犯过的错误，按类型归档，下次绕开" : m.id === "planning" ? "目标、阶段、优先级和依赖" : m.id === "stages" ? "成果、问题、改动和验证" : m.id === "workflows" ? "知识处理、检索与回答流程" : m.id === "documents" ? "搜索个人内容并查看引用" : "查看和管理工作区设置"}</p></span>${arrow}</a>`,
+          `<a class="module-option" href="#module/${m.id}"><span class="module-icon">${icon(m.icon)}</span><span><h3>${m.title}</h3><p>${m.id === "knowledge" ? "记录、检索和整理个人知识" : m.id === "jobs" ? "岗位、投递、跟进与面试复盘" : m.id === "company-capabilities" ? "目标公司需要的技能、重要度与证据状态" : m.id === "lessons" ? "记录犯过的错误，按类型归档，下次绕开" : m.id === "planning" ? "目标、阶段、优先级和依赖" : m.id === "stages" ? "成果、问题、改动和验证" : m.id === "workflows" ? "知识处理、检索与回答流程" : m.id === "documents" ? "搜索个人内容并查看引用" : "查看和管理工作区设置"}</p></span>${arrow}</a>`,
       )
       .join("")}</nav>`,
   );
@@ -388,6 +392,7 @@ export function render() {
   if (id === "stages") return stagePage();
   if (id === "lessons") return lessonsView();
   if (id === "jobs") return jobsView();
+  if (id === "company-capabilities") return capabilitiesView();
   if (id === "collaboration") return collaborationView();
   if (id === "agent-studio") return agentStudioView();
   if (id === "job-insights") return jobInsightsView();
@@ -421,6 +426,7 @@ export function dialogs() {
     automationDialogs() +
     lessonsDialog() +
     jobsDialog() +
+    capabilitiesDialog() +
     learningDialogs() +
     jobProfileDialog() +
     `${dialog("knowledge", "笔记", `${field("标题", "title")}${textarea("正文", "content")}<label class="form-field">标签（用逗号分隔）<input name="tags"></label>${field("来源", "source")}${actions()}`)}${dialog("stage", "阶段记录", `${field("阶段名称", "title")}${textarea("目标", "objective", "", 4)}${actions()}`)}`

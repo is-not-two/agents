@@ -21,11 +21,18 @@
 - 历史恢复会产生新版本，保留原内容；“恢复此版本”是用户明确动作，不是普通状态跳转。
 - 导出/导入包含求职记录；导入预览校验关联类型与缺失父项。JSON 保留结构，Markdown 同时输出字段正文，不只输出标题。
 
+## 求职漏斗与目标公司能力
+
+- 求职记录页顶部显示四阶段漏斗：收藏 → 投递 → 进面 → Offer。进面按已登记面试复盘计，Offer 按当前状态计，两者不保证严格嵌套，页面已注明口径。
+- 空分母显示“暂不计算”，不伪装成 0%。本周投递目标来自 `config/jobs.yaml` 的 `jobs.funnel.weekly_application_target`，周窗口按 `notifications.yaml` 时区从周一起算。
+- 目标公司能力是独立记录类型 `company_capability`：公司、岗位、来源、能力清单（名称 / 硬性要求或加分项 / 重要度 1–5 / 证据状态 / 证据说明）与备注。页面不自动判定“满足/不满足”，只呈现用户填写的事实。
+- 入口：工作区 → 个人工作台 → 目标公司能力，或 `/#module/company-capabilities`。能力记录支持历史版本、回收站恢复与导出；同名能力重复会被拒绝。
+
 ## API
 
-`GET /api/jobs?trash=false` 提供一致的业务列表、状态计数和到期投递 ID。
+`GET /api/jobs?trash=false` 提供一致的业务列表、状态计数、到期投递 ID 与漏斗统计（`funnel`）；回收站模式下 `funnel` 为 null。
 
-`/api/jobs/leads`、`/api/jobs/applications`、`/api/jobs/reports`、`/api/jobs/resumes` 各支持 GET 列表、POST 创建、GET 单条、PUT 全量更新、PATCH 合并更新。写请求为 `{data: {...}, version?: N}`，编辑必须提供 version。
+`/api/jobs/leads`、`/api/jobs/applications`、`/api/jobs/reports`、`/api/jobs/resumes`、`/api/jobs/capabilities` 各支持 GET 列表、POST 创建、GET 单条、PUT 全量更新、PATCH 合并更新。写请求为 `{data: {...}, version?: N}`，编辑必须提供 version。
 
 `GET/POST /api/jobs/applications/{id}/reports` 可按所属投递读取/新增面试复盘；路径和正文所属投递不一致时拒绝。
 
