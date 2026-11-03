@@ -67,6 +67,27 @@ def test_full_native_builds_real_client_command_and_propagates_failure(
     assert data["source_manifest"] == gate.source_manifest(tmp_path)
 
 
+def test_openapi_contract_drift_blocks_gate(gate, monkeypatch, tmp_path):
+    """契约快照必须进入门禁命令；漂移（非零退出）即阻断发布。"""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/app.py").write_text("pass\n", encoding="utf-8")
+    report = tmp_path / "gate.json"
+    monkeypatch.setattr(sys, "argv", ["release_gate.py", "--root", str(tmp_path),
+        "--checks", "quick", "--report", str(report)])
+    monkeypatch.setattr(gate, "configuration_report", lambda *_: {"passed": True, "checks": []})
+    calls = []
+
+    def run(command, **_):
+        calls.append(command)
+        code = 1 if command[-1].endswith("openapi_contract.py") else 0
+        return subprocess.CompletedProcess(command, code, "", "")
+
+    monkeypatch.setattr(gate.subprocess, "run", run)
+    assert gate.main() == 1
+    assert [sys.executable, "scripts/openapi_contract.py"] in calls
+    assert not json.loads(report.read_text(encoding="utf-8"))["passed"]
+
+
 def test_native_client_success_cannot_hide_source_change(gate, monkeypatch, tmp_path):
     (tmp_path / "src").mkdir()
     source = tmp_path / "src/app.py"

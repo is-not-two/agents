@@ -308,6 +308,9 @@ def main() -> int:
     gate.check("前端模块语法", check_js_syntax)
     gate.run("ruff 代码检查",
              [str(VENV_PY), "-m", "ruff", "check", "src", "scripts", "tests"], blocking=True)
+    # 契约快照不连数据库：端点或响应模型变化未同步 docs/openapi.json 时阻断。
+    gate.run("OpenAPI 契约一致",
+             [str(VENV_PY), "scripts/openapi_contract.py"], blocking=True)
 
     # kind 一致性：连不上库时降级为跳过（CI 无库是正常的）
     gate.run("依赖完整性", [str(VENV_PY), "-m", "pip", "check"], blocking=False)
@@ -328,12 +331,17 @@ def main() -> int:
     code = gate.summary()
 
     if args.report:
-        args.report.parent.mkdir(parents=True, exist_ok=True)
-        args.report.write_text(json.dumps({
+        report_path = args.report if args.report.is_absolute() else PROJECT / args.report
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps({
             "passed": code == 0, "quick": args.quick,
             "deploy_check": args.deploy_check, "checks": gate.results,
         }, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(f"报告: {args.report.relative_to(PROJECT)}")
+        try:
+            shown = report_path.resolve().relative_to(PROJECT)
+        except ValueError:
+            shown = report_path.resolve()
+        print(f"报告: {shown}")
 
     return code
 

@@ -45,7 +45,10 @@ def main() -> int:
                     # Generated evidence/rollback fixtures are not product source.
                     # Keep every published Python code directory in lint scope.
                     [sys.executable, "-m", "ruff", "check", "src", "scripts", "tests"],
-                    [sys.executable, "scripts/check_static_version.py"]]
+                    [sys.executable, "scripts/check_static_version.py"],
+                    # 契约漂移与静态版本一样属于「代码自洽」检查：不连数据库，
+                    # 但有端点/模型变化未同步快照时阻断发布。
+                    [sys.executable, "scripts/openapi_contract.py"]]
         commands += [["node", "--check", str(p)] for p in sorted(
             (root / "src/rag_tech_retriever/api/static/shilie").glob("*.js"))]
         commands += [["node", "--check", "scripts/verify-ui.mjs"]]
