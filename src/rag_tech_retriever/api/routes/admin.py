@@ -48,12 +48,7 @@ def create_router(context: WorkspaceContext) -> APIRouter:
             if rate_env.strip().lstrip("-").isdigit()
             else int(context.config.get("web.rate_limit_per_minute", 120))
         )
-        kinds: dict[str, dict[str, int]] = {}
-        for kind in sorted(WORKSPACE_KINDS):
-            kinds[kind] = {
-                "active": len(store.list(kind)),
-                "trash": len(store.list(kind, deleted=True)),
-            }
+        kinds = store.kind_counts(WORKSPACE_KINDS)
         stages = journal.list()
         try:
             llm_configured = bool(search.connection.public(search.connection.load())["configured"])

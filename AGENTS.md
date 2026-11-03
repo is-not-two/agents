@@ -141,10 +141,11 @@ rag-tech-doc-retriever/
 
 上方结构树是 V2 规划时代的快照，实际磁盘已演进为工作台形态，主要差异：
 - `src/rag_tech_retriever/platform/`（27 模块：record_store/private_store/search_service/agent_capabilities/web_search/http_tools/resume_service 等）与 `domains/`（10 模块纯校验层）为现行核心，未在上方树中；`agent/` 现为 capability_runtime/graph_runner/collaboration/evaluation 等 12 模块
-- `api/routes/` **21 个路由模块**（OpenAPI 实测 111 paths / 145 endpoints，含检索评测 `/api/eval/*` 与能力目录）；前端 `api/static/shilie/` **28 个 JS 模块，静态版本 v105**（含 evaluation.js、company-capabilities.js）
+- `api/routes/` **21 个路由模块**（OpenAPI 实测 111 paths / 145 endpoints，含检索评测 `/api/eval/*` 与能力目录）；前端 `api/static/shilie/` **28 个 JS 模块，静态版本 v106**（含 evaluation.js、company-capabilities.js）
+- 2026-11-03 企业级补强（未提交、未部署）：图工作流消费 `max_retries`，支持节点级 `retry`（仅 timeout/tool_error）、`timeout_s`、`on_error=fail|continue|fallback`、`join_policy=any_success`、跨波次动态补位、`node_attempts` 审计；`POST /api/workflow-runs/{id}/resume` 仅恢复只读节点，Agent 节点拒绝自动恢复。前端知识搜索 120ms 防抖 + `#knowledge-panel` 局部渲染、409 冲突对话框、相关笔记；`/api/query`、`/api/knowledge`、`/api/jobs` 增加 response_model；`/api/status` 与 `/api/admin/stats` 改用计数查询。本机纯逻辑测试 28 项通过（DAG 13、契约 4、其余既有），全量 800+ 未跑（缺隔离 PG）。
 - `tools/` 三件（栈解析/协议查询/调试检索）与 MCP `/mcp` Streamable HTTP 端点均已接线
 - 配置 14 个 yaml（web/settings/prompts/mcp + 业务线）；测试 **59 文件**（本机基线 796 项，另计 QA 环境门禁）；本轮新增 7 个测试文件；scripts 含 `local_gate.py`、双环境 `deploy_release.py`、`set_login_password.py`
-- **双环境运行**：正式 `shilie.service` :8770 与测试 `shilie-preview.service` :8771 均为 v103（含账号密码登录+30天记住），**各自独立 PostgreSQL**（正式 `shilie_native_20261027` / 测试 `shilie_preview_20261103`）；部署拓扑、systemd drop-in 与全部踩坑见 `docs/DEPLOYMENT_REALITY.md`
+- **双环境运行**：正式 `shilie.service` :8770 为 v103、测试 `shilie-preview.service` :8771 为 v105（v106 待部署），**各自独立 PostgreSQL**（正式 `shilie_native_20261027` / 测试 `shilie_preview_20261103`）；部署拓扑、systemd drop-in 与全部踩坑见 `docs/DEPLOYMENT_REALITY.md`
 
 ## Execution Plan
 严格按顺序执行，单变量迭代，不提前引入额外变量

@@ -1,5 +1,5 @@
 /* 求职闭环：真实记录优先，业务内容不写 localStorage。 */
-import { api, escapeHtml as esc } from "./data.js?v=105";
+import { api, escapeHtml as esc } from "./data.js?v=106";
 
 const labels = { collected: "已收藏", applied: "已投递", following: "跟进中", interviewing: "面试中", offered: "已获 offer", rejected: "已结束" };
 const paths = { job_lead: "leads", application: "applications", interview_report: "reports", resume_version: "resumes" };

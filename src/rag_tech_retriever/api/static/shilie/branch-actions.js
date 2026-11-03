@@ -1,5 +1,5 @@
 /* 分支删除预检与撤销：服务端版本是唯一提交依据。 */
-import { api } from "./data.js?v=105";
+import { api } from "./data.js?v=106";
 const escape = (x) =>
   String(x ?? "").replace(
     /[&<>"']/g,

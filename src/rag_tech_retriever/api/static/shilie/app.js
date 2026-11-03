@@ -1,25 +1,25 @@
-import { bindCollaboration } from "./collaboration.js?v=105";
-import { bindAgentStudio } from "./agent-studio.js?v=105";
-import { bindBackup } from "./backup.js?v=105";
+import { bindCollaboration } from "./collaboration.js?v=106";
+import { bindAgentStudio } from "./agent-studio.js?v=106";
+import { bindBackup } from "./backup.js?v=106";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=105";
-import { bindModelConnection } from "./model-connection.js?v=105";
-import { bindTree } from "./tree-actions.js?v=105";
-import { bindAutomation } from "./automation-actions.js?v=105";
-import { bindLessons } from "./lessons.js?v=105";
-import { bindJobs } from "./jobs.js?v=105";
-import { bindCapabilities } from "./company-capabilities.js?v=105";
-import { bindLearning } from "./learning.js?v=105";
-import { bindJobInsights } from "./job-insights.js?v=105";
-import { bindServerStatus } from "./server-status.js?v=105";
-import { bindEvaluation } from "./evaluation.js?v=105";
-import { startTour } from "./tour.js?v=105";
-import { toggleDirector, directorActive } from "./director.js?v=105";
-import { initMotion } from "./motion.js?v=105";
-import { initOrbit } from "./orbit.js?v=105";
+} from "./private-view.js?v=106";
+import { bindModelConnection } from "./model-connection.js?v=106";
+import { bindTree } from "./tree-actions.js?v=106";
+import { bindAutomation } from "./automation-actions.js?v=106";
+import { bindLessons } from "./lessons.js?v=106";
+import { bindJobs } from "./jobs.js?v=106";
+import { bindCapabilities } from "./company-capabilities.js?v=106";
+import { bindLearning } from "./learning.js?v=106";
+import { bindJobInsights } from "./job-insights.js?v=106";
+import { bindServerStatus } from "./server-status.js?v=106";
+import { bindEvaluation } from "./evaluation.js?v=106";
+import { startTour } from "./tour.js?v=106";
+import { toggleDirector, directorActive } from "./director.js?v=106";
+import { initMotion } from "./motion.js?v=106";
+import { initOrbit } from "./orbit.js?v=106";
 import {
   api,
   state,
@@ -30,8 +30,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=105";
-import { render, sidebar, dialogs } from "./views.js?v=105";
+} from "./data.js?v=106";
+import {
+  render,
+  sidebar,
+  dialogs,
+  knowledgePanelHtml,
+} from "./views.js?v=106";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -143,6 +148,15 @@ function renderPage({ restore = false } = {}) {
   if (!restore) window.scrollTo(0, 0);
   const route = location.hash || "#home";
   persistRoute();
+}
+let knowledgeTimer;
+function scheduleKnowledgePanel() {
+  clearTimeout(knowledgeTimer);
+  knowledgeTimer = setTimeout(() => {
+    write("query", state.query);
+    const panel = $("#knowledge-panel");
+    if (panel) panel.innerHTML = knowledgePanelHtml();
+  }, 120);
 }
 function go(route) {
   if (!route.startsWith("#")) route = "#" + route;
@@ -260,9 +274,31 @@ function listText(form, name) {
     .map((x) => x.trim())
     .filter(Boolean);
 }
+function showFormError(form, message = "") {
+  let node = form.querySelector(".form-error");
+  if (!message) {
+    node?.remove();
+    return;
+  }
+  if (!node) {
+    node = document.createElement("p");
+    node.className = "form-error error-text";
+    node.setAttribute("role", "alert");
+    const actions = form.querySelector(".form-actions");
+    form.insertBefore(node, actions || null);
+  }
+  node.textContent = message;
+}
+function showConflict(error) {
+  showDetail(
+    "保存冲突",
+    `<p>${escapeHtml(error.message)}</p><p>你的输入没有被覆盖。加载最新版本后重新编辑，避免把旧内容写回去。</p><div class="form-actions"><button class="primary-button" data-action="reload-conflict">加载最新版本</button><button class="small-button" data-action="close-dialog">保留当前输入</button></div>`,
+  );
+}
 async function saveForm(form) {
   if (working) return;
   working = true;
+  showFormError(form);
   const submit = form.querySelector("[type=submit]");
   if (submit) {
     submit.disabled = true;
@@ -304,7 +340,13 @@ async function saveForm(form) {
     await refresh();
     closeDialogs();
   } catch (e) {
-    toast(e.message, true);
+    if (e.code === "VERSION_CONFLICT") {
+      showFormError(form, e.message);
+      showConflict(e);
+    } else {
+      showFormError(form, e.message);
+      toast(e.message, true);
+    }
   } finally {
     working = false;
     if (submit) {
@@ -471,6 +513,14 @@ function handleAction(button) {
     case "close-dialog":
       button.closest("dialog").close();
       break;
+    case "reload-conflict":
+      closeDialogs();
+      refresh().then(() => toast("已加载最新版本，请重新编辑"));
+      break;
+    case "related-note":
+      state.selectedNote = button.dataset.id;
+      renderPage({ restore: true });
+      break;
     case "retry":
       refresh(false);
       break;
@@ -565,12 +615,7 @@ document.addEventListener("input", (e) => {
   }
   if (e.target.id === "knowledge-search") {
     state.query = e.target.value;
-    const y = window.scrollY;
-    renderPage({ restore: true });
-    const input = $("#knowledge-search");
-    input?.focus();
-    input?.setSelectionRange(state.query.length, state.query.length);
-    window.scrollTo(0, y);
+    scheduleKnowledgePanel();
   }
   if (e.target.name === "query") state.searchInput = e.target.value;
 });

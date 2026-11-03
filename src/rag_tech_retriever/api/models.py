@@ -28,6 +28,38 @@ class QueryInput(BaseModel):
     namespace: str | None = Field(default=None, min_length=1, max_length=64)
 
 
+class RecordOut(BaseModel):
+    """记录统一响应；允许各领域附加时间戳等派生字段。"""
+
+    model_config = ConfigDict(extra="allow")
+    id: str
+    kind: str
+    version: int
+    data: dict
+
+
+class QueryOut(BaseModel):
+    """检索响应契约：命中、生成答案与降级说明。"""
+
+    model_config = ConfigDict(extra="allow")
+    query: str
+    engine: str
+    hits: list[dict]
+    answer: str = ""
+    notes: list[str] = Field(default_factory=list)
+    namespace: str | None = None
+
+
+class JobsOverviewOut(BaseModel):
+    """求职总览契约；分组字段随记录类型扩展。"""
+
+    model_config = ConfigDict(extra="allow")
+    as_of: str
+    due_application_ids: list[str]
+    counts: dict[str, int]
+    funnel: dict | None = None
+
+
 class StageInput(BaseModel):
     """开始阶段时的目标。"""
 

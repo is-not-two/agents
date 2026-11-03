@@ -65,8 +65,8 @@ class GraphWorkflowService:
             "title": cfg["title"], "workflow_id": workflow_id, "kind": "graph",
             "status": "running", "started_at": _now(), "input": deepcopy(payload),
             "workflow": workflow, "agent_snapshots": snapshots,
-            "steps": [], "node_outputs": {}, "node_status": {}, "pending_node": "",
-            "pending_kind": "", "pending_child": None, "pending_children": [],
+            "steps": [], "node_outputs": {}, "node_status": {}, "node_attempts": {},
+            "pending_node": "", "pending_kind": "", "pending_child": None, "pending_children": [],
             "approved_nodes": [],
             "result": {"answer": "", "notes": []},
         })
@@ -118,6 +118,34 @@ class GraphWorkflowService:
                 data["result"]["notes"].append(f"用户拒绝了节点 {node_id}")
         data.update(pending_node="", pending_kind="", pending_child=None,
                     pending_children=[], status="running")
+        row = self._save(row, data)
+        return await self._drive(row)
+
+    async def resume(self, run_id: str, version: int) -> dict:
+        """恢复崩溃后停在 running 的只读节点；Agent/审批节点必须先人工预检。"""
+        row = self.store.get(run_id)
+        if row["kind"] != "workflow_run" or row["data"].get("kind") != "graph":
+            raise RecordMissing("图工作流运行不存在")
+        if row["version"] != version:
+            raise VersionConflict("运行记录已变化，请刷新后重试")
+        data = deepcopy(row["data"])
+        if data.get("status") != "running":
+            raise DomainError("只有运行中的图工作流可以恢复")
+        if data.get("pending_node"):
+            raise DomainError("该运行等待人工确认，请使用确认接口")
+        cfg = data["workflow"]["data"]
+        running_ids = {node_id for node_id, status in data["node_status"].items()
+                       if status == "running"}
+        unsafe = [node["id"] for node in cfg["nodes"]
+                  if node["id"] in running_ids and node["type"] == "agent"]
+        if unsafe:
+            raise DomainError(
+                f"节点 {','.join(unsafe)} 为 Agent 节点，可能已产生副作用，需人工预检后再恢复")
+        for node_id in running_ids:
+            data["node_status"][node_id] = ""
+        if running_ids:
+            data.setdefault("recovery", []).append(
+                {"at": _now(), "nodes": sorted(running_ids), "reason": "崩溃后只读节点重排"})
         row = self._save(row, data)
         return await self._drive(row)
 
@@ -189,34 +217,109 @@ class GraphWorkflowService:
         return [source for source, target in data["workflow"]["data"]["edges"] if target == node_id]
 
     async def _run_node(self, data: dict, node: dict) -> dict:
-        """执行单个节点并返回结果；异常与超时收敛为节点级失败，不影响同波次其他节点。"""
-        started = perf_counter()
-        try:
-            with anyio.fail_after(data["workflow"]["data"]["node_timeout_seconds"]):
-                output = await self._execute_node(data, node)
-            return {"status": "completed", "output": output,
-                    "duration_ms": round((perf_counter() - started) * 1000)}
-        except _Pause as pause:
-            return {"status": "paused", "pause": pause,
-                    "duration_ms": round((perf_counter() - started) * 1000)}
-        except (DomainError, ToolError) as exc:
-            return {"status": "failed", "error": str(exc),
-                    "duration_ms": round((perf_counter() - started) * 1000)}
-        except (TimeoutError, asyncio.TimeoutError):
-            return {"status": "failed", "error": f"节点 {node['id']} 执行超时",
-                    "duration_ms": round((perf_counter() - started) * 1000)}
+        """执行单个节点；只对声明过的瞬时错误重试，避免重复写操作或重复审批。"""
+        cfg = data["workflow"]["data"]
+        retry = node.get("retry", {})
+        # Agent 可能已产生副作用：默认不重试，只有显式配置 retry 才允许。
+        default_attempts = 1 if node["type"] == "agent" else cfg["max_retries"] + 1
+        max_attempts = retry.get("max_attempts", default_attempts)
+        backoff_ms = retry.get("backoff_ms", 500)
+        retry_on = set(retry.get("retry_on", ["timeout", "tool_error"]))
+        timeout = node.get("timeout_s", cfg["node_timeout_seconds"])
+        attempts: list[dict] = []
+        for attempt in range(1, max_attempts + 1):
+            started = perf_counter()
+            try:
+                with anyio.fail_after(timeout):
+                    output = await self._execute_node(data, node)
+                attempts.append({"attempt": attempt, "status": "completed",
+                                 "duration_ms": round((perf_counter() - started) * 1000)})
+                return {"status": "completed", "output": output, "attempts": attempts,
+                        "duration_ms": round((perf_counter() - started) * 1000)}
+            except _Pause as pause:
+                attempts.append({"attempt": attempt, "status": "paused",
+                                 "duration_ms": round((perf_counter() - started) * 1000)})
+                return {"status": "paused", "pause": pause, "attempts": attempts,
+                        "duration_ms": round((perf_counter() - started) * 1000)}
+            except (DomainError, ToolError) as exc:
+                category = "tool_error" if isinstance(exc, ToolError) else "domain_error"
+                attempts.append({"attempt": attempt, "status": "failed", "error": str(exc),
+                                 "duration_ms": round((perf_counter() - started) * 1000)})
+                if category in retry_on and attempt < max_attempts:
+                    await asyncio.sleep(backoff_ms / 1000 * (2 ** (attempt - 1)))
+                    continue
+                return {"status": "failed", "error": str(exc), "attempts": attempts,
+                        "duration_ms": round((perf_counter() - started) * 1000)}
+            except (TimeoutError, asyncio.TimeoutError):
+                attempts.append({"attempt": attempt, "status": "failed",
+                                 "error": f"节点 {node['id']} 执行超时",
+                                 "duration_ms": round((perf_counter() - started) * 1000)})
+                if "timeout" in retry_on and attempt < max_attempts:
+                    await asyncio.sleep(backoff_ms / 1000 * (2 ** (attempt - 1)))
+                    continue
+                return {"status": "failed", "error": f"节点 {node['id']} 执行超时",
+                        "attempts": attempts,
+                        "duration_ms": round((perf_counter() - started) * 1000)}
+        raise AssertionError("unreachable retry loop")  # pragma: no cover
 
-    async def _execute_batch(self, data: dict, batch: list[dict]) -> dict[str, dict]:
-        """同一波次并发执行，返回按节点 ID 索引的结果；共享状态只在波次结束后合并。"""
-        outcomes: dict[str, dict] = {}
+    def _ready_nodes(self, data: dict, nodes: dict, order: dict, join_policy: str) -> list[dict]:
+        """按依赖与汇合策略计算当前可执行节点，返回确定性顺序。"""
+        satisfiable = {"completed", "skipped", "fallback"}
+        done = {key for key, value in data["node_status"].items()
+                if value in satisfiable | {"failed", "running"}}
+        ready = []
+        for node_id, node in nodes.items():
+            if node_id in done:
+                continue
+            predecessors = self._predecessors(data, node_id)
+            statuses = [data["node_status"].get(source) for source in predecessors]
+            if not predecessors:
+                satisfied = True
+            elif join_policy == "any_success":
+                satisfied = any(value in satisfiable for value in statuses)
+            else:
+                satisfied = all(value in satisfiable for value in statuses)
+            if satisfied:
+                ready.append(node)
+        ready.sort(key=lambda node: (node["type"] != "input", order[node["id"]]))
+        return ready
 
-        async def execute(item: dict) -> None:
-            outcomes[item["id"]] = await self._run_node(data, item)
-
-        async with anyio.create_task_group() as group:
-            for node in batch:
-                group.start_soon(execute, node)
-        return outcomes
+    def _apply_outcome(self, data: dict, node: dict, outcome: dict) -> bool:
+        """写入单节点结果；返回该节点是否进入待确认。"""
+        attempts = outcome.get("attempts", [])
+        data.setdefault("node_attempts", {})[node["id"]] = attempts
+        if outcome["status"] == "paused":
+            return True
+        if outcome["status"] == "completed":
+            data["node_outputs"][node["id"]] = outcome["output"]
+            data["node_status"][node["id"]] = "completed"
+            data["steps"].append({"key": node["id"], "title": node["id"],
+                                  "status": "completed",
+                                  "detail": json.dumps(outcome["output"], ensure_ascii=False)[:10000],
+                                  "duration_ms": outcome["duration_ms"]})
+            return False
+        on_error = node.get("on_error", "fail")
+        if on_error == "continue":
+            data["node_status"][node["id"]] = "skipped"
+            data["result"]["notes"].append(f"节点 {node['id']} 已按失败策略跳过：{outcome['error']}")
+            data["steps"].append({"key": node["id"], "title": node["id"],
+                                  "status": "skipped", "detail": outcome["error"],
+                                  "duration_ms": outcome["duration_ms"]})
+        elif on_error == "fallback":
+            data["node_outputs"][node["id"]] = deepcopy(node.get("fallback", {}))
+            data["node_status"][node["id"]] = "fallback"
+            data["result"]["notes"].append(f"节点 {node['id']} 已使用回退结果：{outcome['error']}")
+            data["steps"].append({"key": node["id"], "title": node["id"],
+                                  "status": "fallback",
+                                  "detail": json.dumps(node.get("fallback", {}), ensure_ascii=False)[:10000],
+                                  "duration_ms": outcome["duration_ms"]})
+        else:
+            data["node_status"][node["id"]] = "failed"
+            data["result"]["notes"].append(outcome["error"])
+            data["steps"].append({"key": node["id"], "title": node["id"],
+                                  "status": "failed", "detail": outcome["error"],
+                                  "duration_ms": outcome["duration_ms"]})
+        return False
 
     async def _drive(self, row: dict) -> dict:
         data = deepcopy(row["data"])
@@ -225,72 +328,74 @@ class GraphWorkflowService:
         order = {node["id"]: index for index, node in enumerate(cfg["nodes"])}
         terminal_ids = [node["id"] for node in cfg["nodes"]
                         if not any(edge[0] == node["id"] for edge in cfg["edges"])]
-        while True:
-            done = {key for key, value in data["node_status"].items()
-                    if value in {"completed", "skipped", "failed"}}
-            ready = []
-            for node_id, node in nodes.items():
-                if node_id in done:
-                    continue
-                predecessors = self._predecessors(data, node_id)
-                if all(data["node_status"].get(source) in {"completed", "skipped"}
-                       for source in predecessors):
-                    ready.append(node)
-            if not ready:
-                break
-            # 确定性顺序：input 优先，其次按声明顺序。
-            ready.sort(key=lambda node: (node["type"] != "input", order[node["id"]]))
-            approvals = [node for node in ready if node["type"] == "approval"]
-            runnable = [node for node in ready if node["type"] != "approval"]
-            if not runnable:
-                # 只差人工审批：暂停，确认后由 confirm 继续驱动。
-                gate = approvals[0]
-                data.update(status="awaiting_confirmation", pending_node=gate["id"],
-                            pending_kind="approval")
-                return self._save(row, data)
-            batch = runnable[: cfg["max_parallel"]]
-            for node in batch:
-                data["node_status"][node["id"]] = "running"
-            row = self._save(row, data)
-            outcomes = await self._execute_batch(data, batch)
-            pauses = []
-            # 按声明顺序落盘，保证并行波次的步骤与结果稳定可复现。
-            for node in batch:
-                outcome = outcomes[node["id"]]
-                if outcome["status"] == "paused":
-                    pauses.append(node)
-                    continue
-                if outcome["status"] == "completed":
-                    data["node_outputs"][node["id"]] = outcome["output"]
-                    data["node_status"][node["id"]] = "completed"
-                    data["steps"].append({"key": node["id"], "title": node["id"],
-                                          "status": "completed",
-                                          "detail": json.dumps(outcome["output"], ensure_ascii=False)[:10000],
-                                          "duration_ms": outcome["duration_ms"]})
-                else:
-                    data["node_status"][node["id"]] = "failed"
-                    data["result"]["notes"].append(outcome["error"])
-                    data["steps"].append({"key": node["id"], "title": node["id"],
-                                          "status": "failed", "detail": outcome["error"],
-                                          "duration_ms": outcome["duration_ms"]})
-            if pauses:
-                first = pauses[0]
-                pause = outcomes[first["id"]]["pause"]
-                children = [{"node": item["id"], **outcomes[item["id"]]["pause"].child}
-                            for item in pauses if outcomes[item["id"]]["pause"].child]
-                data.update(status="awaiting_confirmation", pending_node=first["id"],
-                            pending_kind=pause.kind, pending_child=pause.child,
-                            pending_children=children)
-                return self._save(row, data)
-            row = self._save(row, data)
+        join_policy = cfg.get("join_policy", "all_success")
+        satisfiable = {"completed", "skipped", "fallback"}
+        running: dict[asyncio.Task, dict] = {}
+        pauses: list[tuple[dict, dict]] = []
+        pause_requested = False
+        try:
+            while True:
+                if not pause_requested:
+                    ready = self._ready_nodes(data, nodes, order, join_policy)
+                    runnable = [node for node in ready if node["type"] != "approval"]
+                    # 动态补位：任一节点完成即释放槽位，不再等整波结束。
+                    started = False
+                    while runnable and len(running) < cfg["max_parallel"]:
+                        node = runnable.pop(0)
+                        data["node_status"][node["id"]] = "running"
+                        snapshot = deepcopy(data)
+                        task = asyncio.create_task(self._run_node(snapshot, node))
+                        running[task] = node
+                        started = True
+                    if started:
+                        row = self._save(row, data)
+                    if not running:
+                        approvals = [node for node in self._ready_nodes(
+                            data, nodes, order, join_policy) if node["type"] == "approval"]
+                        if approvals:
+                            gate = approvals[0]
+                            data.update(status="awaiting_confirmation", pending_node=gate["id"],
+                                        pending_kind="approval")
+                            return self._save(row, data)
+                        break
+                if not running:
+                    break
+                done, _ = await asyncio.wait(list(running.keys()),
+                                             return_when=asyncio.FIRST_COMPLETED)
+                for task in sorted(done, key=lambda item: order[running[item]["id"]]):
+                    node = running.pop(task)
+                    outcome = task.result()
+                    if self._apply_outcome(data, node, outcome):
+                        pauses.append((node, outcome))
+                        pause_requested = True
+                row = self._save(row, data)
+                if pause_requested and not running:
+                    first, first_outcome = pauses[0]
+                    pause = first_outcome["pause"]
+                    children = [{"node": node["id"], **outcome["pause"].child}
+                                for node, outcome in pauses if outcome["pause"].child]
+                    data.update(status="awaiting_confirmation", pending_node=first["id"],
+                                pending_kind=pause.kind, pending_child=pause.child,
+                                pending_children=children)
+                    return self._save(row, data)
+        finally:
+            if running:
+                for task in running:
+                    task.cancel()
+                await asyncio.gather(*running.keys(), return_exceptions=True)
         failed = any(value == "failed" for value in data["node_status"].values())
+        terminal_succeeded = any(data["node_status"].get(node_id) in satisfiable
+                                 for node_id in terminal_ids)
         answers = []
         for node_id in terminal_ids:
             output = data["node_outputs"].get(node_id, {})
             if isinstance(output.get("answer"), str) and output["answer"].strip():
                 answers.append(output["answer"])
         data["result"]["answer"] = "\n\n".join(answers) or data["result"].get("answer", "")
-        data["status"] = "failed" if failed else ("fallback" if data["result"]["notes"] else "completed")
+        if failed and not (join_policy == "any_success" and terminal_succeeded):
+            data["status"] = "failed"
+        else:
+            data["status"] = "fallback" if (failed or data["result"]["notes"]) else "completed"
         data["finished_at"] = _now()
         data.update(pending_node="", pending_kind="", pending_child=None, pending_children=[])
         return self._save(row, data)

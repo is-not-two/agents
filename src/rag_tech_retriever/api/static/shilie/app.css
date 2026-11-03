@@ -7530,3 +7530,48 @@ body::before {
   display: block;
   margin: 12px auto 0;
 }
+
+/* ── 知识详情：相关笔记 ──────────────────────────────────── */
+.related-notes {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--sl-line, #e4ddd2);
+}
+.related-notes h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b5d50;
+}
+.related-notes > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.related-note {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 150px;
+  max-width: 240px;
+  padding: 10px 12px;
+  border: 1px solid var(--sl-line, #e4ddd2);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.related-note:hover {
+  border-color: var(--sl-ember-500, #7a4419);
+}
+.related-note strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.related-note span {
+  font-size: 11px;
+  color: #8a7b6d;
+}

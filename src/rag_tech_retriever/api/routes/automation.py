@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, StrictBool, StrictInt
 from rag_tech_retriever.agent.graph_runner import GraphWorkflowService
 from rag_tech_retriever.agent.workflow_service import WorkflowService
 from rag_tech_retriever.api.dependencies import WorkspaceContext
-from rag_tech_retriever.api.models import RecordInput
+from rag_tech_retriever.api.models import RecordInput, RecordOut
 from rag_tech_retriever.domains.automation import validate_agent
 from rag_tech_retriever.domains.life_planning import DomainError
 from rag_tech_retriever.platform.record_store import RecordMissing
@@ -96,6 +96,13 @@ def create_router(context: WorkspaceContext) -> APIRouter:
         if row["kind"] not in {"workflow_run", "agent_session"} or row["data"].get("kind") not in {"answer", "ingest", "graph"}:
             raise RecordMissing("运行记录不存在")
         return row
+
+    @router.post("/api/workflow-runs/{record_id}/resume", response_model=RecordOut)
+    async def resume(record_id: str, payload: ConfirmInput) -> dict:
+        row = store.get(record_id)
+        if row["data"].get("kind") != "graph":
+            raise DomainError("只有图工作流支持崩溃恢复")
+        return await graph.resume(record_id, payload.version)
 
     @router.post("/api/workflow-runs/{record_id}/confirm")
     async def confirm(record_id: str, payload: ConfirmInput) -> dict:

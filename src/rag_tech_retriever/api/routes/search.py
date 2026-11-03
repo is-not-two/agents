@@ -3,9 +3,7 @@
 from fastapi import APIRouter, HTTPException
 
 from rag_tech_retriever.api.dependencies import WorkspaceContext
-from rag_tech_retriever.api.models import (
-    QueryInput,
-)
+from rag_tech_retriever.api.models import QueryInput, QueryOut
 
 
 def create_router(context: WorkspaceContext) -> APIRouter:
@@ -17,7 +15,7 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     def options() -> dict:
         return search.catalog.options()
 
-    @router.post("/api/query")
+    @router.post("/api/query", response_model=QueryOut)
     def query(payload: QueryInput) -> dict:
         if payload.scope not in {"all", "personal", "docs", "planning"} or payload.mode not in {
             "text",

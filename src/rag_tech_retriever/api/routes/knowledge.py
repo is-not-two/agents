@@ -5,7 +5,7 @@ from fastapi import APIRouter, UploadFile
 
 from rag_tech_retriever.agent.workflow_service import WorkflowService
 from rag_tech_retriever.api.dependencies import WorkspaceContext
-from rag_tech_retriever.api.models import RecordInput
+from rag_tech_retriever.api.models import RecordInput, RecordOut
 from rag_tech_retriever.domains.knowledge import validate_knowledge
 from rag_tech_retriever.domains.life_planning import DomainError
 
@@ -38,15 +38,15 @@ def create_router(context: WorkspaceContext) -> APIRouter:
         finally:
             await file.close()
 
-    @router.get("/api/knowledge")
+    @router.get("/api/knowledge", response_model=list[RecordOut])
     def knowledge_list(trash: bool = False) -> list:
         return store.list("knowledge", deleted=trash)
 
-    @router.post("/api/knowledge", status_code=201)
+    @router.post("/api/knowledge", status_code=201, response_model=RecordOut)
     def knowledge_create(payload: RecordInput) -> dict:
         return store.save("knowledge", validate_knowledge(payload.data))
 
-    @router.put("/api/knowledge/{record_id}")
+    @router.put("/api/knowledge/{record_id}", response_model=RecordOut)
     def knowledge_update(record_id: str, payload: RecordInput) -> dict:
         return store.save("knowledge", validate_knowledge(payload.data), record_id, payload.version)
 

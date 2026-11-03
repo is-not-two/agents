@@ -9,6 +9,9 @@ from rag_tech_retriever.domains.life_planning import DomainError, text
 NODE_TYPES = {"input", "retrieve", "tool", "agent", "merge", "approval"}
 IDENT = re.compile(r"[a-z][a-z0-9_-]{0,40}\Z")
 PLACEHOLDER = re.compile(r"\{\{([^{}]{1,80})\}\}")
+RETRY_ON = {"timeout", "tool_error"}
+ON_ERROR = {"fail", "continue", "fallback"}
+JOIN_POLICY = {"all_success", "any_success"}
 
 
 def _integer(value: object, label: str, low: int, high: int) -> int:
@@ -23,6 +26,22 @@ def _identifier(value: object, label: str) -> str:
     return value
 
 
+def _retry(raw: object, node_id: str) -> dict | None:
+    """Normalize an optional per-node retry policy; total attempts includes the first call."""
+    if raw is None:
+        return None
+    if not isinstance(raw, dict) or set(raw) - {"max_attempts", "backoff_ms", "retry_on"}:
+        raise DomainError(f"节点 {node_id} 重试配置包含无效字段")
+    retry_on = raw.get("retry_on", ["timeout", "tool_error"])
+    if not isinstance(retry_on, list) or not retry_on or any(item not in RETRY_ON for item in retry_on):
+        raise DomainError(f"节点 {node_id} 重试类型只支持 timeout/tool_error")
+    return {
+        "max_attempts": _integer(raw.get("max_attempts", 1), f"节点 {node_id} 最大尝试次数", 1, 4),
+        "backoff_ms": _integer(raw.get("backoff_ms", 500), f"节点 {node_id} 重试退避", 100, 5000),
+        "retry_on": list(dict.fromkeys(retry_on)),
+    }
+
+
 def _node(raw: object) -> dict:
     if not isinstance(raw, dict):
         raise DomainError("工作流节点必须为对象")
@@ -30,7 +49,10 @@ def _node(raw: object) -> dict:
     kind = raw.get("type")
     if not isinstance(kind, str) or kind not in NODE_TYPES:
         raise DomainError("工作流节点类型不支持")
+    execution = kind in {"retrieve", "tool", "agent", "merge"}
     allowed = {"id", "type"}
+    if execution:
+        allowed |= {"retry", "timeout_s", "on_error", "fallback"}
     if kind == "retrieve":
         allowed |= {"agent_id", "query", "limit"}
     elif kind == "tool":
@@ -66,6 +88,23 @@ def _node(raw: object) -> dict:
         node["strategy"] = strategy
     elif kind == "approval":
         node["message"] = text(raw.get("message", ""), f"节点 {node_id} 确认说明", 1000, True)
+    if execution:
+        retry = _retry(raw.get("retry"), node_id)
+        if retry:
+            node["retry"] = retry
+        if raw.get("timeout_s") is not None:
+            node["timeout_s"] = _integer(raw.get("timeout_s"), f"节点 {node_id} 超时", 5, 300)
+        on_error = raw.get("on_error", "fail")
+        if on_error not in ON_ERROR:
+            raise DomainError(f"节点 {node_id} 失败策略只支持 fail/continue/fallback")
+        node["on_error"] = on_error
+        fallback = raw.get("fallback")
+        if on_error == "fallback":
+            if not isinstance(fallback, dict) or not fallback or len(json_size(fallback)) > 16000:
+                raise DomainError(f"节点 {node_id} fallback 必须为非空且大小受限的对象")
+            node["fallback"] = deepcopy(fallback)
+        elif fallback is not None:
+            raise DomainError(f"节点 {node_id} 只有 fallback 策略可配置 fallback 结果")
     return node
 
 
@@ -171,6 +210,9 @@ def validate_graph_workflow(payload: dict) -> dict:
     if default_agent and default_agent not in {node.get("agent_id") for node in clean if node.get("agent_id")}:
         # It is a fallback, not a reference requirement; the service resolves it.
         pass
+    join_policy = payload.get("join_policy", "all_success")
+    if join_policy not in JOIN_POLICY:
+        raise DomainError("汇合策略只支持 all_success/any_success")
     return {
         "title": text(payload.get("title", ""), "流程名称", 160, True),
         "kind": "graph",
@@ -180,4 +222,5 @@ def validate_graph_workflow(payload: dict) -> dict:
         "max_parallel": _integer(payload.get("max_parallel", 1), "并行度", 1, 4),
         "max_retries": _integer(payload.get("max_retries", 1), "节点重试", 0, 3),
         "node_timeout_seconds": _integer(payload.get("node_timeout_seconds", 60), "节点超时", 5, 300),
+        "join_policy": join_policy,
     }

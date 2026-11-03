@@ -199,7 +199,12 @@ def create_app(
                                         "/api/jobs/resumes/upload"}
                 else "web.max_body_bytes"
             )
-            if len(await request.body()) > int(config.get(limit_key, 2097152)):
+            limit = int(config.get(limit_key, 2097152))
+            declared = request.headers.get("content-length")
+            if declared and declared.isdigit() and int(declared) > limit:
+                # 已知超限时不读取正文，避免大导入整包进内存。
+                return guard_error(request, "提交内容超过大小限制", ErrorCode.PAYLOAD_TOO_LARGE, 413)
+            if len(await request.body()) > limit:
                 return guard_error(request, "提交内容超过大小限制", ErrorCode.PAYLOAD_TOO_LARGE, 413)
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -349,7 +354,7 @@ def create_app(
 
     @application.get("/api/status")
     def status() -> dict:
-        knowledge, plans = store.list("knowledge"), store.list("plan")
+        plans = store.list("plan")
         nodes = [n for p in plans for a in p["data"]["acts"] for n in a["nodes"]]
         try:
             llm_configured = search.connection.public(search.connection.load())["configured"]
@@ -357,11 +362,11 @@ def create_app(
             llm_configured = False
         return {
             "storage": "PostgreSQL",
-            "knowledge_count": len(knowledge),
+            "knowledge_count": store.count("knowledge"),
             "plan_count": len(plans),
             "node_count": len(nodes),
             "done_count": sum(n["done"] for n in nodes),
-            "lessons_count": len(store.list("lesson")),
+            "lessons_count": store.count("lesson"),
             "stages_count": len(journal.list()),
             "export_directory": str(exports),
             "auth_enabled": bool(secret),

@@ -240,6 +240,35 @@ class RecordStore:
             )
             return [self._serialize(row) for row in cur.fetchall()]
 
+    def count(self, kind: str, deleted: bool = False) -> int:
+        """只做计数，不读取 JSONB 正文；用于状态卡和统计接口。"""
+        if kind not in RECORD_KINDS:
+            raise StorageError("不支持的记录类型")
+        with self.transaction() as cur:
+            cur.execute(
+                f"SELECT COUNT(*) AS total FROM {self.records} WHERE deleted=%s AND kind=%s",
+                (deleted, kind),
+            )
+            return int(cur.fetchone()["total"])
+
+    def kind_counts(self, kinds: set[str] | None = None) -> dict[str, dict[str, int]]:
+        """一次分组查询返回各类型有效/回收站数量，避免逐类型全表读取。"""
+        selected = sorted(kinds or WORKSPACE_KINDS)
+        if not selected or any(kind not in RECORD_KINDS for kind in selected):
+            raise StorageError("统计类型不合法")
+        with self.transaction() as cur:
+            cur.execute(
+                f"SELECT kind,deleted,COUNT(*) AS total FROM {self.records} "
+                "WHERE kind=ANY(%s::text[]) GROUP BY kind,deleted",
+                (selected,),
+            )
+            rows = cur.fetchall()
+        result = {kind: {"active": 0, "trash": 0} for kind in selected}
+        for row in rows:
+            bucket = "trash" if row["deleted"] else "active"
+            result[row["kind"]][bucket] = int(row["total"])
+        return result
+
     def get(self, record_id: str, include_deleted: bool = False) -> dict:
         """读取记录，软删除默认隐藏。"""
         with self.transaction() as cur:

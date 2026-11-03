@@ -3,7 +3,7 @@ from fastapi import APIRouter, File, Form, UploadFile
 from pydantic import BaseModel, Field
 
 from rag_tech_retriever.api.dependencies import WorkspaceContext
-from rag_tech_retriever.api.models import RecordInput
+from rag_tech_retriever.api.models import JobsOverviewOut, RecordInput, RecordOut
 from rag_tech_retriever.domains.life_planning import DomainError
 from rag_tech_retriever.platform.jobs import JobsService
 from rag_tech_retriever.platform.record_store import RecordMissing
@@ -20,7 +20,7 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     service = JobsService(context.store)
     resumes = ResumeService(context.store, context.journal.root)
 
-    @router.get("/api/jobs")
+    @router.get("/api/jobs", response_model=JobsOverviewOut)
     def overview(trash: bool = False) -> dict:
         return service.overview(trash)
 
@@ -43,11 +43,16 @@ def create_router(context: WorkspaceContext) -> APIRouter:
         def patch(record_id: str, payload: RecordInput) -> dict:
             return service.save(kind, payload.data, record_id, payload.version, patch=True)
 
-        router.add_api_route(path, listing, methods=["GET"], name=kind + "_list")
-        router.add_api_route(path, create, methods=["POST"], status_code=201, name=kind + "_create")
-        router.add_api_route(path + "/{record_id}", detail, methods=["GET"], name=kind + "_get")
-        router.add_api_route(path + "/{record_id}", update, methods=["PUT"], name=kind + "_update")
-        router.add_api_route(path + "/{record_id}", patch, methods=["PATCH"], name=kind + "_patch")
+        router.add_api_route(path, listing, methods=["GET"], name=kind + "_list",
+                             response_model=list[RecordOut])
+        router.add_api_route(path, create, methods=["POST"], status_code=201,
+                             name=kind + "_create", response_model=RecordOut)
+        router.add_api_route(path + "/{record_id}", detail, methods=["GET"],
+                             name=kind + "_get", response_model=RecordOut)
+        router.add_api_route(path + "/{record_id}", update, methods=["PUT"],
+                             name=kind + "_update", response_model=RecordOut)
+        router.add_api_route(path + "/{record_id}", patch, methods=["PATCH"],
+                             name=kind + "_patch", response_model=RecordOut)
 
     endpoints("/api/jobs/leads", "job_lead")
     endpoints("/api/jobs/applications", "application")
@@ -55,14 +60,15 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     endpoints("/api/jobs/resumes", "resume_version")
     endpoints("/api/jobs/capabilities", "company_capability")
 
-    @router.get("/api/jobs/applications/{application_id}/reports")
+    @router.get("/api/jobs/applications/{application_id}/reports", response_model=list[RecordOut])
     def reports(application_id: str) -> list:
         row = context.store.get(application_id)
         if row["kind"] != "application":
             raise RecordMissing("投递记录不存在")
         return [report for report in context.store.list("interview_report") if report["data"]["application_id"] == application_id]
 
-    @router.post("/api/jobs/applications/{application_id}/reports", status_code=201)
+    @router.post("/api/jobs/applications/{application_id}/reports", status_code=201,
+                 response_model=RecordOut)
     def report_create(application_id: str, payload: RecordInput) -> dict:
         if payload.data.get("application_id", application_id) != application_id:
             raise DomainError("路径与复盘所属投递不一致")

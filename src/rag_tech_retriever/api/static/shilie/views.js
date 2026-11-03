@@ -1,35 +1,35 @@
-import { collaborationView } from "./collaboration.js?v=105";
-import { corpusSelect } from "./public-corpus.js?v=105";
-import { agentStudioView } from "./agent-studio.js?v=105";
-import { backupView } from "./backup.js?v=105";
-import { privateView } from "./private-view.js?v=105";
-import { modelConnectionView } from "./model-connection.js?v=105";
-import { treeView, treeDialog } from "./tree.js?v=105";
+import { collaborationView } from "./collaboration.js?v=106";
+import { corpusSelect } from "./public-corpus.js?v=106";
+import { agentStudioView } from "./agent-studio.js?v=106";
+import { backupView } from "./backup.js?v=106";
+import { privateView } from "./private-view.js?v=106";
+import { modelConnectionView } from "./model-connection.js?v=106";
+import { treeView, treeDialog } from "./tree.js?v=106";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=105";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=105";
-import { jobsView, jobsDialog } from "./jobs.js?v=105";
+} from "./automation-views.js?v=106";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=106";
+import { jobsView, jobsDialog } from "./jobs.js?v=106";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=105";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=105";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=105";
-import { serverStatusView } from "./server-status.js?v=105";
-import { evaluationView } from "./evaluation.js?v=105";
-import { directorActive } from "./director.js?v=105";
-import { icon, orbitIcon } from "./icons.js?v=105";
+} from "./company-capabilities.js?v=106";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=106";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=106";
+import { serverStatusView } from "./server-status.js?v=106";
+import { evaluationView } from "./evaluation.js?v=106";
+import { directorActive } from "./director.js?v=106";
+import { icon, orbitIcon } from "./icons.js?v=106";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=105";
+} from "./data.js?v=106";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -228,7 +228,28 @@ function knowledgeEmpty(term) {
   ];
   return `<nav class="demo-grid" aria-label="条目形态示意">${demos.map(([t, d]) => `<article class="demo-card"><h3>${t}</h3><p>${d}</p></article>`).join("")}</nav><section class="empty-panel"><h2>这里还没有知识条目</h2><p>写下第一条经验、想法或资料，保存后会进入个人知识库。</p>${btn("创建第一条笔记", "new-note", "primary-button")}</section>`;
 }
-function knowledge() {
+function relatedNotes(target) {
+  const tags = new Set((target.data.tags || []).map((tag) => tag.toLowerCase()));
+  const titleTerms = new Set(
+    (target.data.title || "")
+      .toLowerCase()
+      .match(/[a-z0-9]{2,}|[\u4e00-\u9fa5]{2,}/g) || [],
+  );
+  return state.knowledge
+    .filter((note) => note.id !== target.id)
+    .map((note) => {
+      const otherTags = (note.data.tags || []).map((tag) => tag.toLowerCase());
+      const tagHits = otherTags.filter((tag) => tags.has(tag)).length;
+      const titleHits = Array.from(titleTerms).filter((term) =>
+        (note.data.title || "").toLowerCase().includes(term),
+      ).length;
+      return { note, score: tagHits * 3 + titleHits * 2, tagHits, titleHits };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || a.note.id.localeCompare(b.note.id))
+    .slice(0, 5);
+}
+function knowledgeSelection() {
   const term = state.query.trim().toLowerCase();
   const filtered = state.knowledge.filter(
     (n) =>
@@ -247,6 +268,23 @@ function knowledge() {
   });
   const selected = rows.find((n) => n.id === state.selectedNote) || rows[0];
   if (selected) state.selectedNote = selected.id;
+  return { term, rows, selected };
+}
+export function knowledgePanelHtml() {
+  const { term, rows, selected } = knowledgeSelection();
+  if (!rows.length) return knowledgeEmpty(term);
+  const related = relatedNotes(selected);
+  return `<div class="knowledge-grid"><nav class="knowledge-list" aria-label="知识列表">${rows.map(noteCard).join("")}</nav><article class="document"><div class="document-toolbar"><span>${esc(selected.data.source || (selected.data.tags || []).join(" · ") || "个人知识")} · v${selected.version}</span><div>${btn("历史", "history-note")}${btn("编辑", "edit-note")}${btn("删除", "delete-note", "text-button")}</div></div><h2>${highlight(selected.data.title, state.query)}</h2><div class="document-content">${selected.data.content
+    .split(/\n{2,}/)
+    .map(
+      (part) =>
+        `<p>${highlight(part, state.query).replace(/\n/g, "<br>")}</p>`,
+    )
+    .join(
+      "",
+    )}</div>${(selected.data.tags || []).length ? `<div class="inline-tags">${selected.data.tags.map((t) => `<span>${esc(t)}</span>`).join("")}</div>` : ""}${related.length ? `<section class="related-notes"><h3>相关笔记</h3><div>${related.map(({ note, tagHits, titleHits }) => `<button class="related-note" data-action="related-note" data-id="${note.id}"><strong>${esc(note.data.title)}</strong><span>${tagHits ? `标签重合 ${tagHits}` : `标题相关 ${titleHits}`}</span></button>`).join("")}</div></section>` : ""}</article></div>`;
+}
+function knowledge() {
   const hasAny = (state.knowledge || []).length > 0;
   return frame(
     "个人知识库",
@@ -262,19 +300,7 @@ function knowledge() {
             state.filter,
           )
         : ""
-    }<div class="module-toolbar">${hasAny ? `<label class="search-field">${icon("search")}<input id="knowledge-search" type="search" placeholder="搜索标题、正文或标签" value="${esc(state.query)}"></label>` : ""}<div class="toolbar-actions">${btn("回收站", "trash-notes")}${btn("新建笔记", "new-note", "primary-button")}</div></div>${
-      rows.length
-        ? `<div class="knowledge-grid"><nav class="knowledge-list" aria-label="知识列表">${rows.map(noteCard).join("")}</nav><article class="document"><div class="document-toolbar"><span>${esc(selected.data.source || (selected.data.tags || []).join(" · ") || "个人知识")} · v${selected.version}</span><div>${btn("历史", "history-note")}${btn("编辑", "edit-note")}${btn("删除", "delete-note", "text-button")}</div></div><h2>${highlight(selected.data.title, state.query)}</h2><div class="document-content">${selected.data.content
-            .split(/\n{2,}/)
-            .map(
-              (part) =>
-                `<p>${highlight(part, state.query).replace(/\n/g, "<br>")}</p>`,
-            )
-            .join(
-              "",
-            )}</div>${(selected.data.tags || []).length ? `<div class="inline-tags">${selected.data.tags.map((t) => `<span>${esc(t)}</span>`).join("")}</div>` : ""}</article></div>`
-        : knowledgeEmpty(term)
-    }`,
+    }<div class="module-toolbar">${hasAny ? `<label class="search-field">${icon("search")}<input id="knowledge-search" type="search" placeholder="搜索标题、正文或标签" value="${esc(state.query)}"></label>` : ""}<div class="toolbar-actions">${btn("回收站", "trash-notes")}${btn("新建笔记", "new-note", "primary-button")}</div></div><div id="knowledge-panel">${knowledgePanelHtml()}</div>`,
   );
 }
 function stagePage() {
