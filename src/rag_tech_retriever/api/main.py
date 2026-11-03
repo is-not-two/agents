@@ -13,6 +13,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.gzip import GZipMiddleware
 
 from rag_tech_retriever.agent.capability_runtime import AgentRuntime
@@ -222,11 +223,14 @@ def create_app(
         return await call_next(request)
 
     error_log = get_logger("unhandled")
+    # Starlette 内置 404/405 的英文默认文案，替换为面向用户的说法（自定义 detail 不受影响）
+    default_http_detail = {"Not Found": "接口不存在", "Method Not Allowed": "该接口不支持此方法"}
     http_error_codes = {
         400: ErrorCode.VALIDATION,
         401: ErrorCode.UNAUTHORIZED,
         403: ErrorCode.FORBIDDEN,
         404: ErrorCode.NOT_FOUND,
+        405: ErrorCode.METHOD_NOT_ALLOWED,
         409: ErrorCode.VERSION_CONFLICT,
         413: ErrorCode.PAYLOAD_TOO_LARGE,
         422: ErrorCode.VALIDATION,
@@ -281,9 +285,12 @@ def create_app(
         payload["fields"] = fields
         return error_response(request, payload, 400)
 
-    @application.exception_handler(HTTPException)
-    async def http_error(request: Request, exc: HTTPException):
+    # 注册 Starlette 基类：路由层抛出的 405/404（以及 FastAPI HTTPException 子类）
+    # 都走统一信封；否则它们由 Starlette 默认处理，返回无 code / 无 request_id 的裸 detail。
+    @application.exception_handler(StarletteHTTPException)
+    async def http_error(request: Request, exc: StarletteHTTPException):
         detail = exc.detail if isinstance(exc.detail, str) and exc.detail else "请求无法完成"
+        detail = default_http_detail.get(detail, detail)
         code = http_error_codes.get(exc.status_code, ErrorCode.INTERNAL)
         return error_response(
             request,

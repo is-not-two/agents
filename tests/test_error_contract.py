@@ -162,3 +162,17 @@ def test_internal_error_hides_details(tmp_path):
         with store.transaction() as cur:
             cur.execute(f"DROP TABLE {store.versions}")
             cur.execute(f"DROP TABLE {store.records}")
+
+
+def test_method_not_allowed_uses_envelope(api):
+    """Starlette 抛出的 405 也必须带稳定 code 与 request_id，而不是裸 detail。"""
+    response = api.patch("/api/knowledge/anything", json={"data": {}})
+    body = assert_envelope(response, "METHOD_NOT_ALLOWED", 405)
+    assert body["detail"] == "该接口不支持此方法"
+
+
+def test_unknown_api_path_uses_envelope(api):
+    """不存在的 /api 路径同样走统一信封，前端才能按 code 归因。"""
+    response = api.get("/api/definitely-not-here")
+    body = assert_envelope(response, "NOT_FOUND", 404)
+    assert body["detail"] == "接口不存在"
