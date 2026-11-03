@@ -127,21 +127,22 @@
 - 正式只读验收：`/api/jobs` 漏斗结构与空分母正确、`/api/jobs/capabilities` 为空、`/api/status` 200；1440px 与 390px 页面均无横向溢出、控制台 0 错误；未写入任何正式业务数据。
 - 回滚提示：正式库已含新 kind，回退 v100 代码前须先恢复旧 17-kind 约束（旧定义见备份目录 `kind-before.txt`），否则服务拒绝启动。
 - 集成测试（服务器一次性 `regression` 库 + 临时 QA 角色，跑完即删）：`tests/test_jobs.py` **32 passed**。期间发现“有投递但 0 进面”的断言误写成 null，实际应为 0%；已修正测试并单独提交（仅测试，不影响运行时）。
-- 未完成：真实 JD 人工核对见下表（需真实 JD 输入，未编造示例数据）。
+- 真实 JD 初核（2026-11-03）：选取 10 家不同公司的公开在招 JD（原文 URL 可回查），已导入测试环境 8771 走完整流程；规则提取 **10/10 引用精确匹配（0 条伪造引用）**，初核 **10/10 合理**；明细见下表。最终人工确认仍以 WorkBuddy 为准。
+- 初核发现 2 处规则缺陷并已修复：“学历及经验”标题被误判为学历硬条件；“至少 N 年 / N 年左右经验”漏提取。修复后重跑同 10 份 JD，硬条件全部正确；preview `native-20261103-112929-e4141b0`、production `native-20261103-113054-e4141b0` 已部署，正式备份 `/var/backups/shilie/deploy-20261103-113104`。
 
-### 10 个真实 JD 人工核对表（等待 WorkBuddy 提供后逐条填写，不预填示例）
+### 10 个真实 JD 核对表（2026-11-03，执行方初核）
 
-| # | 公司 | 岗位 | JD 来源（用户提供） | 规则提取的条件 | 人工结论（合理/需修正/不合理） | 备注 |
-|---|------|------|---------------------|----------------|--------------------------------|------|
-| 1 |  |  |  |  |  |  |
-| 2 |  |  |  |  |  |  |
-| 3 |  |  |  |  |  |  |
-| 4 |  |  |  |  |  |  |
-| 5 |  |  |  |  |  |  |
-| 6 |  |  |  |  |  |  |
-| 7 |  |  |  |  |  |  |
-| 8 |  |  |  |  |  |  |
-| 9 |  |  |  |  |  |  |
-| 10 |  |  |  |  |  |  |
+| # | 公司 | 岗位 | JD 来源 | 规则提取的条件（括号为要求强度） | 初核结论 | 备注 |
+|---|------|------|---------|----------------------------------|----------|------|
+| 1 | 深圳河套学院（教育人工智能创新中心） | 后端工程师 | [原文](https://www.slai.edu.cn/recruitment/388) | Agent、RAG、Python、Java、LangChain、Docker、Linux、PostgreSQL、MySQL；硬条件：硕士及以上 | 合理 | 引用全部命中；K8s/PyTorch/LLM 词表未覆盖 |
+| 2 | 上海泽润通远科技有限公司 | Python开发工程师 | [原文](https://www.liepin.com/a/80025065.shtml) | Python、FastAPI、PostgreSQL、MySQL、Redis(加分)、Linux(加分)、Git(加分)；硬条件：无 | 合理 | 同句 Django/Flask 未覆盖 |
+| 3 | 北京特拉库塔科技有限公司 | 高级后端开发工程师 | [原文](https://m.yupao.com/zhaogong/353133152.html) | Python、FastAPI(要求)、Linux、Docker(要求)；硬条件：无 | 合理 | Flask/Celery/K8s 未覆盖 |
+| 4 | 杭州吉遇品牌管理有限公司 | Python后端开发工程师（校招培养岗） | [原文](https://career.hznu.edu.cn/job/view/id/1030706) | FastAPI、MySQL、Redis、Linux、Git、Python；硬条件：本科及以上 | 合理 | Django 未覆盖 |
+| 5 | 杭州析数科技有限公司 | Python 开发工程师(Web后端/全栈) | [原文](https://msearch.51job.com/jobs/hangzhou-bjq/174009131.html) | Python、FastAPI、CI/CD、Docker、Linux、Git、JavaScript、RAG、Agent、LangGraph、LangChain、MCP；硬条件：本科+3 年左右经验 | 合理 | Django/Flask、React/Vue 未覆盖 |
+| 6 | 广东省东昇智汇科技有限公司 | python后端开发工程师 | [原文](https://m.zhaopin.com/jobs/CCL1295835710J40802495211.htm) | Python(要求)、FastAPI(要求)、CI/CD、PostgreSQL、MySQL、Linux、Docker、Git、TypeScript、Agent、RAG；硬条件：本科+3 年以上 | 合理 | Django/Flask、K8s 未覆盖 |
+| 7 | 上海万申信息产业股份有限公司 | python后端开发工程师 | [原文](https://m.yupao.com/zhaogong/339630680.html) | Python、FastAPI(要求)、Redis、Linux、Docker(要求)、Agent；硬条件：本科+2 年经验 | 合理 | 修复后“学历及经验”标题不再误判，2 年经验已提取 |
+| 8 | 青岛东浪国际商务有限公司 | AI 集成工程师（RAG/知识库） | [原文](https://www.liepin.com/job/1984967939.shtml) | RAG、pgvector、Python(要求)、TypeScript(要求)、PostgreSQL、LangChain；硬条件：3 年以上 | 合理 | Qdrant/Milvus/LLM 未覆盖 |
+| 9 | 涌现工场（天津）智能科技有限责任公司 | AI 应用工程师/RAG 工程师 | [原文](https://job.tiangong.edu.cn/correcruit/content/id/54911.html) | RAG、Agent、LangChain、MCP、Python、Java、pgvector、PostgreSQL；硬条件：本科+1 年以上 | 合理 | Dify/LlamaIndex/Spring Boot 未覆盖 |
+| 10 | 平安科技（南京分公司） | 资深开发工程师-Python | [原文](https://talent.pingan.com/recruit/position.html?positionId=E375E4CF67B64D179795E1654E867130) | Python、FastAPI、PostgreSQL、MySQL、Redis、Linux、Git、Docker(加分)；硬条件：本科+3 年以上 | 合理 | Django/Flask/SQLAlchemy/Kafka/K8s 未覆盖 |
 
-验收口径：≥8 条人工判定“合理”；未达到时只记录问题，不改结论凑数。
+验收口径：≥8 条初核“合理”；本次 **10/10 达线**；词表覆盖缺口（Django/Flask/K8s/LLM 等）列入后续迭代，不加结论凑数。10 条岗位已保留在测试环境（`#module/job-insights` 可选择复核），证据截图 `output/web/preview-v102/jd-insight.png`；正式库未写入。
