@@ -127,22 +127,22 @@
 - 正式只读验收：`/api/jobs` 漏斗结构与空分母正确、`/api/jobs/capabilities` 为空、`/api/status` 200；1440px 与 390px 页面均无横向溢出、控制台 0 错误；未写入任何正式业务数据。
 - 回滚提示：正式库已含新 kind，回退 v100 代码前须先恢复旧 17-kind 约束（旧定义见备份目录 `kind-before.txt`），否则服务拒绝启动。
 - 集成测试（服务器一次性 `regression` 库 + 临时 QA 角色，跑完即删）：`tests/test_jobs.py` **32 passed**。期间发现“有投递但 0 进面”的断言误写成 null，实际应为 0%；已修正测试并单独提交（仅测试，不影响运行时）。
-- 真实 JD 初核（2026-11-03）：选取 10 家不同公司的公开在招 JD（原文 URL 可回查），已导入测试环境 8771 走完整流程；规则提取 **10/10 引用精确匹配（0 条伪造引用）**，初核 **10/10 合理**；明细见下表。最终人工确认仍以 WorkBuddy 为准。
-- 初核发现 2 处规则缺陷并已修复：“学历及经验”标题被误判为学历硬条件；“至少 N 年 / N 年左右经验”漏提取。修复后重跑同 10 份 JD，硬条件全部正确；preview `native-20261103-112929-e4141b0`、production `native-20261103-113054-e4141b0` 已部署，正式备份 `/var/backups/shilie/deploy-20261103-113104`。
+- 真实 JD 初核（2026-11-03，按 WorkBuddy 目标改为 **AI 应用 / Agent 开发**）：10 家不同公司的公开在招 AI/Agent JD，已导入测试环境 8771 走完整流程；规则提取 **10/10 引用精确匹配（0 条伪造引用）**，初核 **10/10 合理**；明细见下表。最终人工确认仍以 WorkBuddy 为准。
+- 初核发现并修复 3 处规则缺陷：“学历及经验”标题误判、“至少 N 年 / N 年左右经验”漏提取、`ReAct` 被误判为前端 `React`；同时补齐 Django/Flask/K8s/LLM/Prompt Engineering/Function Calling/ReAct/LlamaIndex 等词表。preview `native-20261103-114800-4cc2225`、production `native-20261103-115042-4cc2225` 已部署，正式备份 `/var/backups/shilie/deploy-20261103-115052`。
 
-### 10 个真实 JD 核对表（2026-11-03，执行方初核）
+### 10 个真实 AI 应用 / Agent 开发 JD 核对表（2026-11-03，执行方初核）
 
 | # | 公司 | 岗位 | JD 来源 | 规则提取的条件（括号为要求强度） | 初核结论 | 备注 |
 |---|------|------|---------|----------------------------------|----------|------|
-| 1 | 深圳河套学院（教育人工智能创新中心） | 后端工程师 | [原文](https://www.slai.edu.cn/recruitment/388) | Agent、RAG、Python、Java、LangChain、Docker、Linux、PostgreSQL、MySQL；硬条件：硕士及以上 | 合理 | 引用全部命中；K8s/PyTorch/LLM 词表未覆盖 |
-| 2 | 上海泽润通远科技有限公司 | Python开发工程师 | [原文](https://www.liepin.com/a/80025065.shtml) | Python、FastAPI、PostgreSQL、MySQL、Redis(加分)、Linux(加分)、Git(加分)；硬条件：无 | 合理 | 同句 Django/Flask 未覆盖 |
-| 3 | 北京特拉库塔科技有限公司 | 高级后端开发工程师 | [原文](https://m.yupao.com/zhaogong/353133152.html) | Python、FastAPI(要求)、Linux、Docker(要求)；硬条件：无 | 合理 | Flask/Celery/K8s 未覆盖 |
-| 4 | 杭州吉遇品牌管理有限公司 | Python后端开发工程师（校招培养岗） | [原文](https://career.hznu.edu.cn/job/view/id/1030706) | FastAPI、MySQL、Redis、Linux、Git、Python；硬条件：本科及以上 | 合理 | Django 未覆盖 |
-| 5 | 杭州析数科技有限公司 | Python 开发工程师(Web后端/全栈) | [原文](https://msearch.51job.com/jobs/hangzhou-bjq/174009131.html) | Python、FastAPI、CI/CD、Docker、Linux、Git、JavaScript、RAG、Agent、LangGraph、LangChain、MCP；硬条件：本科+3 年左右经验 | 合理 | Django/Flask、React/Vue 未覆盖 |
-| 6 | 广东省东昇智汇科技有限公司 | python后端开发工程师 | [原文](https://m.zhaopin.com/jobs/CCL1295835710J40802495211.htm) | Python(要求)、FastAPI(要求)、CI/CD、PostgreSQL、MySQL、Linux、Docker、Git、TypeScript、Agent、RAG；硬条件：本科+3 年以上 | 合理 | Django/Flask、K8s 未覆盖 |
-| 7 | 上海万申信息产业股份有限公司 | python后端开发工程师 | [原文](https://m.yupao.com/zhaogong/339630680.html) | Python、FastAPI(要求)、Redis、Linux、Docker(要求)、Agent；硬条件：本科+2 年经验 | 合理 | 修复后“学历及经验”标题不再误判，2 年经验已提取 |
-| 8 | 青岛东浪国际商务有限公司 | AI 集成工程师（RAG/知识库） | [原文](https://www.liepin.com/job/1984967939.shtml) | RAG、pgvector、Python(要求)、TypeScript(要求)、PostgreSQL、LangChain；硬条件：3 年以上 | 合理 | Qdrant/Milvus/LLM 未覆盖 |
-| 9 | 涌现工场（天津）智能科技有限责任公司 | AI 应用工程师/RAG 工程师 | [原文](https://job.tiangong.edu.cn/correcruit/content/id/54911.html) | RAG、Agent、LangChain、MCP、Python、Java、pgvector、PostgreSQL；硬条件：本科+1 年以上 | 合理 | Dify/LlamaIndex/Spring Boot 未覆盖 |
-| 10 | 平安科技（南京分公司） | 资深开发工程师-Python | [原文](https://talent.pingan.com/recruit/position.html?positionId=E375E4CF67B64D179795E1654E867130) | Python、FastAPI、PostgreSQL、MySQL、Redis、Linux、Git、Docker(加分)；硬条件：本科+3 年以上 | 合理 | Django/Flask/SQLAlchemy/Kafka/K8s 未覆盖 |
+| 1 | 厦门德捷信息科技有限公司 | AI Agent 工程师（LLM应用 / Agent系统） | [原文](https://m.zhaopin.com/jobs/CC263302730J40756947606.htm) | Agent、LLM、RAG、Prompt Engineering、Python(要求)、Java(要求)、LangChain(加分)；硬条件：本科+3 年 | 合理 | Java 为“任一后端语言”，不是唯一要求 |
+| 2 | 上海人工智能实验室 | Agent 开发工程师 | [原文](https://www.shlab.org.cn/joinus/detail/7686149294239467814?location=CT_125&mode=social) | Agent、Function Calling、LLM、RAG(要求)、Docker(要求)、Linux(要求)、Python、ReAct、LangChain(加分)、PyTorch(加分)、LlamaIndex(加分)、vLLM(加分)；硬条件：本科（硕士优先） | 合理 | ReAct 已不再误判为 React |
+| 3 | 江苏开拓信息与系统有限公司 | AI Agent开发工程师 / 资深AI全栈工程师 | [原文](https://m.zhaopin.com/jobs/CC246890110J40875528210.htm) | Agent、MCP、LLM、RAG、Prompt Engineering、Context Engineering、Function Calling、Python(要求)、Java(要求)、Docker(要求)、CI/CD(要求)、Kubernetes(要求)、LangGraph、LangChain、Dify、LlamaIndex、pgvector(要求)、FAISS(要求)；硬条件：本科+3 年 | 合理 | AutoGen/A2A 尚未单独成词 |
+| 4 | 润建股份 | 大模型应用开发工程师 | [原文](https://m.zhaopin.com/jobs/CC202740210J40966029404.htm) | Agent、RAG、Neo4j、LLM、LangChain、LlamaIndex、FastAPI(要求)、Flask(要求)、React(要求)、Vue(要求)、ReAct(要求)、Dify(要求)；硬条件：本科+2 年 | 合理 | React/Vue/Dify 位于加分项，句级规则标为要求（已知边界） |
+| 5 | 智算星空（无锡）科技有限公司 | 智能体开发工程师 | [原文](https://m.zhaopin.com/jobs/CCL1518338570J40970282102.htm) | Agent、RAG、Function Calling、LLM、LangGraph、MCP、Python(要求)、Java(要求)、TypeScript(要求)、Prompt Engineering、LangChain、Dify、LlamaIndex；硬条件：本科+3 年+1 年 Agent | 合理 | 覆盖 Agent 框架与工具调用 |
+| 6 | 山东晨歌电子技术有限公司 | 大模型应用开发工程师（Agent 智能体方向） | [原文](https://m.zhaopin.com/jobs/CC269199330J40950082615.htm) | Agent、LLM、ReAct(要求)、RAG、Function Calling、Python(要求)、MySQL、Git、FAISS(要求)、LangChain、LlamaIndex、Docker(要求)；硬条件：硕士+2 年+1 套上线 Agent | 合理 | Docker 位于加分项，句级规则标为要求（已知边界） |
+| 7 | 上海灵境起源科技有限公司 | AI智能体研发工程师 | [原文](https://msearch.51job.com/jobs/shanghai/174019258.html) | Agent、RAG、MCP、LLM、Python(要求)、FastAPI(要求)、LangGraph、Prompt Engineering(要求)、Function Calling(要求)、Playwright(要求)、pgvector(要求)、vLLM(要求)；硬条件：本科+3 年+1 年 Agent | 合理 | 覆盖 MCP/浏览器自动化/本地推理 |
+| 8 | 滴滴（Food Tech） | AI Agent 开发工程师 | [原文](https://talent.didiglobal.com/social/p/65072) | Agent、MCP、Function Calling、LangGraph、LangChain、LLM、Prompt Engineering、ReAct、Python(要求)、Java(要求)；硬条件：本科（大专可放宽） | 合理 | 覆盖 Function Calling/MCP |
+| 9 | 阿里云（ATH-AI创新事业部） | AI Agent 研发工程师（Coding / Harness 方向） | [原文](https://careers.aliyun.com/off-campus/position-detail?positionId=100004083014) | Agent、LLM、Python(要求)、TypeScript(要求)、Prompt Engineering、Context Engineering；硬条件：本科+2 年 | 合理 | Agent Loop / Harness / Subagent 未单独成词，归入 Agent |
+| 10 | 福建奇鹭物联网科技股份公司 | AI智能体应用工程师 | [原文](https://m.zhaopin.com/jobs/CC319716280J41001127104.htm) | Agent、LLM、Prompt Engineering、RAG、Function Calling、LangChain、ReAct、Python、FastAPI(要求)、Flask(要求)；硬条件：本科+1-3 年 | 合理 | 覆盖 To C Agent / RAG |
 
-验收口径：≥8 条初核“合理”；本次 **10/10 达线**；词表覆盖缺口（Django/Flask/K8s/LLM 等）列入后续迭代，不加结论凑数。10 条岗位已保留在测试环境（`#module/job-insights` 可选择复核），证据截图 `output/web/preview-v102/jd-insight.png`；正式库未写入。
+验收口径：≥8 条初核“合理”；本次 **10/10 达线**。此前的通用 Python 后端样本已在测试环境归档，避免与 AI 岗位混在一起；10 条 AI 岗位保留在 `#module/job-insights` 可复核，证据截图 `output/web/preview-v102/jd-insight.png`；正式库未写入。
