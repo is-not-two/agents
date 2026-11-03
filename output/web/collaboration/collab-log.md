@@ -177,4 +177,6 @@
 - **部署持久化修复**：部署脚本改为继承上一 release 的 `data/local`（此前只复制 skills/exports，简历正文会在每次部署后丢失），并把 `data/local` 整体加入 systemd `ReadWritePaths`；首次部署生成 `encryption.key`（0600），后续继承。
 - **配置**：`config/jobs.yaml` 增加 `ocr`；`config/settings.yaml` 增加 `encryption`（默认关闭）；`.env.example` 增加密钥变量。
 - **验证**：新增 `tests/test_field_crypto.py` 8 项、`tests/test_resume.py` 3 项 OCR 用例；`tests/test_encryption_store.py` 1 项隔离 PG 集成（待 QA 门禁）；本地 36 项相关测试通过，ruff 0，快速门禁 6/7 通过，静态版本统一 v105。
+- **测试环境部署**：`native-20261103-150405-2e625e6`（v105）已上线 8771，健康检查通过，数据 55 条记录 / 494 向量未变；venv 安装 OCR 依赖，实测 `OCR_AVAILABLE=True` 且识别出 `RESUME 2026 PYTHON`；字段加密实测落库为 `enc:v1:`、读取为明文，临时验收记录已清理；密钥指纹在两次部署间一致（继承成功）。清理 v103 之前 10 个 release，磁盘从 3.0G 恢复到 16.9G。正式 8770 仍为 v103，未推送。
+- **CI/CD**：新增 `.github/workflows/deploy-preview.yml`（workflow_dispatch，`confirm` 必须为 HEAD，需 secrets `SHILIE_SSH_KEY` / `SHILIE_KNOWN_HOSTS`）；正式环境保持人工确认。
 - **边界**：加密暂无密钥轮换与离线恢复演练；OCR 未做版面还原/表格结构化；未部署生产。

@@ -188,4 +188,4 @@ WORKSPACE_PASSWORD_HASH=scrypt$16384$8$1$<salt>$<hash>   # 由脚本生成
 | 错误文案 | 账号错与密码错同为「账号或密码不正确」（防枚举）；未配置回「账号登录未配置」 |
 | 令牌登录 | 仍可用（`POST /api/session {token}`），MCP/脚本不受影响 |
 
-**部署状态**：v103 已部署正式环境（8770，`native-20261103-124220-d131fc7`）与测试环境（8771，`native-20261103-124108-d131fc7`）；两库均为 18 种 kind（正式库 15 条记录 / 494 向量未变）。双环境 venv 已安装 `pypdf`、`python-docx`；`/var/lib/shilie/config/agent-tools.yaml` 已同步 Bing 搜索配置。
+**部署状态**：正式环境仍为 v103（8770，`native-20261103-124220-d131fc7`）；测试环境已升级到 v105（8771，`native-20261103-150405-2e625e6`）。两库均为 18 种 kind，正式 15 条记录 / 494 向量、测试 55 条记录 / 494 向量。测试环境 venv 已安装 `pypdf`、`python-docx`、`pypdfium2`、`rapidocr-onnxruntime`、`pillow`，OCR 引擎与 AES 字段加密实测可用；`data/local/encryption.key`（0600, shilie）在部署间继承。`/var/lib/shilie/config` 已下发 OCR 与加密配置（加密对旧代码无影响），正式环境部署 v105 时由部署脚本生成自己的密钥。为释放磁盘已清理 v103 之前的 10 个 release，仅保留正式/测试的当前版与回滚版（约 6.2G）。
