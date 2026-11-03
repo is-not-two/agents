@@ -8,7 +8,8 @@ from fastapi.testclient import TestClient
 
 from rag_tech_retriever.api.main import create_app
 from rag_tech_retriever.common.stage_journal import JournalError
-from rag_tech_retriever.platform.record_store import RecordStore
+from rag_tech_retriever.domains.snapshot import SNAPSHOT_VALIDATORS, validate_snapshot
+from rag_tech_retriever.platform.record_store import WORKSPACE_KINDS, RecordStore
 
 
 @pytest.fixture
@@ -152,6 +153,37 @@ def test_invalid_file_is_rejected_before_snapshot(backup_api, snapshot):
     )
     assert api.app.state.store.export() == before
     assert not api.app.state.journal.list()
+
+
+def test_snapshot_validators_cover_all_workspace_kinds() -> None:
+    """可恢复类型注册表与快照校验器不得漂移。"""
+    assert set(WORKSPACE_KINDS) <= set(SNAPSHOT_VALIDATORS)
+    assert not {"wish", "diary", "notification_outbox"} & set(SNAPSHOT_VALIDATORS)
+
+
+def test_bookmark_and_lesson_are_restorable_from_backup() -> None:
+    """收藏与谨记曾在导出中可写、恢复时被拒；回归覆盖这两类。"""
+    snapshot = {
+        "format_version": 1,
+        "records": [
+            {"kind": "bookmark", "id": "b-1",
+             "data": {"title": "收藏条目", "url": "https://example.com/doc"}},
+            {"kind": "lesson", "id": "l-1",
+             "data": {"title": "错误简述", "category": "操作",
+                      "content": "经过与原因", "remedy": "对策"}},
+        ],
+    }
+    cleaned = validate_snapshot(snapshot)
+    assert [row["kind"] for row in cleaned["records"]] == ["bookmark", "lesson"]
+    assert cleaned["records"][0]["data"]["category"] == "未分类"
+    assert cleaned["records"][0]["data"]["url"] == "https://example.com/doc"
+
+
+def test_snapshot_rejects_unknown_kind() -> None:
+    """未注册类型仍必须整包拒绝，避免恢复绕过内容校验。"""
+    with pytest.raises(Exception, match="备份记录类型错误"):
+        validate_snapshot({"format_version": 1,
+                           "records": [{"kind": "unknown_kind", "id": "x", "data": {}}]})
 
 
 def test_protection_failure_prevents_write_and_secret_stays_private(backup_api, monkeypatch):

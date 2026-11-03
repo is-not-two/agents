@@ -4,12 +4,24 @@ import hashlib
 import json
 
 from rag_tech_retriever.domains.automation import VALIDATORS
+from rag_tech_retriever.domains.bookmarks import validate_bookmark
 from rag_tech_retriever.domains.jobs import VALIDATORS as JOB_VALIDATORS
 from rag_tech_retriever.domains.jobs import validate_references
 from rag_tech_retriever.domains.knowledge import validate_knowledge
 from rag_tech_retriever.domains.learning import VALIDATORS as LEARNING_VALIDATORS
 from rag_tech_retriever.domains.learning import validate_references as validate_learning_references
+from rag_tech_retriever.domains.lessons import validate_lesson
 from rag_tech_retriever.domains.life_planning import DomainError, validate_plan
+
+SNAPSHOT_VALIDATORS = {
+    "knowledge": validate_knowledge,
+    "bookmark": validate_bookmark,
+    "lesson": validate_lesson,
+    "plan": validate_plan,
+    **VALIDATORS,
+    **JOB_VALIDATORS,
+    **LEARNING_VALIDATORS,
+}
 
 
 def validate_snapshot(snapshot: dict) -> dict:
@@ -24,8 +36,8 @@ def validate_snapshot(snapshot: dict) -> dict:
         raise DomainError("备份缺少 records 列表")
     records = []
     ids = set()
+    validators = SNAPSHOT_VALIDATORS
     for row in snapshot["records"]:
-        validators = {"knowledge": validate_knowledge, "plan": validate_plan, **VALIDATORS, **JOB_VALIDATORS, **LEARNING_VALIDATORS}
         if (
             not isinstance(row, dict)
             or not isinstance(row.get("kind"), str)
