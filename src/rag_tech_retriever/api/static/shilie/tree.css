@@ -10,7 +10,7 @@
 body {
   background:
     linear-gradient(110deg, #e8f0f2f5, #e8f0f2e8),
-    url("./assets/landscape-1600.webp") center/cover fixed;
+    url("./planning-mist.webp") center/cover fixed;
   min-height: 100vh;
 }
 .topbar {
@@ -127,7 +127,7 @@ select:focus-visible {
   border-radius: 14px 14px 0 0;
   background:
     linear-gradient(90deg, #163347f5 0%, #163347cb 45%, #16334726 100%),
-    url("./assets/landscape-1600.webp") center 48% / cover;
+    url("./planning-mist.webp") center 48% / cover;
   color: white;
   min-height: 150px;
 }

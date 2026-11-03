@@ -50,7 +50,9 @@ def main() -> int:
                     # 但有端点/模型变化未同步快照时阻断发布。
                     [sys.executable, "scripts/openapi_contract.py"],
                     # 前端调用的 /api 路径必须在 OpenAPI 中存在，防止页面指向已删除/改名的端点。
-                    [sys.executable, "scripts/frontend_api_contract.py"]]
+                    [sys.executable, "scripts/frontend_api_contract.py"],
+                    # 页面/CSS 引用的本地静态文件必须存在，防止改名后 404 背景图与脚本。
+                    [sys.executable, "scripts/check_static_assets.py"]]
         commands += [["node", "--check", str(p)] for p in sorted(
             (root / "src/rag_tech_retriever/api/static/shilie").glob("*.js"))]
         commands += [["node", "--check", "scripts/verify-ui.mjs"]]

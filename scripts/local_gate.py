@@ -314,6 +314,9 @@ def main() -> int:
     # 前端引用的 /api 路径必须存在：页面指向已删端点时阻断。
     gate.run("前端接口契约一致",
              [str(VENV_PY), "scripts/frontend_api_contract.py"], blocking=True)
+    # 页面与 CSS 引用的本地静态文件必须存在：改名漏改引用会 404。
+    gate.run("静态资源引用完整",
+             [str(VENV_PY), "scripts/check_static_assets.py"], blocking=True)
 
     # kind 一致性：连不上库时降级为跳过（CI 无库是正常的）
     gate.run("依赖完整性", [str(VENV_PY), "-m", "pip", "check"], blocking=False)
