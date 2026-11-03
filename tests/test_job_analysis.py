@@ -53,6 +53,15 @@ def test_ten_synthetic_jds_keep_exact_citations_and_no_qualification_claim(jd):
     )
 
 
+def test_hard_condition_headers_are_not_requirements_and_at_least_years_are_detected():
+    profile = validate_profile({"title": "验收用空资料"})
+    header = rules_analysis("学历及经验\n技术要求\n1. 掌握 Python。", profile, taxonomy())
+    assert [row["category"] for row in header["hard_conditions"]] == []
+    years = rules_analysis("学历及经验\n2. 具备至少2年Python开发实战经验。", profile, taxonomy())
+    assert [row["category"] for row in years["hard_conditions"]].count("experience") == 1
+    assert "至少2年Python开发实战经验" in years["hard_conditions"][0]["quote"]
+
+
 def test_word_boundaries_negation_and_evidence_not_keyword_absence():
     profile = validate_profile(
         {

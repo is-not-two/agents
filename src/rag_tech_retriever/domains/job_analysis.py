@@ -8,8 +8,10 @@ from rag_tech_retriever.domains.life_planning import DomainError, text
 
 FACT_CATEGORIES = {"education", "experience", "availability", "language", "other"}
 HARD_PATTERNS = {
-    "education": r"学历|本科|硕士|博士|大专|学士|bachelor|master|phd",
-    "experience": r"(?<!\d)\d{1,2}\+?\s*(?:年(?:以上|及以上|工作|开发|经验)|years?)|工作经验|实习经验|工作年限",
+    # “学历及经验”这类小标题不是要求本身，不能只凭“学历”二字生成硬条件。
+    "education": r"学历要求|本科|硕士|博士|大专|学士|bachelor|master|phd",
+    # “至少2年Python开发经验”中“年”与“经验”之间有其他词，需向前看确认语义。
+    "experience": r"(?<!\d)\d{1,2}\+?\s*年(?:以上|及以上|左右)?(?=[^\n。；]{0,30}(?:经验|工作|开发))|years?|工作经验|实习经验|工作年限",
     "availability": r"到岗|每周|实习.{0,6}(?:月|天)|全职|出勤|onsite|on-site",
     "language": r"英语|四六级|CET[- ]?[46]|TOEFL|IELTS|English",
 }
