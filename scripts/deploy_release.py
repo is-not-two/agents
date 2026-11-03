@@ -49,7 +49,7 @@ TARGETS: dict[str, dict] = {
     },
     "preview": {
         "app": f"{REMOTE_ROOT}/preview", "port": 8771, "service": "shilie-preview",
-        "scheme": "http", "dropin": "/etc/systemd/system/shilie-preview.service.d",
+        "scheme": "https", "dropin": "/etc/systemd/system/shilie-preview.service.d",
         "db": "shilie_preview_20261103", "backup": False, "label": "测试环境",
     },
 }
