@@ -504,7 +504,7 @@ fi
 mkdir -p {DROPIN_DIR}
 cat > {DROPIN_DIR}/runtime-writable.conf <<EOF
 [Service]
-ReadWritePaths={prev_release}/output/stages {prev_release}/data/local/skills {prev_release}/data/local/skill-imports {prev_release}/data/local/exports /var/lib/shilie
+ReadWritePaths={prev_release}/output/stages {prev_release}/data/local {prev_release}/data/local/skills {prev_release}/data/local/skill-imports {prev_release}/data/local/exports /var/lib/shilie
 EOF
 systemctl daemon-reload
 systemctl restart {SERVICE}
