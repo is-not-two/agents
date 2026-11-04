@@ -150,6 +150,11 @@ def remote_version() -> str | None:
     return found[0] if (code == 0 and found) else None
 
 
+def preview_runtime_isolated(unit_user: str, unit_exec: str) -> bool:
+    """preview unit 是否已切到隔离运行时：身份不再是 shilie，或执行路径在独立根。"""
+    return unit_user not in ("", "shilie") or "/var/lib/shilie-preview/app" in unit_exec
+
+
 def preflight() -> dict:
     """预检：连接、空间、备份能力、kind 一致性、当前发布状态。"""
     step("预检")
@@ -164,6 +169,8 @@ set -e
 echo "PROBE_START"
 readlink -f {REMOTE_APP}
 systemctl is-active {SERVICE} || true
+echo "UNIT_USER=$(systemctl show {SERVICE} --property=User --value)"
+echo "UNIT_EXEC=$(systemctl show {SERVICE} --property=ExecStart --value | head -c 220)"
 df -P / | awk 'NR==2 {{print "DISK_FREE_KB=" $4}}'
 sudo -u postgres psql -d {DB} -tAc "select count(*) from workspace_records" | sed 's/^/RECORDS=/'
 sudo -u postgres psql -d {DB} -tAc "select count(*) from rag_chunks" | sed 's/^/VECTORS=/'
@@ -193,6 +200,21 @@ echo "PROBE_END"
             info["db_kinds"] = set(re.findall(r"'([a-z_]+)'::text", line))
         elif line.startswith("RELEASE="):
             info.setdefault("releases", []).append(line.split("=", 1)[1].strip())
+        elif line.startswith("UNIT_USER="):
+            info["unit_user"] = line.split("=", 1)[1].strip()
+        elif line.startswith("UNIT_EXEC="):
+            info["unit_exec"] = line.split("=", 1)[1].strip()
+
+    # preview 已在 2026-11-04 切到隔离运行时（shilie_pvapp + /var/lib/shilie-preview/app + 55433）。
+    # 旧部署流程会以共享身份覆盖 /opt/shilie/preview 并重启，直接破坏隔离，必须拒绝。
+    if SERVICE == "shilie-preview" and preview_runtime_isolated(
+        info.get("unit_user", ""), info.get("unit_exec", "")
+    ):
+        raise DeployError(
+            "preview 已切换到隔离运行时（User=" + info.get("unit_user", "?") + "），"
+            "本脚本会以共享身份覆盖 /opt/shilie/preview 并重启，破坏隔离；已中止。"
+            "请使用隔离部署流程，或在明确撤销隔离后人工处理。"
+        )
 
     # 代码与数据库 kind 必须一致，否则切换后必然拒绝启动
     sys.path.insert(0, str(PROJECT / "src"))
