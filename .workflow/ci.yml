@@ -36,5 +36,5 @@ stages:
             cd ~/gitee_go/deploy
             python3 -m venv .ci-venv
             .ci-venv/bin/python -m pip install -q --upgrade pip
-            .ci-venv/bin/python -m pip install -q -e '.[dev]'
+            .ci-venv/bin/python -m pip install -q -e '.[web,dev]'
             .ci-venv/bin/python scripts/ci_gate.py
