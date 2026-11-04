@@ -17,11 +17,11 @@
 | 正式 | `https://8.156.81.128:8770/` | `shilie.service` | v103（未切换） |
 | 测试 | `https://8.156.81.128:8771/` | `shilie-preview.service` | v108（独立运行时，2026-11-04 隔离） |
 
-**测试环境（8771）已与正式完全隔离**：OS 用户 `shilie_pvapp`（UID 992）、应用根 `/var/lib/shilie-preview/app`、独立 PG 16 集群（`shilie_pvdb`、仅 `127.0.0.1:55433`）与库 `shilie_preview_20261104`；旧库 `shilie_preview_20261103` 保留但不再对外服务。正式仍为 `shilie`（UID 995）+ 系统集群 5432 + `/var/lib/shilie`。两环境各自独立数据库、凭据与文件根，仅共用只读模型缓存；数据库端口不对公网开放，ufw 仅放行本人 IP（云安全组需另行放行 8770/8771）。
+**测试环境（8771）已与正式完全隔离**：OS 用户 `shilie_pvapp`（UID 992）、应用根 `/var/lib/shilie-preview/app`、独立 PG 16 集群（`shilie_pvdb`、仅 `127.0.0.1:55433`）与库 `shilie_preview_20261104`；旧库 `shilie_preview_20261103` 保留但不再对外服务。正式仍为 `shilie`（UID 995）+ 系统集群 5432 + `/var/lib/shilie`。两环境各自独立数据库、凭据、文件根与模型缓存副本；数据库端口不对公网开放，ufw 仅放行本人 IP（云安全组需另行放行 8770/8771）。
 
 **登录方式**：正式用 `/etc/shilie/workspace.env` 的账号哈希；测试用 `/etc/shilie-preview/workspace.env`（账号 `luojiee`），密码在服务器 root 终端执行 `shilie-preview-set-password` 交互设置（密码不回显、不进日志）。均支持「记住此账号 30 天」，访问令牌登录保留为备用通道。
 
-**部署流程**：`deploy_release.py --target production` 仍是人工确认 + 自动回滚，但正式库当前缺少 `bookmark` kind，**晋升前必须先做 schema 迁移**；`--target preview` 检测到 8771 已隔离时会**主动拒绝**（避免旧流程覆盖隔离环境），测试环境改用隔离部署流程（人工，脚本待补）。`.github/workflows/` 仅作为镜像仓库备用，Gitee 侧暂不接云端流水线。
+**部署流程**：正式走 `deploy_release.py --target production`（人工确认 + 自动回滚），但正式库当前缺少 `bookmark` kind，**晋升前必须先做 schema 迁移**；测试走 `scripts/deploy_preview_isolated.py`（默认 dry-run，`--apply --confirm HEAD` 才执行；staging 构建 + 整目录换位 + 失败换回，只操作 `/var/lib/shilie-preview`）。旧流程 `--target preview` 检测到 8771 已隔离时会**主动拒绝**。`.github/workflows/` 仅作为镜像仓库备用，Gitee 侧暂不接云端流水线。
 
 **质量门禁**：`scripts/ci_gate.py`（pre-push 自动运行，约 15s：ruff / 静态版本 / OpenAPI / 前端契约 / 静态资源 / 纯逻辑 pytest，不依赖数据库）；完整门禁 `scripts/release_gate.py --checks full --backend native`。真实拓扑与全部踩坑见 [docs/DEPLOYMENT_REALITY.md](docs/DEPLOYMENT_REALITY.md)。
 

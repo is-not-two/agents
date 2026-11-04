@@ -22,17 +22,17 @@
 |---|---|---|
 | 服务 | `shilie.service` | `shilie-preview.service` |
 | 端口 | **8770 HTTPS** | **8771 HTTPS**（同证书；HTTP 已拒绝） |
-| 代码软链 | `/opt/shilie/current` | `/opt/shilie/preview` |
-| 代码目录 | `releases/native-<stamp>-<sha>` | `releases/native-<stamp>-<sha>`（独立） |
-| drop-in | `shilie.service.d/runtime-writable.conf` | `shilie-preview.service.d/runtime-writable.conf` |
-| 数据库 | `shilie_native_20261027` | `shilie_preview_20261103`（独立测试副本，写操作不影响正式） |
+| 代码软链 | `/opt/shilie/current` | `/var/lib/shilie-preview/app`（普通目录，整目录换位，无 releases） |
+| 代码目录 | `releases/native-<stamp>-<sha>` | `/var/lib/shilie-preview/app`（上一版在 `previous/`） |
+| drop-in | `shilie.service.d/runtime-writable.conf` | 旧 3 个 drop-in + `zzzz-preview-isolation.conf`（最后加载，复位身份/环境/写路径） |
+| 数据库 | `shilie_native_20261027`（127.0.0.1:5432） | `shilie_preview_20261104`（独立集群 `shilie-preview-postgres.service`，127.0.0.1:55433） |
 | 防火墙 | ufw: 8770 ← 125.70.13.156 | ufw: 8771 ← 125.70.13.156 + 云安全组 |
 | 备份 | 每次部署前 pg_dump | 不自动备份（独立副本，可重建；需要时手动 dump） |
 
-- 两环境**各自独立数据库**（2026-11-03 起）；测试库为正式库的一次性副本，之后独立演进，可随时重建。共用模型缓存与 `data/local` 私密配置。
-- preview 独有 drop-in `database.conf` 通过 `EnvironmentFile=-/etc/shilie/preview-db.env`（仅一行 `POSTGRES_DB=shilie_preview_20261103`）指定测试库；`Environment=` 会被 `workspace.env` 覆盖，不要用前者。
-- 部署命令统一走 `deploy_release.py --target production|preview`，各自写自己的 drop-in（曾有硬编码污染生产的 bug，已修）。
-- 工作流：改代码 → `--target preview --apply --confirm HEAD` → 浏览器验证 → 确认后 `--target production --apply --confirm HEAD`。
+- 两环境**各自独立数据库与运行时**（2026-11-04 起）：身份、根目录、PG 集群、库、Web 令牌、DB 密码、字段加密密钥、TLS 证书均分开；不再共用 `data/local` 私密配置与模型缓存。
+- preview 旧 drop-in（auth/database/runtime-writable）保留，但 `zzzz-preview-isolation.conf` 最后加载并用空赋值复位 `EnvironmentFile/Environment/ExecStart/ReadWritePaths`，实际生效的只有隔离配置；旧文件不要单独修改。
+- 部署命令：正式走 `deploy_release.py --target production`；测试走 `deploy_preview_isolated.py`（旧流程检测到隔离运行时会主动拒绝）。
+- 工作流：改代码 → `deploy_preview_isolated.py --apply --confirm HEAD` → 浏览器/接口验证 → 确认后 `deploy_release.py --target production --apply --confirm HEAD`。
 
 ### 关键纠正：历史上所有 `current` 切换都未真正生效
 

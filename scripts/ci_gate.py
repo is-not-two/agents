@@ -31,6 +31,7 @@ PURE_LOGIC_TESTS = [
     "tests/test_native_gate_policy.py",
     "tests/test_config_merge.py",
     "tests/test_deploy_guard.py",
+    "tests/test_deploy_preview_isolated.py",
 ]
 
 

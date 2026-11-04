@@ -1308,3 +1308,11 @@ Edge 四场景全部通过：首页顶栏 `rgb(0,0,0)`；树布局折叠往返 `
 - 用户后续明确环境工作流：8771 为日常修改、迁移和验收的测试环境；8770 为正式环境，仅在所有功能完善、回归通过并取得用户明确的正式晋级同意后推送。确认端口不是授予新的 root 操作权限；正式环境不参与测试写入、不因测试部署而重启、切换或清理历史。
 
 - 用户针对现有私密数据明确选择：保留 8771 旧私密数据可读，继续使用相同私密口令；仅从现有测试目录复制校验元数据到独立测试目录，不把它称作独立口令。测试数据库、系统账号、登录令牌及文件权限仍需独立；这项选择保留了同口令风险，原测试库与原文件不删除。
+
+### 隔离部署流程（2026-11-04，已实测）
+
+- 旧 `deploy_release.py --target preview` 与隔离运行时冲突（写 `/opt/shilie/preview`、以 `shilie` 覆盖代码），已在预检阶段拒绝；新增 `scripts/deploy_preview_isolated.py` 作为唯一路径。
+- 采用**整目录换位**而非软链：隔离 unit 的 `WorkingDirectory`/`ExecStart`/`ReadWritePaths` 都指向稳定路径 `/var/lib/shilie-preview/app`，换目录后无需改任何 drop-in。staging 里完成解包、`.venv` 硬链接克隆（1.7G 不复制）、`data/local`/`credentials`/`output` 继承、配置深合并、`site-packages` 替换与服务身份 import 自检；随后停服、旧 app 移到 `previous/`、staging 改名为 `app`、启动。
+- 验证覆盖：健康、静态版本号、`workspace_records`/`workspace_versions`/`rag_chunks` 计数不变、未鉴权 `/api/knowledge` 401、`account_login=true`、unit 身份仍为 `shilie_pvapp`、正式 8770 PID 与正式库计数不变。失败自动换回旧目录；数据库不在部署脚本内变更。
+- 实测 `native-20261104-141033-82fe657`：8771 v108 健康，63/122/819 不变；8770 PID 225177、正式库 15/24/494 不变；旧目录 `previous/app-native-20261104-141033-82fe657` 保留，staging 清空。证据 `output/deployment/preview-isolated/verify-20261104.txt`。
+- 首跑失败点：staging 根目录 700 导致服务身份无法执行 `.venv/bin/python`，构建期自检 `Permission denied`；改为 711 后通过（服务身份只需穿行，不需要列目录）。这意味着部署自检必须用真实服务身份执行，root 跑 import 不能替代。
