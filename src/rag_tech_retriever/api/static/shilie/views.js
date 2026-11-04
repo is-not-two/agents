@@ -1,35 +1,35 @@
-import { collaborationView } from "./collaboration.js?v=111";
-import { corpusSelect } from "./public-corpus.js?v=111";
-import { agentStudioView } from "./agent-studio.js?v=111";
-import { backupView } from "./backup.js?v=111";
-import { privateView } from "./private-view.js?v=111";
-import { modelConnectionView } from "./model-connection.js?v=111";
-import { treeView, treeDialog } from "./tree.js?v=111";
+import { collaborationView } from "./collaboration.js?v=112";
+import { corpusSelect } from "./public-corpus.js?v=112";
+import { agentStudioView } from "./agent-studio.js?v=112";
+import { backupView } from "./backup.js?v=112";
+import { privateView } from "./private-view.js?v=112";
+import { modelConnectionView } from "./model-connection.js?v=112";
+import { treeView, treeDialog } from "./tree.js?v=112";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=111";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=111";
-import { jobsView, jobsDialog } from "./jobs.js?v=111";
+} from "./automation-views.js?v=112";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=112";
+import { jobsView, jobsDialog } from "./jobs.js?v=112";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=111";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=111";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=111";
-import { serverStatusView } from "./server-status.js?v=111";
-import { evaluationView } from "./evaluation.js?v=111";
-import { directorActive } from "./director.js?v=111";
-import { icon, orbitIcon } from "./icons.js?v=111";
+} from "./company-capabilities.js?v=112";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=112";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=112";
+import { serverStatusView } from "./server-status.js?v=112";
+import { evaluationView } from "./evaluation.js?v=112";
+import { directorActive } from "./director.js?v=112";
+import { icon, orbitIcon } from "./icons.js?v=112";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=111";
+} from "./data.js?v=112";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -498,6 +498,38 @@ export function render() {
   if (id === "appearance") return appearance();
   return simple(id);
 }
+const TRASH_LABELS = {
+  knowledge: "知识",
+  bookmark: "收藏",
+  plan: "规划",
+  lesson: "谨记",
+  learning_card: "复习卡",
+  job_lead: "岗位",
+  application: "投递",
+  interview_report: "面试复盘",
+  resume_version: "简历版本",
+  company_capability: "公司能力",
+};
+function trashPanel() {
+  if (state.trashLoading)
+    return `<div class="trash-panel"><p class="trash-note">正在读取回收站…</p></div>`;
+  if (state.trashError)
+    return `<div class="trash-panel"><p class="trash-note error-text">${esc(state.trashError)}</p><button class="small-button trash-refresh" data-action="trash-refresh">重试</button></div>`;
+  const items = (state.trashData && state.trashData.items) || [];
+  if (!items.length)
+    return `<div class="trash-panel"><p class="trash-note">回收站为空。</p></div>`;
+  const shown = items.slice(0, 30);
+  return `<div class="trash-panel">${shown
+    .map(
+      (row) =>
+        `<div class="trash-row"><div class="trash-main"><span class="trash-kind">${esc(TRASH_LABELS[row.kind] || row.kind)}</span><strong>${esc(row.title)}</strong>${row.subtitle ? `<small>${esc(row.subtitle)}</small>` : ""}</div><button class="small-button" data-action="trash-restore" data-id="${esc(row.id)}" data-kind="${esc(row.kind)}" data-version="${row.version}">恢复</button></div>`,
+    )
+    .join("")}${items.length > shown.length ? `<p class="trash-note">只显示最近 ${shown.length} 条，完整列表请到各模块查看。</p>` : ""}<button class="small-button trash-refresh" data-action="trash-refresh">刷新</button></div>`;
+}
+function trashSection() {
+  const total = (state.trashData && state.trashData.total) || 0;
+  return `<section class="sidebar-trash"><button class="nav-link trash-toggle" type="button" data-action="trash-toggle" aria-expanded="${state.trashOpen}">${icon("trash")}回收站${total ? `<span class="trash-badge">${total}</span>` : ""}</button>${state.trashOpen ? trashPanel() : ""}</section>`;
+}
 export function sidebar() {
   return `<a class="nav-link" href="#home">${icon("home")}工作区首页</a>${groups
     .map(
@@ -510,7 +542,7 @@ export function sidebar() {
           )
           .join("")}</section>`,
     )
-    .join("")}`;
+    .join("")}${trashSection()}`;
 }
 export function dialogs() {
   return (

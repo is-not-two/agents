@@ -1,5 +1,5 @@
 /* 自动化纯视图：配置、实际运行与人工确认各自呈现。 */
-import { state } from "./data.js?v=111";
+import { state } from "./data.js?v=112";
 export const esc = (x) =>
   String(x ?? "").replace(
     /[&<>"']/g,

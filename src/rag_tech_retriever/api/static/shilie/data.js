@@ -129,6 +129,11 @@ export const state = {
   knowledge: [],
   bookmarks: [],
   bookmarkFilter: read("bookmarkFilter", "全部"),
+  /* 侧栏回收站：展开状态只存在内存，数据由 /api/trash 一次汇总。 */
+  trashOpen: false,
+  trashLoading: false,
+  trashError: "",
+  trashData: null,
   plans: [],
   stages: [],
   stageTime: "",

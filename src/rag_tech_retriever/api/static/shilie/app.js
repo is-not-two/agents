@@ -1,25 +1,25 @@
-import { bindCollaboration } from "./collaboration.js?v=111";
-import { bindAgentStudio } from "./agent-studio.js?v=111";
-import { bindBackup } from "./backup.js?v=111";
+import { bindCollaboration } from "./collaboration.js?v=112";
+import { bindAgentStudio } from "./agent-studio.js?v=112";
+import { bindBackup } from "./backup.js?v=112";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=111";
-import { bindModelConnection } from "./model-connection.js?v=111";
-import { bindTree } from "./tree-actions.js?v=111";
-import { bindAutomation } from "./automation-actions.js?v=111";
-import { bindLessons } from "./lessons.js?v=111";
-import { bindJobs } from "./jobs.js?v=111";
-import { bindCapabilities } from "./company-capabilities.js?v=111";
-import { bindLearning } from "./learning.js?v=111";
-import { bindJobInsights } from "./job-insights.js?v=111";
-import { bindServerStatus } from "./server-status.js?v=111";
-import { bindEvaluation } from "./evaluation.js?v=111";
-import { startTour } from "./tour.js?v=111";
-import { toggleDirector, directorActive } from "./director.js?v=111";
-import { initMotion } from "./motion.js?v=111";
-import { initOrbit } from "./orbit.js?v=111";
+} from "./private-view.js?v=112";
+import { bindModelConnection } from "./model-connection.js?v=112";
+import { bindTree } from "./tree-actions.js?v=112";
+import { bindAutomation } from "./automation-actions.js?v=112";
+import { bindLessons } from "./lessons.js?v=112";
+import { bindJobs } from "./jobs.js?v=112";
+import { bindCapabilities } from "./company-capabilities.js?v=112";
+import { bindLearning } from "./learning.js?v=112";
+import { bindJobInsights } from "./job-insights.js?v=112";
+import { bindServerStatus } from "./server-status.js?v=112";
+import { bindEvaluation } from "./evaluation.js?v=112";
+import { startTour } from "./tour.js?v=112";
+import { toggleDirector, directorActive } from "./director.js?v=112";
+import { initMotion } from "./motion.js?v=112";
+import { initOrbit } from "./orbit.js?v=112";
 import {
   api,
   state,
@@ -30,13 +30,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=111";
+} from "./data.js?v=112";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=111";
+} from "./views.js?v=112";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -115,6 +115,9 @@ function updatePosition() {
     nav.append("›", group.title);
   }
 }
+function paintSidebar() {
+  $("#sidebar").innerHTML = sidebar();
+}
 function renderPage({ restore = false } = {}) {
   document.documentElement.dataset.layout = state.mode;
   document.documentElement.dataset.density =
@@ -162,7 +165,7 @@ function renderPage({ restore = false } = {}) {
       (target.startsWith("#module/") && location.hash.startsWith(target + "/"));
     a.setAttribute("aria-current", current ? "page" : "false");
   });
-  $("#sidebar").innerHTML = sidebar();
+  paintSidebar();
   document
     .querySelectorAll("button[data-mode]")
     .forEach((b) =>
@@ -670,6 +673,15 @@ function handleAction(button) {
     case "trash-notes":
       openTrash();
       break;
+    case "trash-toggle":
+      toggleTrash();
+      break;
+    case "trash-refresh":
+      loadTrash();
+      break;
+    case "trash-restore":
+      restoreSidebarTrash(id, Number(button.dataset.version || 0));
+      break;
     case "restore-trash":
       restoreTrash(id);
       break;
@@ -975,6 +987,47 @@ async function restoreTrash(id) {
     closeDialogs();
     await refreshKnowledge();
     toast("笔记已恢复，历史仍保留");
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+/* 侧栏回收站：一次汇总所有公开工作区类型的已删除记录。 */
+async function toggleTrash() {
+  state.trashOpen = !state.trashOpen;
+  if (state.trashOpen && !state.trashData && !state.trashLoading) {
+    await loadTrash();
+    return;
+  }
+  paintSidebar();
+}
+async function loadTrash() {
+  if (state.trashLoading) return;
+  state.trashLoading = true;
+  state.trashError = "";
+  paintSidebar();
+  try {
+    state.trashData = await api("trash");
+  } catch (error) {
+    state.trashError = error.message;
+  } finally {
+    state.trashLoading = false;
+    paintSidebar();
+  }
+}
+async function restoreSidebarTrash(id, version) {
+  const row = (state.trashData?.items || []).find((item) => item.id === id);
+  if (!row) return;
+  try {
+    const history = await api(`records/${id}/history`),
+      target = history.find((item) => !item.deleted);
+    if (!target) throw Error("没有可恢复的历史版本");
+    await api(`records/${id}/restore`, {
+      target_version: target.version,
+      current_version: version || row.version,
+    });
+    toast(`已恢复「${row.title}」`);
+    await refresh();
+    await loadTrash();
   } catch (error) {
     toast(error.message, true);
   }

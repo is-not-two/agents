@@ -1,5 +1,5 @@
 /* Experimental collaboration: no paid dispatch without server opt-in and confirmation. */
-import { api, escapeHtml as esc } from "./data.js?v=111";
+import { api, escapeHtml as esc } from "./data.js?v=112";
 const c = { loaded: false, loading: false, busy: false, agents: [], runs: [], selected: "", run: null, status: {}, configured: false, error: "", draft: { query: "", steps: [] } };
 let paint = () => {}, generation = 0;
 const owner = () => c.agents.find((a) => a.id === c.selected);

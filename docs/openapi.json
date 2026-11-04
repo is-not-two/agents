@@ -6618,6 +6618,27 @@
         "summary": "Status"
       }
     },
+    "/api/trash": {
+      "get": {
+        "description": "汇总公开工作区的回收站；一次返回计数与最近条目，避免前端逐模块请求。",
+        "operationId": "trash_overview_api_trash_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Trash Overview Api Trash Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Trash Overview"
+      }
+    },
     "/api/workflow-runs": {
       "get": {
         "operationId": "runs_api_workflow_runs_get",

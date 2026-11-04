@@ -19,6 +19,8 @@ export function icon(name) {
     link: '<path d="M8 12a4 4 0 0 1 0-6l2-2a4 4 0 0 1 6 6l-1 1M12 8a4 4 0 0 1 0 6l-2 2a4 4 0 0 1-6-6l1-1"/>',
     /* 锁：data.js 里 private 模块的 icon 就写着 "lock"，缺这一条会静默兜底成知识库书本。 */
     lock: '<rect x="4" y="9" width="12" height="9" rx="2"/><path d="M7 9V6a3 3 0 0 1 6 0v3"/>',
+    /* 回收站：侧栏入口与各模块的「回收站」按钮共用。 */
+    trash: '<path d="M3 6h14M7 6V4h6v2M5 6l1 11h8l1-11M8 9v5M12 9v5"/>',
   };
   return `<svg class="icon" viewBox="0 0 20 20" aria-hidden="true">${paths[name] || paths.knowledge}</svg>`;
 }
