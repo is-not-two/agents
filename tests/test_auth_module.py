@@ -37,7 +37,9 @@ def test_session_rejects_expired_and_tampered():
 
     fresh = issue_session(secret, 3600)
     payload, signature = fresh.rsplit(".", 1)
-    assert not verify_session(payload + "." + signature[:-1] + "0", secret)
+    # 不能固定改成 "0"：签名末位本来就可能就是 0，这样“篡改”其实没改动，测试会随机失败。
+    tampered_last = "0" if signature[-1] != "0" else "1"
+    assert not verify_session(payload + "." + signature[:-1] + tampered_last, secret)
     assert not verify_session("garbage", secret)
     assert not verify_session("", secret)
     assert not verify_session(fresh, "")
