@@ -1,0 +1,233 @@
+{
+  "generated_at": "2026-10-25T02:18:01",
+  "namespace": "python_docs",
+  "corpus_chunks": 257,
+  "top_k": 5,
+  "candidate_k": 20,
+  "fetch_k": 50,
+  "direct": {
+    "hits": 9,
+    "total": 10
+  },
+  "rerank": {
+    "hits": 10,
+    "total": 10
+  },
+  "per_source": {
+    "fastapi-background-tasks": {
+      "questions": 1,
+      "direct_hit": 0,
+      "rerank_hit": 1
+    },
+    "fastapi-path-params": {
+      "questions": 1,
+      "direct_hit": 1,
+      "rerank_hit": 1
+    },
+    "fastapi-query-params": {
+      "questions": 1,
+      "direct_hit": 1,
+      "rerank_hit": 1
+    },
+    "fastapi-middleware": {
+      "questions": 1,
+      "direct_hit": 1,
+      "rerank_hit": 1
+    },
+    "fastapi-request-files": {
+      "questions": 1,
+      "direct_hit": 1,
+      "rerank_hit": 1
+    },
+    "pgvector-README": {
+      "questions": 2,
+      "direct_hit": 2,
+      "rerank_hit": 2
+    },
+    "pydoc-pathlib": {
+      "questions": 2,
+      "direct_hit": 2,
+      "rerank_hit": 2
+    },
+    "pydoc-json": {
+      "questions": 1,
+      "direct_hit": 1,
+      "rerank_hit": 1
+    }
+  },
+  "chunk_size_stats": {
+    "tech_doc": {
+      "min": 37,
+      "median": 382,
+      "mean": 531,
+      "max": 1500
+    },
+    "python_docs": {
+      "min": 7,
+      "median": 330,
+      "mean": 470,
+      "max": 1500
+    }
+  },
+  "results": [
+    {
+      "qid": "PQ01",
+      "type": "事实查询",
+      "question": "FastAPI 里怎么定义在响应返回后继续执行的后台任务？用哪个类、哪个方法把任务加进去？",
+      "must_retrieve": [
+        "fastapi-background-tasks::002",
+        "fastapi-background-tasks::004"
+      ],
+      "direct_rank": 6,
+      "direct_hit": false,
+      "rerank_rank": 5,
+      "rerank_hit": true,
+      "pool_available": true,
+      "top1_direct": "fastapi-middleware::001",
+      "top1_rerank": "fastapi-background-tasks::001"
+    },
+    {
+      "qid": "PQ02",
+      "type": "类型约束",
+      "question": "FastAPI 路径参数想限制为预设的几个值（如 alexnet/resnet/lenet）应该用什么机制？拿到枚举成员后怎么取它的实际值？",
+      "must_retrieve": [
+        "fastapi-path-params::009",
+        "fastapi-path-params::015"
+      ],
+      "direct_rank": 3,
+      "direct_hit": true,
+      "rerank_rank": 2,
+      "rerank_hit": true,
+      "pool_available": true,
+      "top1_direct": "fastapi-query-params::005",
+      "top1_rerank": "fastapi-path-params::005"
+    },
+    {
+      "qid": "PQ03",
+      "type": "参数识别",
+      "question": "FastAPI 路径操作函数的参数，什么情况下被识别为查询参数而不是路径参数？同时声明多个路径参数和查询参数时，声明顺序重要吗？",
+      "must_retrieve": [
+        "fastapi-query-params::001",
+        "fastapi-query-params::005"
+      ],
+      "direct_rank": 1,
+      "direct_hit": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "pool_available": true,
+      "top1_direct": "fastapi-query-params::005",
+      "top1_rerank": "fastapi-query-params::005"
+    },
+    {
+      "qid": "PQ04",
+      "type": "执行顺序",
+      "question": "FastAPI 用 @app.middleware() 添加多个中间件时，它们的执行顺序是怎样的？",
+      "must_retrieve": [
+        "fastapi-middleware::004"
+      ],
+      "direct_rank": 1,
+      "direct_hit": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "pool_available": true,
+      "top1_direct": "fastapi-middleware::004",
+      "top1_rerank": "fastapi-middleware::004"
+    },
+    {
+      "qid": "PQ05",
+      "type": "实现细节",
+      "question": "FastAPI 上传文件的 UploadFile 有哪些属性？和直接用 bytes 声明文件参数有什么区别？",
+      "must_retrieve": [
+        "fastapi-request-files::003",
+        "fastapi-request-files::005"
+      ],
+      "direct_rank": 1,
+      "direct_hit": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "pool_available": true,
+      "top1_direct": "fastapi-request-files::003",
+      "top1_rerank": "fastapi-request-files::003"
+    },
+    {
+      "qid": "PQ06",
+      "type": "配置口径",
+      "question": "pgvector 的 HNSW 索引和 IVFFlat 索引分别用什么 SQL 创建？HNSW 查询时的动态候选列表大小（ef_search）默认是多少？",
+      "must_retrieve": [
+        "pgvector-README::010",
+        "pgvector-README::012",
+        "pgvector-README::015"
+      ],
+      "direct_rank": 2,
+      "direct_hit": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "pool_available": true,
+      "top1_direct": "pgvector-README::011",
+      "top1_rerank": "pgvector-README::010"
+    },
+    {
+      "qid": "PQ07",
+      "type": "机制原理",
+      "question": "pgvector 不建索引时执行的是什么搜索？召回效果如何？什么时候应该建索引？",
+      "must_retrieve": [
+        "pgvector-README::009"
+      ],
+      "direct_rank": 1,
+      "direct_hit": true,
+      "rerank_rank": 4,
+      "rerank_hit": true,
+      "pool_available": true,
+      "top1_direct": "pgvector-README::009",
+      "top1_rerank": "pgvector-README::082"
+    },
+    {
+      "qid": "PQ08",
+      "type": "模式语言",
+      "question": "pathlib 的 Path.glob() 模式里 ** 能匹配什么？它和 glob 模块的行为有什么差异（比如以点号开头的文件）？",
+      "must_retrieve": [
+        "pydoc-pathlib::036",
+        "pydoc-pathlib::037"
+      ],
+      "direct_rank": 1,
+      "direct_hit": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "pool_available": true,
+      "top1_direct": "pydoc-pathlib::037",
+      "top1_rerank": "pydoc-pathlib::037"
+    },
+    {
+      "qid": "PQ09",
+      "type": "行为细节",
+      "question": "pathlib 怎么遍历目录下的对象？Path.walk() 的 top_down 参数控制什么遍历顺序？",
+      "must_retrieve": [
+        "pydoc-pathlib::027",
+        "pydoc-pathlib::029"
+      ],
+      "direct_rank": 1,
+      "direct_hit": true,
+      "rerank_rank": 1,
+      "rerank_hit": true,
+      "pool_available": true,
+      "top1_direct": "pydoc-pathlib::029",
+      "top1_rerank": "pydoc-pathlib::029"
+    },
+    {
+      "qid": "PQ10",
+      "type": "参数口径",
+      "question": "json.dumps 的 ensure_ascii 和 indent 参数默认值是什么？indent 非 None 时 separators 的默认值和 indent 为 None 时有什么不同？",
+      "must_retrieve": [
+        "pydoc-json::005",
+        "pydoc-json::010"
+      ],
+      "direct_rank": 1,
+      "direct_hit": true,
+      "rerank_rank": 2,
+      "rerank_hit": true,
+      "pool_available": true,
+      "top1_direct": "pydoc-json::010",
+      "top1_rerank": "pydoc-json::006"
+    }
+  ]
+}

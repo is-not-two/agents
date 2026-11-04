@@ -1,0 +1,363 @@
+{
+  "generated_at": "2026-10-25T01:55:59",
+  "top_k": 5,
+  "candidate_k": 20,
+  "fetch_k": 50,
+  "corpus_chunks": 237,
+  "status_weights": {
+    "CONFIRMED": 1.0,
+    "PENDING": 0.92,
+    "DISABLED": 0.85,
+    "EXCEPTION": 1.0,
+    "UNKNOWN": 1.0
+  },
+  "guard": {
+    "pre_recall": 1.0,
+    "post_recall": 0.8,
+    "pre_hits": 10,
+    "post_hits": 8,
+    "total": 10,
+    "results": [
+      {
+        "qid": "Q01",
+        "type": "事实查询",
+        "question": "微信 RPA 协议里主动加好友命令 wechat.add_friend 的命令号和回执号分别是多少？它的幂等键怎么计算？",
+        "must_retrieve": [
+          "RPA微信命令与事件协议v0::011"
+        ],
+        "pre_rank": 1,
+        "pre_hit": true,
+        "post_rank": 7,
+        "post_hit": false,
+        "top1_pre": "RPA微信命令与事件协议v0::011",
+        "top1_post": "微信设备指令通道划分与现状::007"
+      },
+      {
+        "qid": "Q02",
+        "type": "状态判断",
+        "question": "自动通过好友（wechat.accept_friend=740）目前可以通过 RPA 命令下发吗？现在实际由谁承接？",
+        "must_retrieve": [
+          "RPA微信命令与事件协议v0::012"
+        ],
+        "pre_rank": 2,
+        "pre_hit": true,
+        "post_rank": 11,
+        "post_hit": false,
+        "top1_pre": "微信设备指令通道划分与现状::007",
+        "top1_post": "微信设备指令通道划分与现状::007"
+      },
+      {
+        "qid": "Q03",
+        "type": "通道机制",
+        "question": "设备端上报 type=55（收到好友消息/私信）时，后端会登记独立的 RPA 事件吗？个微 AI 实时回复走哪条通道？",
+        "must_retrieve": [
+          "RPA微信命令与事件协议v0::021"
+        ],
+        "pre_rank": 1,
+        "pre_hit": true,
+        "post_rank": 1,
+        "post_hit": true,
+        "top1_pre": "RPA微信命令与事件协议v0::021",
+        "top1_post": "RPA微信命令与事件协议v0::021"
+      },
+      {
+        "qid": "Q04",
+        "type": "实现细节",
+        "question": "设备端收到 wechat.add_friend 下发命令时，命令号放在信封的哪个字段？业务参数（如 targetWechat）在哪个字段里、怎么取出来？",
+        "must_retrieve": [
+          "RPA微信命令与事件协议v0::037"
+        ],
+        "pre_rank": 1,
+        "pre_hit": true,
+        "post_rank": 1,
+        "post_hit": true,
+        "top1_pre": "RPA微信命令与事件协议v0::037",
+        "top1_post": "RPA微信命令与事件协议v0::037"
+      },
+      {
+        "qid": "Q05",
+        "type": "易混淆",
+        "question": "WeChatPadPro 的 POST /User/FriendVerification 是「通过好友申请」的接口吗？它实际是做什么的？",
+        "must_retrieve": [
+          "微信设备指令通道划分与现状::018"
+        ],
+        "pre_rank": 1,
+        "pre_hit": true,
+        "post_rank": 1,
+        "post_hit": true,
+        "top1_pre": "微信设备指令通道划分与现状::018",
+        "top1_post": "微信设备指令通道划分与现状::018"
+      },
+      {
+        "qid": "Q06",
+        "type": "决策记录",
+        "question": "视频号图文下发张数上限（R2 问题）目前最终的决策是什么？是否已经把上限从 12 改成 9？",
+        "must_retrieve": [
+          "视频号发布_后端侧答复::011"
+        ],
+        "pre_rank": 1,
+        "pre_hit": true,
+        "post_rank": 1,
+        "post_hit": true,
+        "top1_pre": "视频号发布_后端侧答复::011",
+        "top1_post": "视频号发布_后端侧答复::011"
+      },
+      {
+        "qid": "Q07",
+        "type": "排障根因",
+        "question": "个微「AI 接管」为什么会对所有提问固定回复同一句「转接」兜底文案？",
+        "must_retrieve": [
+          "微信接管AI回复兜底排查::002",
+          "微信接管AI回复兜底排查::004"
+        ],
+        "pre_rank": 1,
+        "pre_hit": true,
+        "post_rank": 1,
+        "post_hit": true,
+        "top1_pre": "微信接管AI回复兜底排查::002",
+        "top1_post": "微信接管AI回复兜底排查::002"
+      },
+      {
+        "qid": "Q08",
+        "type": "字段口径",
+        "question": "AI 员工详情完善度接口（setupProgress）里 keyword_count 的统计口径是什么？",
+        "must_retrieve": [
+          "api-ai员工-P1-P3接口契约::032"
+        ],
+        "pre_rank": 1,
+        "pre_hit": true,
+        "post_rank": 1,
+        "post_hit": true,
+        "top1_pre": "api-ai员工-P1-P3接口契约::032",
+        "top1_post": "api-ai员工-P1-P3接口契约::032"
+      },
+      {
+        "qid": "Q09",
+        "type": "环境事实",
+        "question": "服务器环境对齐要求中，composer.lock 锁定的 topthink/framework 版本是多少？",
+        "must_retrieve": [
+          "SERVER_CHECKLIST::010"
+        ],
+        "pre_rank": 1,
+        "pre_hit": true,
+        "post_rank": 1,
+        "post_hit": true,
+        "top1_pre": "SERVER_CHECKLIST::010",
+        "top1_post": "SERVER_CHECKLIST::010"
+      },
+      {
+        "qid": "Q10",
+        "type": "行为误解",
+        "question": "智能会话发送附件时，附件内容会通过 SSE 帧重复回传吗？客户端怎么拿到附件服务端确认后的数据？",
+        "must_retrieve": [
+          "智能会话-小程序附件联调协议::004"
+        ],
+        "pre_rank": 1,
+        "pre_hit": true,
+        "post_rank": 1,
+        "post_hit": true,
+        "top1_pre": "智能会话-小程序附件联调协议::004",
+        "top1_post": "智能会话-小程序附件联调协议::004"
+      }
+    ]
+  },
+  "probes": {
+    "landed_first_before": 0,
+    "landed_first_after": 0,
+    "landed_first_total": 3,
+    "honest_guard_before": 3,
+    "honest_guard_after": 3,
+    "honest_guard_total": 3,
+    "results": [
+      {
+        "pid": "SP1",
+        "kind": "honest_guard",
+        "question": "RPA 现在能自动通过好友吗？现在实际由谁承接？",
+        "anchors": [
+          "RPA微信命令与事件协议v0::012"
+        ],
+        "competitors": [],
+        "note": "诚实答案即 DISABLED 条目（740 占位 + WeChatPadPro 承接决策）",
+        "pre_rank": 2,
+        "post_rank": 3,
+        "pre_top1_status": "UNKNOWN",
+        "post_top1_status": "UNKNOWN",
+        "pre_top1_is_anchor": false,
+        "post_top1_is_anchor": false,
+        "pre_top_status": [
+          "UNKNOWN",
+          "DISABLED",
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "post_top_status": [
+          "UNKNOWN",
+          "UNKNOWN",
+          "DISABLED",
+          "UNKNOWN",
+          "UNKNOWN"
+        ]
+      },
+      {
+        "pid": "SP2",
+        "kind": "honest_guard",
+        "question": "RPA 收到好友消息会登记独立事件吗？个微 AI 实时回复走什么通道？",
+        "anchors": [
+          "RPA微信命令与事件协议v0::021",
+          "RPA微信命令与事件协议v0::022"
+        ],
+        "competitors": [],
+        "note": "诚实答案即 EXCEPTION 决策条目（不登记、走 protobuf）",
+        "pre_rank": 1,
+        "post_rank": 1,
+        "pre_top1_status": "EXCEPTION",
+        "post_top1_status": "EXCEPTION",
+        "pre_top1_is_anchor": true,
+        "post_top1_is_anchor": true,
+        "pre_top_status": [
+          "EXCEPTION",
+          "UNKNOWN",
+          "DISABLED",
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "post_top_status": [
+          "EXCEPTION",
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN",
+          "DISABLED"
+        ]
+      },
+      {
+        "pid": "SP3",
+        "kind": "landed_first",
+        "question": "设备端上报朋友圈动态用哪个事件号？现在实际用哪个？",
+        "anchors": [
+          "RPA微信命令与事件协议v0::019"
+        ],
+        "competitors": [
+          "RPA微信命令与事件协议v0::024"
+        ],
+        "note": "落地答案 CONFIRMED type=52；竞争条目 DISABLED type=57 不分配",
+        "pre_rank": 2,
+        "post_rank": 2,
+        "pre_top1_status": "UNKNOWN",
+        "post_top1_status": "UNKNOWN",
+        "pre_top1_is_anchor": false,
+        "post_top1_is_anchor": false,
+        "pre_top_status": [
+          "UNKNOWN",
+          "CONFIRMED",
+          "PENDING",
+          "UNKNOWN",
+          "DISABLED"
+        ],
+        "post_top_status": [
+          "UNKNOWN",
+          "CONFIRMED",
+          "UNKNOWN",
+          "PENDING",
+          "CONFIRMED"
+        ]
+      },
+      {
+        "pid": "SP4",
+        "kind": "landed_first",
+        "question": "RPA 拉取朋友圈的命令下发后，结果怎么回传？",
+        "anchors": [
+          "RPA微信命令与事件协议v0::025"
+        ],
+        "competitors": [
+          "RPA微信命令与事件协议v0::014"
+        ],
+        "note": "落地答案 CONFIRMED type=58 已落地；竞争条目 PENDING 命令需确认",
+        "pre_rank": 2,
+        "post_rank": 2,
+        "pre_top1_status": "UNKNOWN",
+        "post_top1_status": "UNKNOWN",
+        "pre_top1_is_anchor": false,
+        "post_top1_is_anchor": false,
+        "pre_top_status": [
+          "UNKNOWN",
+          "CONFIRMED",
+          "PENDING",
+          "PENDING",
+          "CONFIRMED"
+        ],
+        "post_top_status": [
+          "UNKNOWN",
+          "CONFIRMED",
+          "CONFIRMED",
+          "UNKNOWN",
+          "PENDING"
+        ]
+      },
+      {
+        "pid": "SP5",
+        "kind": "landed_first",
+        "question": "设备执行加好友动作后，单条业务结果怎么上报？",
+        "anchors": [
+          "RPA微信命令与事件协议v0::018"
+        ],
+        "competitors": [
+          "RPA微信命令与事件协议v0::011"
+        ],
+        "note": "落地答案 CONFIRMED type=50；竞争条目 PENDING 命令号需确认",
+        "pre_rank": 3,
+        "post_rank": 2,
+        "pre_top1_status": "UNKNOWN",
+        "post_top1_status": "UNKNOWN",
+        "pre_top1_is_anchor": false,
+        "post_top1_is_anchor": false,
+        "pre_top_status": [
+          "UNKNOWN",
+          "DISABLED",
+          "CONFIRMED",
+          "UNKNOWN",
+          "UNKNOWN"
+        ],
+        "post_top_status": [
+          "UNKNOWN",
+          "CONFIRMED",
+          "UNKNOWN",
+          "UNKNOWN",
+          "UNKNOWN"
+        ]
+      },
+      {
+        "pid": "SP6",
+        "kind": "honest_guard",
+        "question": "RPA 现在支持发朋友圈吗？命令号注册了吗？",
+        "anchors": [
+          "RPA微信命令与事件协议v0::015",
+          "RPA微信命令与事件协议v0::034"
+        ],
+        "competitors": [],
+        "note": "诚实答案即 PENDING 条目（实际走 Jubo、743 未注册）",
+        "pre_rank": 4,
+        "post_rank": 4,
+        "pre_top1_status": "PENDING",
+        "post_top1_status": "UNKNOWN",
+        "pre_top1_is_anchor": false,
+        "post_top1_is_anchor": false,
+        "pre_top_status": [
+          "PENDING",
+          "UNKNOWN",
+          "CONFIRMED",
+          "PENDING",
+          "DISABLED"
+        ],
+        "post_top_status": [
+          "UNKNOWN",
+          "CONFIRMED",
+          "PENDING",
+          "PENDING",
+          "UNKNOWN"
+        ]
+      }
+    ]
+  },
+  "tag": ""
+}

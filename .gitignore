@@ -68,3 +68,6 @@ output/web/*-wheel/
 output/web/wheel-check/
 output/web/package/
 output/web/*-before/
+
+# 2026-11-04 事故恢复工具与临时副本（一次性，不入库）
+output/v2/recovery-tools/
