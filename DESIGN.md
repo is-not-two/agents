@@ -1333,3 +1333,19 @@ Edge 四场景全部通过：首页顶栏 `rgb(0,0,0)`；树布局折叠往返 `
 - 窄屏：环轨在容器 <610px 时隐藏，中心「进入」也随之消失；因此列表顶部补一行「进入工作台」(`#home/workspace`)，否则工作台在 390px 不可达。
 - 验证（真实 Edge，`ignoreHTTPSErrors`，令牌登录不打印）：910 开始页 `orbit=block/workspace=0` → 点 hub 后 `#home/workspace`、`orbit=0`、`active=home-main`、crumbs `开始页›工作台`；点「回到开始页」与浏览器后退均回 `#home`；390 `orbit=none/list=grid/enter=true` → 点击后 `workspace=1`；两端控制台 **0 错误**。截图 `output/web/orbit-check/view-{start,workspace}-{910,390}.png`。
 - 未采用：View Transitions API 可以做出更连续的空间过渡，但它要求把渲染改成异步回调，和现有同步 `renderPage`、滚动恢复、各 controller 的初始化顺序冲突；本轮优先保证行为正确，不做快照式过渡。
+
+### 侧栏回收站（2026-11-04，已实测）
+
+- 需求：各模块原来各自有「回收站」按钮，用户希望侧栏有一个统一入口，点击展开后直接看到已删除内容。
+- 后端：新增 `GET /api/trash`，一次汇总 knowledge/bookmark/plan/lesson/learning_card 与 5 类求职记录；**排除**私密愿望/日记与运行审计（`workflow_run`/`learning_review`/`notification_outbox`/`agent_memory`/`agent_session`）。返回 `total`、按 kind 的计数、以及最近条目（`id/kind/version/title/subtitle/updated_at`）；正文、图结构等大字段用 `TRASH_OMIT` 剥离，避免把整份规划或工作流图塞进侧栏。
+- 前端：侧栏底部新增折叠「回收站」按钮，带总数徽标；展开后把该 section 对齐到侧栏顶部（不是滚到最底），显示最近 30 条，每条带类型、标题、摘要和「恢复」。恢复复用 `records/{id}/history` 找最新非删除版本，再 `records/{id}/restore`；求职类型仍由 `JobsService` 处理。恢复后刷新工作区数据并重新拉取回收站。
+- 验证（真实 Edge 1280，`ignoreHTTPSErrors`，令牌登录不打印）：临时知识创建→删除→`/api/trash` total 19 且出现条目→页面展开侧栏回收站→点击恢复→知识回到有效列表、total 18，控制台 **0 错误**；随后通过数据库按 id 物理清理测试记录与版本，基线回到 **63/122/819**。截图 `output/web/orbit-check/trash-open-1280.png`。
+- 边界：每类最多取 50 条、侧栏最多显示 30 条；彻底删除/撤销历史仍需进入各模块；计数使用 `kind_counts` 单次分组查询，条目按类型逐个读取，当前 10 类量级可接受。
+
+
+### 自主维护：工作流策略类型边界（2026-11-04）
+
+- 隔离实际路由验收复现：图工作流 JSON 的 `on_error=[]`、`retry_on=[{}]`、`join_policy={}` 在 set 成员判断抛 TypeError，创建/更新请求会变成 500，不能作为正常输入错误反馈。
+- 比较全局捕获 TypeError（会掩盖真正程序错误）、仅前端限制（绕过前端仍失败）与领域层字符串守卫；采用最后一案，仅修复 `_node` / `_retry` / `validate_graph_workflow` 三处，沿用 DomainError/400 与原文案，不改变合法策略或默认值。
+- 证据：隔离路由+内存存储同输入 BASELINE 500 → MODIFIED 400 → ROLLBACK 500；合法创建→执行→审批→完成与重复确认 409 仍正常，非法创建/更新不产生记录或版本变化；定向 54 项通过、Ruff 通过。
+- 阶段 `20261104-160722-3f84d8ac`。未验真实 PostgreSQL/完整鉴权限流中间件/真实浏览器；不部署、不改模型连接或私密配置，不涉及 LEARN-001。
