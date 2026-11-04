@@ -1,5 +1,5 @@
 /* Corpus choices come from the server; never invent a namespace or file path. */
-import { state, escapeHtml as esc } from "./data.js?v=108";
+import { state, escapeHtml as esc } from "./data.js?v=109";
 export function corpusSelect() {
   const options = state.corpusOptions;
   if (!options) return "";

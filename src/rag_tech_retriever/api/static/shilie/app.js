@@ -1,25 +1,25 @@
-import { bindCollaboration } from "./collaboration.js?v=108";
-import { bindAgentStudio } from "./agent-studio.js?v=108";
-import { bindBackup } from "./backup.js?v=108";
+import { bindCollaboration } from "./collaboration.js?v=109";
+import { bindAgentStudio } from "./agent-studio.js?v=109";
+import { bindBackup } from "./backup.js?v=109";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=108";
-import { bindModelConnection } from "./model-connection.js?v=108";
-import { bindTree } from "./tree-actions.js?v=108";
-import { bindAutomation } from "./automation-actions.js?v=108";
-import { bindLessons } from "./lessons.js?v=108";
-import { bindJobs } from "./jobs.js?v=108";
-import { bindCapabilities } from "./company-capabilities.js?v=108";
-import { bindLearning } from "./learning.js?v=108";
-import { bindJobInsights } from "./job-insights.js?v=108";
-import { bindServerStatus } from "./server-status.js?v=108";
-import { bindEvaluation } from "./evaluation.js?v=108";
-import { startTour } from "./tour.js?v=108";
-import { toggleDirector, directorActive } from "./director.js?v=108";
-import { initMotion } from "./motion.js?v=108";
-import { initOrbit } from "./orbit.js?v=108";
+} from "./private-view.js?v=109";
+import { bindModelConnection } from "./model-connection.js?v=109";
+import { bindTree } from "./tree-actions.js?v=109";
+import { bindAutomation } from "./automation-actions.js?v=109";
+import { bindLessons } from "./lessons.js?v=109";
+import { bindJobs } from "./jobs.js?v=109";
+import { bindCapabilities } from "./company-capabilities.js?v=109";
+import { bindLearning } from "./learning.js?v=109";
+import { bindJobInsights } from "./job-insights.js?v=109";
+import { bindServerStatus } from "./server-status.js?v=109";
+import { bindEvaluation } from "./evaluation.js?v=109";
+import { startTour } from "./tour.js?v=109";
+import { toggleDirector, directorActive } from "./director.js?v=109";
+import { initMotion } from "./motion.js?v=109";
+import { initOrbit } from "./orbit.js?v=109";
 import {
   api,
   state,
@@ -30,13 +30,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=108";
+} from "./data.js?v=109";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=108";
+} from "./views.js?v=109";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),

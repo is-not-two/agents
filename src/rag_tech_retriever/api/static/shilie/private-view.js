@@ -1,7 +1,7 @@
 /* 私密管理：愿望清单与私密日记。
    口令不存浏览器——每次访问都由后端校验，明文只在当前页面内存中存在。
    因此本模块不做路由级缓存，刷新即重新要求口令。 */
-import { api, state } from "./data.js?v=108";
+import { api, state } from "./data.js?v=109";
 
 const esc = (x) =>
   String(x ?? "").replace(
