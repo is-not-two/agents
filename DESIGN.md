@@ -1316,3 +1316,11 @@ Edge 四场景全部通过：首页顶栏 `rgb(0,0,0)`；树布局折叠往返 `
 - 验证覆盖：健康、静态版本号、`workspace_records`/`workspace_versions`/`rag_chunks` 计数不变、未鉴权 `/api/knowledge` 401、`account_login=true`、unit 身份仍为 `shilie_pvapp`、正式 8770 PID 与正式库计数不变。失败自动换回旧目录；数据库不在部署脚本内变更。
 - 实测 `native-20261104-141033-82fe657`：8771 v108 健康，63/122/819 不变；8770 PID 225177、正式库 15/24/494 不变；旧目录 `previous/app-native-20261104-141033-82fe657` 保留，staging 清空。证据 `output/deployment/preview-isolated/verify-20261104.txt`。
 - 首跑失败点：staging 根目录 700 导致服务身份无法执行 `.venv/bin/python`，构建期自检 `Permission denied`；改为 711 后通过（服务身份只需穿行，不需要列目录）。这意味着部署自检必须用真实服务身份执行，root 跑 import 不能替代。
+
+### 首页环轨断点修正（2026-11-04，已实测）
+
+- 现象：910px 视口打开 `#home` 只显示 2 列入口列表，环轨与中心「进入」不出现。
+- 根因：`@media (max-width: 959px)` 强制列表，覆盖了内容区 `@container (min-width: 610px)`；portal 模式 910px 视口内容区约 830px，576px 舞台本可完整放下。
+- 修复：删除该视口兜底，显隐只由 `.home-orbit-wrap` 的内容宽度决定。sidebar 模式在 910px 时内容区约 606px，仍按规则回退列表，没有破坏窄屏形态。
+- 验证：真实 Edge（`ignoreHTTPSErrors`，临时用访问令牌登录，不打印令牌）390 → 列表、910 → 环轨、1280 → 环轨，`hasHub=true`；截图 `output/web/orbit-check/home-{390,910,1280}.png`。静态版本升至 v109，已部署 `native-20261104-142928-3d1e54e`。
+- 附带修复 `tests/test_auth_module.py` 的偶发失败：篡改签名末位固定写 `0`，原末位本来就是 `0` 时等于未篡改；改为按原末位选不同字符。
