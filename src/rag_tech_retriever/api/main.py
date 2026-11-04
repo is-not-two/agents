@@ -74,6 +74,13 @@ from rag_tech_retriever.platform.search_service import SearchService
 mimetypes.add_type("image/webp", ".webp")
 
 
+def close_store(store: object) -> None:
+    """释放注入的存储；测试替身可能没有 close，不能因此让应用退出失败。"""
+    close = getattr(store, "close", None)
+    if callable(close):
+        close()
+
+
 def create_app(
     store: RecordStore | None = None, root: Path = PROJECT_ROOT, token: str | None = None
 ) -> FastAPI:
@@ -143,8 +150,8 @@ def create_app(
                     await stack.enter_async_context(sub_app.router.lifespan_context(sub_app))
                 yield
         finally:
-            # 释放连接池；注入的测试 store 没有池，close 为无操作。
-            store.close()
+            # 释放连接池；注入的测试替身可能没有 close（探针/桩），不能因此让退出失败。
+            close_store(store)
 
     application = FastAPI(title="时列 · 个人工作台", lifespan=lifespan)
     # 中间件：add 顺序越晚越靠外层——限流在内，追踪最外（访问日志覆盖限流响应）。

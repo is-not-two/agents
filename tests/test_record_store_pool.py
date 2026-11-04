@@ -88,3 +88,25 @@ def test_broken_pooled_connection_is_discarded(monkeypatch):
     with pytest.raises(StorageError, match="数据库暂不可用"), store.transaction():
         pass
     assert fake.close_flags == [True]
+
+
+def test_lifespan_tolerates_store_without_close():
+    """注入式替身（探针/桩）可能没有 close；退出阶段不得因此抛 AttributeError。"""
+    from rag_tech_retriever.api.main import close_store
+
+    class NoCloseStore:
+        """没有 close 的最小替身。"""
+
+    close_store(NoCloseStore())
+
+    class WithClose:
+        def __init__(self):
+            self.called = False
+
+        def close(self):
+            self.called = True
+
+    store = WithClose()
+    close_store(store)
+    assert store.called
+
