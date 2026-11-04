@@ -1278,3 +1278,33 @@ Edge 四场景全部通过：首页顶栏 `rgb(0,0,0)`；树布局折叠往返 `
 - 全门禁继续覆盖原有配置/pip/lint/静态/离线评测、完整 pytest、七个业务浏览器 runner、真实 MCP SDK、停库503/恢复及应用重启。默认 backend=native，缺会话 failclosed；GitHub 托管 CI 明确 backend=docker，生产和本机不会隐式启动 Docker。生成回执/测试夹具不应被 Ruff 当产品源码，lint 固定覆盖全部发布 Python 目录 src/scripts/tests，而不是修改历史夹具凑绿。
 - 实际只读发现旧运行角色对 versions 仅 SELECT/INSERT。核对 RecordStore 只对 records 做 UPDATE，恢复也追加历史；旧核验器把 versions UPDATE 误作必需。选择修正代码和受限角色测试，生产禁止历史表表级/列级 UPDATE，而不是为通过检查扩大服务器权限。此更正本机纯测试和副本回滚已验证，真实新 PG 门禁仍待执行。
 - 根 DESIGN/AGENT-DESIGN/FEATURE-DESIGN/PLAN 已按真实架构和逐批证据同步；保持人工模型质量、真实外部通知、七天使用、服务器新功能切换未完成的边界。未推送的 CI 定义不是云端成功，不把依赖来源清单称为已验证 Linux wheelhouse 锁。
+
+
+## 2026-11-04 测试与正式环境隔离（已实测完成）
+
+- 用户明确要求测试与正式环境分隔。既有部署记录显示两者数据库名/服务/端口不同，但部署脚本仍引用生产私密文件、配置和 `/var/lib/shilie`，且历史预览 unit 共用 `shilie` 与生产 env；分库不能证明账号、凭据及文件隔离。以上是静态证据，不冒充实时服务器确认。
+- 三案：同集群仅改库名不足以隔离权限；在现有生产库撤 PUBLIC CONNECT 会改变生产授权、可能中断现有客户端；优先评估同机独立原生 PostgreSQL 测试集群（仅回环监听、独立 OS 和 DB 身份）及独立测试配置/数据根。复用模型文件仅限确认只读、不共享凭据；不需要 Docker 或数据库公网端口。实际运行成本和机器现有状态须先核验。
+- 保留现有正式库与测试库，不删除/覆盖；测试库如需迁移，先做带校验的备份并恢复到独立新目标，不能对原库执行清理。测试库已有来自正式环境的一次性副本，隔离后仍可能包含真实资料；不擅自清空或称其匿名化。账号、令牌和加密元数据须分开处理，不能静默继承生产密钥。
+- 目标验收：各自有效连接经真实进程身份查库/用户/端口，测试角色对正式集群连接及文件访问拒绝；测试写唯一哨兵且正式记录、历史及关键文件摘要不变；正式现有数据保留、健康检查正常；重启/失败恢复的边界和证据单独记录。测试来源 IP、HTTPS 和资源上限保持受控；原项目另一服务不动。
+- 原「当前仅完成静态审查」的断点已结束（2026-11-04）：按单次授权完成实测，结果见下；交付后管理员权限不再延续。
+
+### 实测结果（2026-11-04，证据 `output/deployment/environment-isolation-20261104/`）
+
+- **身份**：8770 `shilie.service` 仍为 `shilie`（UID 995）、PID 225177，全程未重启/未改配置；8771 已切到 `shilie_pvapp`（UID 992），根目录 `/var/lib/shilie-preview/app`，新 TLS 证书与新令牌。
+- **独立集群**：`shilie-preview-postgres.service`（PG 16.15，`/var/lib/shilie-preview/pgdata`，`shilie_pvdb` UID 993），仅 `127.0.0.1:55433`；库 `shilie_preview_20261104`，交接的 `shilie_stream_probe_20261104` 原样保留。
+- **迁移**：停 8771 → 旧库停写（5 秒写元组增量全 0、无其它会话）→ `pg_dump -Fc | pg_restore --single-transaction`，**不落盘 dump**，两端退出码 0/0、0.62s；23 张表名/行数/内容 md5 全一致（总行 1011），索引 23、约束 45、vector 0.8.7、无序列。旧库 `shilie_preview_20261103`（63 记录 / 122 历史 / 819 向量）原样保留，未删未覆盖。
+- **最小权限**：运行角色仅 `workspace_records` SELECT/INSERT/UPDATE、`workspace_versions` SELECT/INSERT（表级与列级 UPDATE 均无）、`rag_chunks` SELECT、schema USAGE；无 DELETE/TRUNCATE、无 schema/DB CREATE，QA 残留表零访问。`WORKSPACE_PROFILE=production` + `WORKSPACE_SCHEMA_MODE=verify` 启动即通过运行时角色校验。
+- **隔离**：`zzzz-preview-isolation.conf`（sha256 `cb8ac9f6…f9752`）在旧 3 个 drop-in 后加载，以空赋值复位 `EnvironmentFile/Environment/ExecStart/ReadWritePaths`；最终 `ReadWritePaths` 只剩 app 的 data-local/output/model-cache，`InaccessiblePaths` 覆盖 `/var/lib/shilie`、`/etc/shilie`、`/opt/shilie`、pgdata、pgsock。实测命名空间内三个目录为空占位（`26:424`），正式 env/私钥/私密文件不可见；`shilie_pvapp` 读正式文件、写正式数据目录全部被拒；用新测试库密码登录 5432 被拒。
+- **行为修正**：首版 drop-in 的 `Environment=` 复位丢掉了 `WEB_RATE_LIMIT_PER_MINUTE=600` 与线程/编码变量（模型推理会不受限用核），已补回并重启；重启后 20 路由浏览器遍历 0 页异常、0 控制台错误。
+- **写入隔离**：新 8771 建/改/软删一条知识（历史 2 版）后清理，基线 63/122/819 复原；同期正式库 15 记录 / 24 历史 / 494 向量与 `private-vault.json` 摘要前后一致。
+- **私密库**：按用户选择沿用旧测试 vault（字节与旧 preview 相同），`/api/private/status` 为 `configured=true`、强加密、有恢复；口令未输入未打印。**同口令跨环境复用仍是风险**。
+- **未验证**：真实邮件送达、付费模型质量、连续 7 天使用、桌面 MCP；正式 8770 未切换；本次未创建备份或 dump；`shilie-preview.service` 的 `static` 形态沿用。
+- **回滚**：删除 `zzzz-preview-isolation.conf` → `daemon-reload` → `restart` 即回到共享身份与旧库；旧 unit、旧 drop-in、新旧库均保留。
+- **令牌**：root 终端 `sed -n 's/^WORKSPACE_ACCESS_TOKEN=//p' /etc/shilie-preview/workspace.env`，不要把输出贴进聊天或日志；新自签证书需重新信任。
+
+- 对抗审查发现 `.github/workflows/deploy-preview.yml` 的确认提示声称检查同提交 CI，但其步骤并未核验，且可能把高权 SSH 密钥交给原部署脚本。文件存在不证明 GitHub 工作流已启用或执行；在隔离与可验证门禁完成前，预览部署应停用此路径。仅修改本地副本不能停用云端工作流，需用户检查/关闭已配置的对应 workflow 或生产密钥；不擅自改云设置。
+- 同一台服务器即使使用不同的 PostgreSQL 集群、受限账号和文件根，仍共用内核、磁盘和 CPU，不等同独立主机的故障隔离。测试 TLS 私钥/登录令牌须独立，不得让测试身份读取正式私钥；是否需要独立主机取决于故障隔离需求与资源实测。
+
+- 用户后续明确环境工作流：8771 为日常修改、迁移和验收的测试环境；8770 为正式环境，仅在所有功能完善、回归通过并取得用户明确的正式晋级同意后推送。确认端口不是授予新的 root 操作权限；正式环境不参与测试写入、不因测试部署而重启、切换或清理历史。
+
+- 用户针对现有私密数据明确选择：保留 8771 旧私密数据可读，继续使用相同私密口令；仅从现有测试目录复制校验元数据到独立测试目录，不把它称作独立口令。测试数据库、系统账号、登录令牌及文件权限仍需独立；这项选择保留了同口令风险，原测试库与原文件不删除。
