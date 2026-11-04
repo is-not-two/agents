@@ -1324,3 +1324,12 @@ Edge 四场景全部通过：首页顶栏 `rgb(0,0,0)`；树布局折叠往返 `
 - 修复：删除该视口兜底，显隐只由 `.home-orbit-wrap` 的内容宽度决定。sidebar 模式在 910px 时内容区约 606px，仍按规则回退列表，没有破坏窄屏形态。
 - 验证：真实 Edge（`ignoreHTTPSErrors`，临时用访问令牌登录，不打印令牌）390 → 列表、910 → 环轨、1280 → 环轨，`hasHub=true`；截图 `output/web/orbit-check/home-{390,910,1280}.png`。静态版本升至 v109，已部署 `native-20261104-142928-3d1e54e`。
 - 附带修复 `tests/test_auth_module.py` 的偶发失败：篡改签名末位固定写 `0`，原末位本来就是 `0` 时等于未篡改；改为按原末位选不同字符。
+
+### 开始页与工作台分层（2026-11-04，已实测）
+
+- 需求：中心「进入」此前只是同一页的 `scrollIntoView`，用户要求“不同层次、不同视图跳转”，而不是简单下滑。
+- 方案：`#home` 只渲染环轨开始页；`#home/workspace` 渲染工作台（hero/统计/最近）。中心「进入」改为 hash 路由跳转，选择 hash 而不是 `sessionStorage` 隐藏态：浏览器后退、刷新、深链语义都由现有路由免费获得，不引入第二套状态。
+- 行为：工作台提供显式「回到开始页」；导航条只在模块页出现；面包屑为「开始页 › 工作台」，不会再把 `workspace` 当成分组显示成两个“工作区”。跨层切换播 `#content.page-enter` 260ms 入场（`prefers-reduced-motion` 自动关闭），进入工作台后焦点落到 `#home-main`。
+- 窄屏：环轨在容器 <610px 时隐藏，中心「进入」也随之消失；因此列表顶部补一行「进入工作台」(`#home/workspace`)，否则工作台在 390px 不可达。
+- 验证（真实 Edge，`ignoreHTTPSErrors`，令牌登录不打印）：910 开始页 `orbit=block/workspace=0` → 点 hub 后 `#home/workspace`、`orbit=0`、`active=home-main`、crumbs `开始页›工作台`；点「回到开始页」与浏览器后退均回 `#home`；390 `orbit=none/list=grid/enter=true` → 点击后 `workspace=1`；两端控制台 **0 错误**。截图 `output/web/orbit-check/view-{start,workspace}-{910,390}.png`。
+- 未采用：View Transitions API 可以做出更连续的空间过渡，但它要求把渲染改成异步回调，和现有同步 `renderPage`、滚动恢复、各 controller 的初始化顺序冲突；本轮优先保证行为正确，不做快照式过渡。
