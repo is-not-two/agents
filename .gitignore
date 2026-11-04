@@ -58,3 +58,13 @@ output/web/_orbit-baseline/
 output/web/review/
 # 公开语料安装产物（由 scripts/public_corpus.py 生成，源与哈希在 config/ 审批中）
 data/public/
+
+# 2026-11-04 历史清理：以下产物可重生成，不再入库（历史中已移除）
+output/web/**/*.png
+output/web/**/*.whl
+output/web/collab-round*/
+output/web/design*/
+output/web/*-wheel/
+output/web/wheel-check/
+output/web/package/
+output/web/*-before/
