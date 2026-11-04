@@ -43,32 +43,20 @@ else
   exit 0
 fi
 
-if [ ! -f "scripts/local_gate.py" ]; then
-  echo "未找到 scripts/local_gate.py，跳过门禁"
+if [ ! -f "scripts/ci_gate.py" ]; then
+  echo "未找到 scripts/ci_gate.py，跳过门禁"
   exit 0
 fi
 
 echo ""
-echo "运行本地门禁（推送前检查）..."
+echo "运行 CI 门禁（约 15 秒，不依赖数据库）..."
 echo ""
-
-# 只改文档时用 quick 模式，避免无谓等待
-CHANGED="$(git diff --name-only HEAD @{push} 2>/dev/null || git diff --name-only HEAD)"
-if [ -n "$CHANGED" ] && ! echo "$CHANGED" | grep -qvE '^(\\.md$|docs/|output/)'; then
-  "$PY" scripts/local_gate.py --quick || {
-    echo ""
-    echo "门禁未通过，推送已中止。"
-    echo "确认无碍后可用：GATE_SKIP=1 git push"
-    exit 1
-  }
-else
-  "$PY" scripts/local_gate.py || {
-    echo ""
-    echo "门禁未通过，推送已中止。"
-    echo "确认无碍后可用：GATE_SKIP=1 git push"
-    exit 1
-  }
-fi
+"$PY" scripts/ci_gate.py || {
+  echo ""
+  echo "门禁未通过，推送已中止。"
+  echo "确认无碍后可用：GATE_SKIP=1 git push"
+  exit 1
+}
 
 exit 0
 """
@@ -106,9 +94,7 @@ def main() -> int:
     target.write_text(HOOK.replace("\r\n", "\n"), encoding="utf-8", newline="\n")
     print(f"已安装 {target}")
     print()
-    print("行为：git push 前自动跑 scripts/local_gate.py")
-    print("  - 只改文档：quick 模式（跳过 pytest）")
-    print("  - 其它改动：全量（含 pytest）")
+    print("行为：git push 前自动跑 scripts/ci_gate.py（约 15 秒，不依赖 PostgreSQL/Docker）")
     print("  - 失败则中止推送")
     print("  - 紧急跳过：GATE_SKIP=1 git push")
     print(f"  - 卸载：python {Path(__file__).name} --remove")
