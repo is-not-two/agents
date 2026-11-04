@@ -1,5 +1,5 @@
 /* 证据对照不等于能力评分；规则/统计永远可独立于模型使用。 */
-import { api, escapeHtml as esc } from "./data.js?v=109";
+import { api, escapeHtml as esc } from "./data.js?v=110";
 
 const cache = { leads: null, profile: null, gap: null, lead: "", routeLoaded: "", weekly: null, day: "", loaded: false, weeklyLoaded: false, busy: false, error: "", weeklyError: "", model: false, chosen: new Set() };
 let paint = () => {};

@@ -1,5 +1,5 @@
-import { bindBranch } from "./branch-actions.js?v=109";
-import { api, state, write } from "./data.js?v=109";
+import { bindBranch } from "./branch-actions.js?v=110";
+import { api, state, write } from "./data.js?v=110";
 import {
   treeState as s,
   treePlan,
@@ -8,7 +8,7 @@ import {
   esc,
   isFolded,
   setFolded,
-} from "./tree.js?v=109";
+} from "./tree.js?v=110";
 
 export function bindTree({ renderPage, refresh, toast }) {
   const $ = (q) => document.querySelector(q),

@@ -183,15 +183,13 @@ export function initOrbit() {
     entryFocus = !!(next && stage.contains(next) && !hub.contains(next));
     recompute();
   };
-  /* 首页是"开始页"：中心按钮不再是暂停开关，而是"进入工作台"。
-     环轨默认就在转，暂停交给"指针停到入口上"这个天然行为。 */
+  /* 首页是"开始页"：中心按钮进入独立的工作台视图，而不是在同一页往下滚。
+     路由变化由 app.js 的 hashchange 接管，环轨随之卸载。 */
   const onHubClick = (event) => {
     event.preventDefault();
-    const main = document.getElementById("home-main");
-    if (main) {
-      main.scrollIntoView({ behavior: "smooth", block: "start" });
-      announce("进入工作台");
-    }
+    if (location.hash === "#home/workspace") return;
+    announce("进入工作台");
+    location.hash = "#home/workspace";
   };
   const onVisibility = () => {
     if (document.visibilityState === "hidden") {

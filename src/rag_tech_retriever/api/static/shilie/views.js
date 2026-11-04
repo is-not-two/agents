@@ -1,35 +1,35 @@
-import { collaborationView } from "./collaboration.js?v=109";
-import { corpusSelect } from "./public-corpus.js?v=109";
-import { agentStudioView } from "./agent-studio.js?v=109";
-import { backupView } from "./backup.js?v=109";
-import { privateView } from "./private-view.js?v=109";
-import { modelConnectionView } from "./model-connection.js?v=109";
-import { treeView, treeDialog } from "./tree.js?v=109";
+import { collaborationView } from "./collaboration.js?v=110";
+import { corpusSelect } from "./public-corpus.js?v=110";
+import { agentStudioView } from "./agent-studio.js?v=110";
+import { backupView } from "./backup.js?v=110";
+import { privateView } from "./private-view.js?v=110";
+import { modelConnectionView } from "./model-connection.js?v=110";
+import { treeView, treeDialog } from "./tree.js?v=110";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=109";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=109";
-import { jobsView, jobsDialog } from "./jobs.js?v=109";
+} from "./automation-views.js?v=110";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=110";
+import { jobsView, jobsDialog } from "./jobs.js?v=110";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=109";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=109";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=109";
-import { serverStatusView } from "./server-status.js?v=109";
-import { evaluationView } from "./evaluation.js?v=109";
-import { directorActive } from "./director.js?v=109";
-import { icon, orbitIcon } from "./icons.js?v=109";
+} from "./company-capabilities.js?v=110";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=110";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=110";
+import { serverStatusView } from "./server-status.js?v=110";
+import { evaluationView } from "./evaluation.js?v=110";
+import { directorActive } from "./director.js?v=110";
+import { icon, orbitIcon } from "./icons.js?v=110";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=109";
+} from "./data.js?v=110";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -169,7 +169,7 @@ function orbitStage() {
   ].join("");
   return `<div class="home-orbit-wrap"><nav class="sl-orbit" aria-label="工作区入口环轨" data-orbit-speed="running"><div class="sl-orbit__halo" aria-hidden="true"></div><div class="sl-orbit__track sl-orbit__track--inner" aria-hidden="true"></div><div class="sl-orbit__track sl-orbit__track--outer" aria-hidden="true"></div><div class="sl-orbit__spokes" aria-hidden="true"></div><div class="sl-orbit__ring sl-orbit__ring--inner">${inner}</div><div class="sl-orbit__ring sl-orbit__ring--outer">${outer}</div><button class="sl-orbit__hub" type="button" aria-label="进入工作台" aria-describedby="sl-orbit-hint"><span class="sl-orbit__hub-label">进入</span><span class="sl-orbit__hub-state">环轨运行中</span></button><p id="sl-orbit-hint" class="sl-sr-only">环轨上的入口正在自动旋转。按此键进入下方工作台；也可以直接用键盘聚焦到某个入口。</p><p id="sl-orbit-status" role="status" class="sl-sr-only"></p></nav><nav class="sl-orbit-list" aria-label="工作区入口">${list}</nav></div>`;
 }
-function home() {
+function workspacePage() {
   const stats = homeStats();
   const today = localToday();
   const due = (state.plans || [])
@@ -187,7 +187,7 @@ function home() {
     .slice(0, 5);
   const recentNotes = (state.knowledge || []).slice(0, 3);
   const picture = `<picture><source media="(max-width: 700px)" srcset="/static/shilie/landscape-800.webp"><img src="/static/shilie/landscape-1600.webp" alt="花树掩映的临水书阁，远山与云海" fetchpriority="high"></picture>`;
-  return `<section class="home-start" aria-label="时列开始页">${orbitStage()}</section><section class="home-main" id="home-main"><section class="home-hero" aria-label="时列工作区">${picture}<div class="home-heading"><span class="home-brand">时列</span><p class="home-greet">${greet()}，${today}</p><button class="small-button home-quick" data-action="quick">快速打开搜索 <kbd>Ctrl K</kbd></button></div></section><section class="today-overview" aria-label="今日概览"><nav class="stat-grid">${stats.map((s) => `<a class="stat-block" href="${s.href}"><b ${typeof s.value === "number" ? 'data-count="' + s.value + '"' : ""}>${s.value}${s.total !== undefined ? "<small> / " + s.total + "</small>" : ""}</b><span>${s.label}</span></a>`).join("")}</nav>${due.length ? `<div class="due-panel"><h2>今日到期</h2><ul>${due.map((d) => `<li><strong>${esc(d.title)}</strong><small>${esc(d.plan || "")}</small></li>`).join("")}</ul></div>` : ""}${recentNotes.length ? `<div class="recent-notes"><h2>最近笔记</h2><nav>${recentNotes.map((n) => `<a href="#module/knowledge" data-action="select-note" data-id="${esc(n.id)}">${esc(n.data.title)}</a>`).join("")}</nav></div>` : ""}</section>${
+  return `<section class="home-main" id="home-main" tabindex="-1" aria-label="时列工作台"><section class="home-hero" aria-label="时列工作区">${picture}<div class="home-heading"><span class="home-brand">时列</span><p class="home-greet">${greet()}，${today}</p><button class="small-button home-quick" data-action="quick">快速打开搜索 <kbd>Ctrl K</kbd></button><a class="small-button home-back-start" href="#home">回到开始页</a></div></section><section class="today-overview" aria-label="今日概览"><nav class="stat-grid">${stats.map((s) => `<a class="stat-block" href="${s.href}"><b ${typeof s.value === "number" ? 'data-count="' + s.value + '"' : ""}>${s.value}${s.total !== undefined ? "<small> / " + s.total + "</small>" : ""}</b><span>${s.label}</span></a>`).join("")}</nav>${due.length ? `<div class="due-panel"><h2>今日到期</h2><ul>${due.map((d) => `<li><strong>${esc(d.title)}</strong><small>${esc(d.plan || "")}</small></li>`).join("")}</ul></div>` : ""}${recentNotes.length ? `<div class="recent-notes"><h2>最近笔记</h2><nav>${recentNotes.map((n) => `<a href="#module/knowledge" data-action="select-note" data-id="${esc(n.id)}">${esc(n.data.title)}</a>`).join("")}</nav></div>` : ""}</section>${
     state.recent.length
       ? `<section class="recent-section"><h2>继续上次工作</h2><nav class="recent-links">${state.recent
           .map((id) => modules.find((m) => m.id === id))
@@ -196,6 +196,13 @@ function home() {
           .join("")}</nav></section>`
       : ""
   }</section>`;
+}
+function startPage() {
+  return `<section class="home-start" aria-label="时列开始页">${orbitStage()}</section>`;
+}
+/* 兼容旧调用：没有指定视图时默认落在开始页。 */
+function home() {
+  return startPage();
 }
 function category(id) {
   const group = groups.find((g) => g.id === id);
@@ -460,8 +467,9 @@ export function render() {
   if (state.error)
     return `<section class="empty-panel"><h2>工作区暂不可用</h2><p>${esc(state.error)}</p><button class="primary-button" data-action="retry">重试</button></section>`;
   const [kind, id, tab] = location.hash.slice(1).split("/");
+  if (kind === "home" && id === "workspace") return workspacePage();
   if (kind === "category") return category(id);
-  if (kind !== "module" || !modules.some((m) => m.id === id)) return home();
+  if (kind !== "module" || !modules.some((m) => m.id === id)) return startPage();
   if (id === "knowledge") {
     if (["all", "notes", "resources"].includes(tab)) state.filter = tab;
     return knowledge();

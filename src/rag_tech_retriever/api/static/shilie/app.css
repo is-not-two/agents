@@ -5672,6 +5672,17 @@ body::before {
 .home-quick {
   align-self: flex-start;
 }
+/* 工作台是独立视图：给显式的“回到开始页”入口，导航条不再承担返回。 */
+.home-back-start {
+  align-self: flex-start;
+}
+.home-main:focus {
+  outline: none;
+}
+.home-main:focus-visible {
+  outline: 2px solid #996d41;
+  outline-offset: 4px;
+}
 .today-overview {
   display: flex;
   flex-direction: column;

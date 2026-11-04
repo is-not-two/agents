@@ -1,25 +1,25 @@
-import { bindCollaboration } from "./collaboration.js?v=109";
-import { bindAgentStudio } from "./agent-studio.js?v=109";
-import { bindBackup } from "./backup.js?v=109";
+import { bindCollaboration } from "./collaboration.js?v=110";
+import { bindAgentStudio } from "./agent-studio.js?v=110";
+import { bindBackup } from "./backup.js?v=110";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=109";
-import { bindModelConnection } from "./model-connection.js?v=109";
-import { bindTree } from "./tree-actions.js?v=109";
-import { bindAutomation } from "./automation-actions.js?v=109";
-import { bindLessons } from "./lessons.js?v=109";
-import { bindJobs } from "./jobs.js?v=109";
-import { bindCapabilities } from "./company-capabilities.js?v=109";
-import { bindLearning } from "./learning.js?v=109";
-import { bindJobInsights } from "./job-insights.js?v=109";
-import { bindServerStatus } from "./server-status.js?v=109";
-import { bindEvaluation } from "./evaluation.js?v=109";
-import { startTour } from "./tour.js?v=109";
-import { toggleDirector, directorActive } from "./director.js?v=109";
-import { initMotion } from "./motion.js?v=109";
-import { initOrbit } from "./orbit.js?v=109";
+} from "./private-view.js?v=110";
+import { bindModelConnection } from "./model-connection.js?v=110";
+import { bindTree } from "./tree-actions.js?v=110";
+import { bindAutomation } from "./automation-actions.js?v=110";
+import { bindLessons } from "./lessons.js?v=110";
+import { bindJobs } from "./jobs.js?v=110";
+import { bindCapabilities } from "./company-capabilities.js?v=110";
+import { bindLearning } from "./learning.js?v=110";
+import { bindJobInsights } from "./job-insights.js?v=110";
+import { bindServerStatus } from "./server-status.js?v=110";
+import { bindEvaluation } from "./evaluation.js?v=110";
+import { startTour } from "./tour.js?v=110";
+import { toggleDirector, directorActive } from "./director.js?v=110";
+import { initMotion } from "./motion.js?v=110";
+import { initOrbit } from "./orbit.js?v=110";
 import {
   api,
   state,
@@ -30,13 +30,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=109";
+} from "./data.js?v=110";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=109";
+} from "./views.js?v=110";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -64,7 +64,8 @@ let toastTimer,
   detailTrigger = null,
   editingId = "",
   working = false,
-  pendingBack = false;
+  pendingBack = false,
+  paintedRoute = location.hash || "#home";
 document.body.insertAdjacentHTML("beforeend", dialogs());
 function toast(message, error = false) {
   toastBox.textContent = message;
@@ -95,6 +96,15 @@ function updatePosition() {
     a.textContent = label;
     nav.append(a);
   };
+  /* 首页分两层：开始页（环轨）与工作台。这里的 id 不能交给 groups 匹配，
+     否则 `#home/workspace` 会被当成 `#category/workspace` 显示成两个“工作区”。 */
+  if (kind === "home") {
+    if (id === "workspace") {
+      link("开始页", "#home");
+      nav.append("›", "工作台");
+    }
+    return;
+  }
   if (module) {
     link("工作区", "#home");
     nav.append("›");
@@ -114,6 +124,13 @@ function renderPage({ restore = false } = {}) {
     : "full";
   document.body.dataset.layout = state.mode;
   const moduleId = location.hash.split("/")[1];
+  /* 首页两层：`#home` 开始页（环轨）、`#home/workspace` 工作台。
+     只有真正跨层跳转时才播放入场过渡；同层刷新/重绘不闪。 */
+  const route = location.hash || "#home";
+  const homeLayer = route === "#home" || route === "#home/workspace";
+  const enteringHomeLayer = route !== paintedRoute && homeLayer;
+  const cameFromStart = paintedRoute === "#home" && route === "#home/workspace";
+  paintedRoute = route;
   if (
     location.hash.startsWith("#module/") &&
     modules.some((m) => m.id === moduleId)
@@ -136,7 +153,7 @@ function renderPage({ restore = false } = {}) {
   serverStatusController?.ensure();
   evaluationController?.ensure();
   bindSlide();
-  navigationStrip.hidden = !location.hash || location.hash === "#home";
+  navigationStrip.hidden = !location.hash || homeLayer;
   /* 移动端底部导航高亮：模块子页（如 #module/knowledge/notes）也算命中父模块。 */
   document.querySelectorAll(".mobile-nav a").forEach((a) => {
     const target = a.getAttribute("href");
@@ -152,9 +169,23 @@ function renderPage({ restore = false } = {}) {
       b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode)),
     );
   document.title =
-    (modules.find((m) => m.id === moduleId)?.title || "工作区") + " · 时列";
+    route === "#home/workspace"
+      ? "工作台 · 时列"
+      : route === "#home"
+        ? "开始 · 时列"
+        : (modules.find((m) => m.id === moduleId)?.title || "工作区") +
+          " · 时列";
   if (!restore) window.scrollTo(0, 0);
-  const route = location.hash || "#home";
+  if (enteringHomeLayer) {
+    /* 跨层跳转：开始页 ↔ 工作台各给一次 260ms 入场，同层重绘不闪。 */
+    content.classList.remove("page-enter");
+    void content.offsetWidth;
+    content.classList.add("page-enter");
+  }
+  if (cameFromStart)
+    requestAnimationFrame(() => {
+      document.querySelector("#home-main")?.focus({ preventScroll: true });
+    });
   persistRoute();
 }
 let knowledgeTimer;
