@@ -30,6 +30,7 @@ PURE_LOGIC_TESTS = [
     "tests/test_openapi_contract.py",
     "tests/test_native_gate_policy.py",
     "tests/test_config_merge.py",
+    "tests/test_deploy_guard.py",
 ]
 
 

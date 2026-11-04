@@ -8,22 +8,22 @@
 
 运行诊断、发布门禁与 CI/发布包流程见 [运维说明](docs/OPERATIONS.md)。CI 定义未推送前不代表云端已执行；真实服务器 CD 尚未配置。
 
-### 当前有效使用方式（2026-11-03 更新）
+### 当前有效使用方式（2026-11-04 更新）
 
 按用户确认，日常使用以**服务器为唯一后端与数据库**，不要求桌面启动 Docker 或本机网页进程。服务器采用 Ubuntu 原生 PostgreSQL/pgvector、Python venv 和 systemd，**双环境**：
 
 | 环境 | 地址 | 服务 | 状态 |
 |---|---|---|---|
-| 正式 | `https://8.156.81.128:8770/` | `shilie.service` | v103 |
-| 测试 | `https://8.156.81.128:8771/` | `shilie-preview.service` | v107（新功能先在此验证，独立数据库） |
+| 正式 | `https://8.156.81.128:8770/` | `shilie.service` | v103（未切换） |
+| 测试 | `https://8.156.81.128:8771/` | `shilie-preview.service` | v108（独立运行时，2026-11-04 隔离） |
 
-两环境各自独立数据库（正式 `shilie_native_20261027`，测试 `shilie_preview_20261103`）并共用模型缓存，代码目录与 systemd drop-in 各自独立；数据库端口不对公网开放，ufw 仅放行本人 IP（云安全组需另行放行 8770/8771）。代码位于 `/opt/shilie/releases`，入口软链 `current`/`preview`，持久数据在 `/var/lib/shilie`，私密环境变量与证书在 `/etc/shilie`；代码切换不覆盖数据。
+**测试环境（8771）已与正式完全隔离**：OS 用户 `shilie_pvapp`（UID 992）、应用根 `/var/lib/shilie-preview/app`、独立 PG 16 集群（`shilie_pvdb`、仅 `127.0.0.1:55433`）与库 `shilie_preview_20261104`；旧库 `shilie_preview_20261103` 保留但不再对外服务。正式仍为 `shilie`（UID 995）+ 系统集群 5432 + `/var/lib/shilie`。两环境各自独立数据库、凭据与文件根，仅共用只读模型缓存；数据库端口不对公网开放，ufw 仅放行本人 IP（云安全组需另行放行 8770/8771）。
 
-**登录方式**：账号密码（`WORKSPACE_USER` + `WORKSPACE_PASSWORD_HASH`，scrypt 哈希，存 `/etc/shilie/workspace.env`；用 `scripts/set_login_password.py` 交互生成，明文密码不入任何文件）+ 可选「记住此账号 30 天」；访问令牌登录保留为备用通道。
+**登录方式**：正式用 `/etc/shilie/workspace.env` 的账号哈希；测试用 `/etc/shilie-preview/workspace.env`（账号 `luojiee`），密码在服务器 root 终端执行 `shilie-preview-set-password` 交互设置（密码不回显、不进日志）。均支持「记住此账号 30 天」，访问令牌登录保留为备用通道。
 
-**部署流程**：`python scripts/deploy_release.py --target preview --apply --confirm HEAD` 推测试 → 浏览器验证 → `--target production` 推正式；失败自动回滚代码。CI 为 `.github/workflows/ci.yml`（全量门禁），测试环境可用 `Deploy preview`（workflow_dispatch，需配置 secrets `SHILIE_SSH_KEY` / `SHILIE_KNOWN_HOSTS`）；正式环境仍保持人工确认，不做 push-to-deploy。真实拓扑与全部踩坑（ProtectSystem 只读、site-packages 非 editable、kind 约束 8→17 等）见 [docs/DEPLOYMENT_REALITY.md](docs/DEPLOYMENT_REALITY.md)。
+**部署流程**：`deploy_release.py --target production` 仍是人工确认 + 自动回滚，但正式库当前缺少 `bookmark` kind，**晋升前必须先做 schema 迁移**；`--target preview` 检测到 8771 已隔离时会**主动拒绝**（避免旧流程覆盖隔离环境），测试环境改用隔离部署流程（人工，脚本待补）。`.github/workflows/` 仅作为镜像仓库备用，Gitee 侧暂不接云端流水线。
 
-**质量门禁**：`scripts/local_gate.py`（pre-push hook 自动运行：ruff / pytest / 静态版本一致 / 敏感文件 / kind 与库一致）；完整门禁 `scripts/release_gate.py --checks full --backend native`（Docker 后端仅限 GitHub CI 显式选择）。
+**质量门禁**：`scripts/ci_gate.py`（pre-push 自动运行，约 15s：ruff / 静态版本 / OpenAPI / 前端契约 / 静态资源 / 纯逻辑 pytest，不依赖数据库）；完整门禁 `scripts/release_gate.py --checks full --backend native`。真实拓扑与全部踩坑见 [docs/DEPLOYMENT_REALITY.md](docs/DEPLOYMENT_REALITY.md)。
 
 ### 企业级能力（2026-11-03，v106 已部署测试环境）
 
