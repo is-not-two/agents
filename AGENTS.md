@@ -286,6 +286,13 @@ rag-tech-doc-retriever/
 4. 服务器部署以分支为准：8771 取 `develop`，8770 取 `master`；禁止把未验收的提交直接部署到 8770
 5. 分支保护、CI 触发与部署密钥属于平台/服务器配置，按需单独授权后设置
 
+## CI/CD
+1. CI 入口：`.workflow/ci.yml`（Gitee Go）+ `scripts/ci_gate.py`。门禁内容：ruff、静态版本号、OpenAPI 契约、前端接口契约、静态资源引用、纯逻辑 pytest 白名单；**不依赖 PostgreSQL / Docker**，本机实测 `CI_GATE_PASSED`（6 项全过，约 15s）。
+2. 触发：push 到 `develop`、PR 到 `master`。Gitee Go 云端 Python 插件最高 3.9，而项目要求 3.10+，因此流水线走**主机组 `shilie-ci`**（`shell@agent`）在接入主机上建临时 venv 执行；主机组需在 Gitee 网页创建并接入主机，名称不一致时同步改 `hostGroupID`。
+3. 正式门禁：`master` 分支保护规则里把该流水线设为必需状态检查；合并前必须绿。
+4. CD 边界：**不配置自动部署**。`develop` 的部署到 8771 由人工执行（`deploy_release.py` 对 preview 的既有流程）；`master` 部署到 8770 必须在全部功能验收 + 用户明确同意后人工执行。部署用的 SSH 密钥只放平台 Secrets / 服务器 env，禁止入仓。
+5. 本机 `pre-push` 钩子跑全量 pytest，依赖本机 PostgreSQL；无库时推送会卡在测试阶段并失败。已知环境限制下的处置：先单独跑 `scripts/ci_gate.py`，再用 `GATE_SKIP=1` 推送，并在提交说明里注明原因；CI 侧不接受这种跳过。
+
 ## Documentation Sync Convention
 1. 每个可验收改动完成的同一轮，更新：`DESIGN.md`（当前态/决策）、`PLAN.md`（断面数字）、`progress.html`（看板）、本文件（长期记忆与踩坑）
 2. 证据放 `output/` 并写清路径、命令、退出码、数值；未验证项必须显式标注“未验收”

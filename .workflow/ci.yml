@@ -1,0 +1,40 @@
+# Gitee Go 流水线：只读质量门禁（不部署、不写数据库、不碰正式环境）
+#
+# 使用前提（网页操作，仓库所有者完成）：
+# 1. 仓库「服务 → Gitee Go」开通流水线；
+# 2. 新建主机组 `shilie-ci` 并把构建主机接入（主机需 Python 3.10+ 且能访问 PyPI 镜像）；
+# 3. 新建流水线时选择本文件，或把本文件内容粘贴到流水线的 YAML 编辑器；
+#    若主机组名不同，同步修改下方 hostGroupID。
+#
+# 触发范围：push 到 develop（测试/开发分支）与 PR 到 master（正式分支）。
+# master 合并前应把本流水线设为必需状态检查（分支保护规则里勾选）。
+version: '1.0'
+name: ci-gate
+displayName: 质量门禁（开发/PR）
+triggers:
+  push:
+    branches:
+      precise:
+        - develop
+  pr:
+    branches:
+      precise:
+        - master
+stages:
+  - stage:
+      name: gate
+      displayName: 只读门禁
+      strategy: fast
+      trigger: auto
+      steps:
+        - step: shell@agent
+          name: run_ci_gate
+          displayName: ruff + 契约 + 静态 + 纯逻辑 pytest
+          hostGroupID: shilie-ci
+          script: |
+            set -e
+            cd ~/gitee_go/deploy
+            python3 -m venv .ci-venv
+            .ci-venv/bin/python -m pip install -q --upgrade pip
+            .ci-venv/bin/python -m pip install -q -e '.[dev]'
+            .ci-venv/bin/python scripts/ci_gate.py
