@@ -279,6 +279,13 @@ rag-tech-doc-retriever/
 6. 一次提交只做一件事；代码与文档分开提交，便于回滚与审读
 7. 未配置远端前不猜测推送地址；推送前先确认 `git remote -v` 与目标分支
 
+## Branch & Environment Mapping
+1. 仓库 `origin` = `git@gitee.com:luojiee/agents.git`（Gitee 私有仓库，SSH 密钥 `id_ed25519_gitee`）
+2. 只维护两个长期分支：`develop`（测试/开发，对应服务器 8771）与 `master`（正式，对应服务器 8770）
+3. 日常改动提交到 `develop`；正式晋级必须经用户明确同意，用合并/评审把 `develop` 合入 `master`，不直接在 `master` 上开发
+4. 服务器部署以分支为准：8771 取 `develop`，8770 取 `master`；禁止把未验收的提交直接部署到 8770
+5. 分支保护、CI 触发与部署密钥属于平台/服务器配置，按需单独授权后设置
+
 ## Documentation Sync Convention
 1. 每个可验收改动完成的同一轮，更新：`DESIGN.md`（当前态/决策）、`PLAN.md`（断面数字）、`progress.html`（看板）、本文件（长期记忆与踩坑）
 2. 证据放 `output/` 并写清路径、命令、退出码、数值；未验证项必须显式标注“未验收”
