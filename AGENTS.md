@@ -269,6 +269,20 @@ rag-tech-doc-retriever/
 5. **配置优先**：所有可变参数从配置读取，禁止魔法数字硬编码
 6. **导入规范**：按标准库→第三方库→本地模块顺序导入，禁止循环导入
 
+## Commit & Push Convention
+1. 格式：`type(scope): 内容`（Conventional Commits 的中文口径，用户指定）
+2. type 取值：`fix` / `feat` / `docs` / `test` / `perf` / `refactor` / `chore` / `ci`
+3. scope 用一句话说清受影响的中文模块，例如 `修复备份`、`连接池`、`文档`、`测试环境隔离`、`门禁`
+4. 内容动词开头，写“为什么/结果”，禁止 `update files`、`misc` 之类无信息描述
+5. 示例：`fix(修复备份): 补齐 bookmark/lesson 校验器`、`perf(连接池): 借满等待与失效连接丢弃`、`docs(文档): 记录 8771 隔离实测与回滚`
+6. 一次提交只做一件事；代码与文档分开提交，便于回滚与审读
+7. 未配置远端前不猜测推送地址；推送前先确认 `git remote -v` 与目标分支
+
+## Documentation Sync Convention
+1. 每个可验收改动完成的同一轮，更新：`DESIGN.md`（当前态/决策）、`PLAN.md`（断面数字）、`progress.html`（看板）、本文件（长期记忆与踩坑）
+2. 证据放 `output/` 并写清路径、命令、退出码、数值；未验证项必须显式标注“未验收”
+3. 不用计划、模拟或旧结果替代实测；不改写历史证据，只追加新一轮
+
 ## Configuration Management
 1. 所有配置集中在`config/`目录下，yaml格式
 2. 优先级规则：环境变量 > .env文件 > 配置文件
