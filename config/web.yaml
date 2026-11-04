@@ -25,6 +25,11 @@ web:
   chat:
     greeting: 你好，我可以检索知识与技术文档；需要写入时会引导你确认。
     write_hint: 尚未执行写入。请前往资料入库或Agent工作室，核对内容后人工确认。
+  # 提示词优化：只在用户点击时调用一次模型；不自动触发、不写库。
+  prompt_optimizer:
+    max_input_chars: 4000
+    max_tokens: 800
+    timeout_seconds: 25
 llm:
   timeout_seconds: 25
   max_tokens: 800

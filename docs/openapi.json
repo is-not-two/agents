@@ -582,6 +582,28 @@
         "title": "ProfileInput",
         "type": "object"
       },
+      "PromptOptimizeInput": {
+        "description": "草稿原文，以及调用场景；场景只用于后续扩展，不改变模型权限。",
+        "properties": {
+          "target": {
+            "default": "workspace",
+            "maxLength": 32,
+            "title": "Target",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "PromptOptimizeInput",
+        "type": "object"
+      },
       "QueryInput": {
         "additionalProperties": false,
         "description": "查询文本、范围与模式。",
@@ -5875,6 +5897,46 @@
           }
         },
         "summary": "Private Update"
+      }
+    },
+    "/api/prompt/optimize": {
+      "post": {
+        "operationId": "optimize_api_prompt_optimize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptOptimizeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Optimize Api Prompt Optimize Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Optimize"
       }
     },
     "/api/query": {

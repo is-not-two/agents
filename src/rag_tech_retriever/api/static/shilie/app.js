@@ -1,25 +1,25 @@
-import { bindCollaboration } from "./collaboration.js?v=114";
-import { bindAgentStudio } from "./agent-studio.js?v=114";
-import { bindBackup } from "./backup.js?v=114";
+import { bindCollaboration } from "./collaboration.js?v=115";
+import { bindAgentStudio } from "./agent-studio.js?v=115";
+import { bindBackup } from "./backup.js?v=115";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=114";
-import { bindModelConnection } from "./model-connection.js?v=114";
-import { bindTree } from "./tree-actions.js?v=114";
-import { bindAutomation } from "./automation-actions.js?v=114";
-import { bindLessons } from "./lessons.js?v=114";
-import { bindJobs } from "./jobs.js?v=114";
-import { bindCapabilities } from "./company-capabilities.js?v=114";
-import { bindLearning } from "./learning.js?v=114";
-import { bindJobInsights } from "./job-insights.js?v=114";
-import { bindServerStatus } from "./server-status.js?v=114";
-import { bindEvaluation } from "./evaluation.js?v=114";
-import { startTour } from "./tour.js?v=114";
-import { toggleDirector, directorActive } from "./director.js?v=114";
-import { initMotion } from "./motion.js?v=114";
-import { initOrbit } from "./orbit.js?v=114";
+} from "./private-view.js?v=115";
+import { bindModelConnection } from "./model-connection.js?v=115";
+import { bindTree } from "./tree-actions.js?v=115";
+import { bindAutomation } from "./automation-actions.js?v=115";
+import { bindLessons } from "./lessons.js?v=115";
+import { bindJobs } from "./jobs.js?v=115";
+import { bindCapabilities } from "./company-capabilities.js?v=115";
+import { bindLearning } from "./learning.js?v=115";
+import { bindJobInsights } from "./job-insights.js?v=115";
+import { bindServerStatus } from "./server-status.js?v=115";
+import { bindEvaluation } from "./evaluation.js?v=115";
+import { startTour } from "./tour.js?v=115";
+import { toggleDirector, directorActive } from "./director.js?v=115";
+import { initMotion } from "./motion.js?v=115";
+import { initOrbit } from "./orbit.js?v=115";
 import {
   api,
   state,
@@ -30,13 +30,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=114";
+} from "./data.js?v=115";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=114";
+} from "./views.js?v=115";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -512,6 +512,54 @@ async function submitSearch(form) {
     }));
   }
 }
+/* 个人工作台提示词优化：只改写草稿，必须由用户点「应用」才写回输入框。 */
+async function optimizePrompt() {
+  const draft = $("#prompt-draft"),
+    button = document.querySelector('[data-action="optimize-prompt"]'),
+    status = $("#prompt-status"),
+    result = $("#prompt-result"),
+    optimized = $("#prompt-optimized");
+  if (!draft || !button || !status || !result || !optimized) return;
+  const text = draft.value.trim();
+  if (!text) {
+    toast("先写下需要优化的提示词", true);
+    draft.focus();
+    return;
+  }
+  button.disabled = true;
+  status.textContent = "正在优化…";
+  result.hidden = true;
+  try {
+    const data = await api("prompt/optimize", { text, target: "workspace" });
+    optimized.value = data.optimized;
+    result.hidden = false;
+    status.textContent = data.usage?.total_tokens
+      ? `已完成 · ${data.usage.total_tokens} tokens`
+      : "已完成";
+  } catch (error) {
+    status.textContent = error.message;
+    toast(error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+}
+function applyOptimizedPrompt() {
+  const draft = $("#prompt-draft"),
+    optimized = $("#prompt-optimized"),
+    result = $("#prompt-result"),
+    status = $("#prompt-status");
+  if (!draft || !optimized || !result) return;
+  draft.value = optimized.value.trim();
+  result.hidden = true;
+  if (status) status.textContent = "已应用到草稿";
+  draft.focus();
+}
+function dismissOptimizedPrompt() {
+  const result = $("#prompt-result"),
+    status = $("#prompt-status");
+  if (result) result.hidden = true;
+  if (status) status.textContent = "";
+}
 async function finishStage(form) {
   if (form.dataset.saving === "true") return;
   const id = $("#detail-dialog").dataset.finishId,
@@ -691,6 +739,15 @@ function handleAction(button) {
       break;
     case "trash-restore":
       restoreSidebarTrash(id, Number(button.dataset.version || 0));
+      break;
+    case "optimize-prompt":
+      optimizePrompt();
+      break;
+    case "apply-optimized":
+      applyOptimizedPrompt();
+      break;
+    case "dismiss-optimized":
+      dismissOptimizedPrompt();
       break;
     case "restore-trash":
       restoreTrash(id);

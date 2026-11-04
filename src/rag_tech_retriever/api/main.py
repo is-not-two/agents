@@ -38,6 +38,7 @@ from rag_tech_retriever.api.routes import model_connection as connection_routes
 from rag_tech_retriever.api.routes import notifications as notification_routes
 from rag_tech_retriever.api.routes import operations as operations_routes
 from rag_tech_retriever.api.routes import private as private_routes
+from rag_tech_retriever.api.routes import prompts as prompt_routes
 from rag_tech_retriever.api.routes import search as search_routes
 from rag_tech_retriever.api.routes import stages as stage_routes
 from rag_tech_retriever.common.account_auth import is_configured, verify_login
@@ -449,6 +450,7 @@ def create_app(
         automation,
         connection_routes,
         private_routes,
+        prompt_routes,
         capability_routes,
         mcp_routes,
         evaluation_routes,

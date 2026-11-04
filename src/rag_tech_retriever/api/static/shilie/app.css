@@ -1851,9 +1851,7 @@ body[data-layout="sidebar"] .sidebar {
 }
 /* 侧栏回收站：折叠入口 + 窄栏内的紧凑恢复列表。 */
 .sidebar-trash {
-  margin-top: 24px;
-  border-top: 1px solid #e8e2dc;
-  padding-top: 8px;
+  margin-top: 8px;
 }
 .trash-toggle {
   width: 100%;
@@ -5765,6 +5763,68 @@ body::before {
 .home-main:focus-visible {
   outline: 2px solid #996d41;
   outline-offset: 4px;
+}
+/* 个人工作台：提示词优化卡；只在点击时调用模型，结果需人工应用。 */
+.prompt-optimizer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 22px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #e6ded4;
+  border-radius: 14px;
+}
+.prompt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.prompt-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.prompt-head span,
+.prompt-status {
+  font-size: 12px;
+  color: #8b7c6e;
+}
+.prompt-optimizer textarea,
+.prompt-result textarea {
+  width: 100%;
+  min-height: 76px;
+  padding: 10px 12px;
+  border: 1px solid #e1d8ce;
+  border-radius: 8px;
+  background: #fffdfa;
+  color: #3a3128;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.prompt-optimizer textarea:focus,
+.prompt-result textarea:focus {
+  outline: 2px solid #bd9659;
+  outline-offset: 1px;
+}
+.prompt-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.prompt-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed #e1d8ce;
+}
+.prompt-result label {
+  font-size: 12px;
+  color: #7b726a;
 }
 .today-overview {
   display: flex;
