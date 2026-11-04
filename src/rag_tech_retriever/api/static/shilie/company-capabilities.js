@@ -1,5 +1,5 @@
 /* 目标公司能力清单：记录公司要什么，不自动判定个人是否具备。 */
-import { api, escapeHtml as esc } from "./data.js?v=112";
+import { api, escapeHtml as esc } from "./data.js?v=113";
 
 const requirementLabels = { must: "硬性要求", nice: "加分项" };
 const statusLabels = { evidence: "有证据", pending: "待补证据", missing: "未提供" };
