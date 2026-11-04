@@ -6954,6 +6954,13 @@ body::before {
   height: 14px;
   color: #b7a794;
 }
+/* 窄屏列表里的主入口：环轨隐藏后，这是进入工作台视图的唯一入口。 */
+.sl-orbit-list__item--enter {
+  grid-column: 1 / -1;
+  background: #fff4e4;
+  border-color: #d99a5c;
+  font-weight: 600;
+}
 .sl-orbit-list__item:hover,
 .sl-orbit-list__item:focus-visible {
   background: #fff0dc;

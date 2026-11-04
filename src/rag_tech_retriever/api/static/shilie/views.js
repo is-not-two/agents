@@ -1,35 +1,35 @@
-import { collaborationView } from "./collaboration.js?v=110";
-import { corpusSelect } from "./public-corpus.js?v=110";
-import { agentStudioView } from "./agent-studio.js?v=110";
-import { backupView } from "./backup.js?v=110";
-import { privateView } from "./private-view.js?v=110";
-import { modelConnectionView } from "./model-connection.js?v=110";
-import { treeView, treeDialog } from "./tree.js?v=110";
+import { collaborationView } from "./collaboration.js?v=111";
+import { corpusSelect } from "./public-corpus.js?v=111";
+import { agentStudioView } from "./agent-studio.js?v=111";
+import { backupView } from "./backup.js?v=111";
+import { privateView } from "./private-view.js?v=111";
+import { modelConnectionView } from "./model-connection.js?v=111";
+import { treeView, treeDialog } from "./tree.js?v=111";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=110";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=110";
-import { jobsView, jobsDialog } from "./jobs.js?v=110";
+} from "./automation-views.js?v=111";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=111";
+import { jobsView, jobsDialog } from "./jobs.js?v=111";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=110";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=110";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=110";
-import { serverStatusView } from "./server-status.js?v=110";
-import { evaluationView } from "./evaluation.js?v=110";
-import { directorActive } from "./director.js?v=110";
-import { icon, orbitIcon } from "./icons.js?v=110";
+} from "./company-capabilities.js?v=111";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=111";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=111";
+import { serverStatusView } from "./server-status.js?v=111";
+import { evaluationView } from "./evaluation.js?v=111";
+import { directorActive } from "./director.js?v=111";
+import { icon, orbitIcon } from "./icons.js?v=111";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=110";
+} from "./data.js?v=111";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -164,10 +164,12 @@ function orbitStage() {
   const outer = ORBIT_OUTER.map((n, i) => orbitSlot(n, "category", i)).join("");
   const inner = ORBIT_INNER.map((n, i) => orbitSlot(n, "module", i)).join("");
   const list = [
+    /* 窄屏环轨被隐藏，中心「进入」也不存在；列表必须保留一个进入工作台的入口。 */
+    `<a class="sl-orbit-list__item sl-orbit-list__item--enter" href="#home/workspace">${icon("home")}<span>进入工作台</span>${arrow}</a>`,
     ...ORBIT_OUTER.map((n) => orbitListItem(n, "category")),
     ...ORBIT_INNER.map((n) => orbitListItem(n, "module")),
   ].join("");
-  return `<div class="home-orbit-wrap"><nav class="sl-orbit" aria-label="工作区入口环轨" data-orbit-speed="running"><div class="sl-orbit__halo" aria-hidden="true"></div><div class="sl-orbit__track sl-orbit__track--inner" aria-hidden="true"></div><div class="sl-orbit__track sl-orbit__track--outer" aria-hidden="true"></div><div class="sl-orbit__spokes" aria-hidden="true"></div><div class="sl-orbit__ring sl-orbit__ring--inner">${inner}</div><div class="sl-orbit__ring sl-orbit__ring--outer">${outer}</div><button class="sl-orbit__hub" type="button" aria-label="进入工作台" aria-describedby="sl-orbit-hint"><span class="sl-orbit__hub-label">进入</span><span class="sl-orbit__hub-state">环轨运行中</span></button><p id="sl-orbit-hint" class="sl-sr-only">环轨上的入口正在自动旋转。按此键进入下方工作台；也可以直接用键盘聚焦到某个入口。</p><p id="sl-orbit-status" role="status" class="sl-sr-only"></p></nav><nav class="sl-orbit-list" aria-label="工作区入口">${list}</nav></div>`;
+  return `<div class="home-orbit-wrap"><nav class="sl-orbit" aria-label="工作区入口环轨" data-orbit-speed="running"><div class="sl-orbit__halo" aria-hidden="true"></div><div class="sl-orbit__track sl-orbit__track--inner" aria-hidden="true"></div><div class="sl-orbit__track sl-orbit__track--outer" aria-hidden="true"></div><div class="sl-orbit__spokes" aria-hidden="true"></div><div class="sl-orbit__ring sl-orbit__ring--inner">${inner}</div><div class="sl-orbit__ring sl-orbit__ring--outer">${outer}</div><button class="sl-orbit__hub" type="button" aria-label="进入工作台" aria-describedby="sl-orbit-hint"><span class="sl-orbit__hub-label">进入</span><span class="sl-orbit__hub-state">环轨运行中</span></button><p id="sl-orbit-hint" class="sl-sr-only">环轨上的入口正在自动旋转。按此键进入工作台视图；也可以直接用键盘聚焦到某个入口。</p><p id="sl-orbit-status" role="status" class="sl-sr-only"></p></nav><nav class="sl-orbit-list" aria-label="工作区入口">${list}</nav></div>`;
 }
 function workspacePage() {
   const stats = homeStats();
