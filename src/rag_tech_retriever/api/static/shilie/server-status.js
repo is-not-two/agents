@@ -1,5 +1,5 @@
 /* 运行诊断：分区读取，失败与旧数据显式区分；诊断不执行发布命令。 */
-import { api, escapeHtml as escape } from "./data.js?v=113";
+import { api, escapeHtml as escape } from "./data.js?v=114";
 const cache = { data: null, mcp: null, diagnostics: null, errors: {}, loaded: false, loading: false, checkedAt: "" };
 let repaint = () => {};
 

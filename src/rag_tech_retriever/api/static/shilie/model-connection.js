@@ -1,5 +1,5 @@
 /* 模型连接表单：密钥仅随请求发送，不写浏览器偏好。 */
-import { api, state } from "./data.js?v=113";
+import { api, state } from "./data.js?v=114";
 const escape = (x) =>
   String(x ?? "").replace(
     /[&<>"']/g,

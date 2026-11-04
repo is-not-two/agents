@@ -1,6 +1,6 @@
 /* 谨记名单：记录犯过的错误，按类型分类（技术/操作/判断/习惯/其他，可自定义）。
    事实源在 PostgreSQL（kind=lesson）；分类筛选是浏览器显示偏好。 */
-import { api, read, write, escapeHtml as escape } from "./data.js?v=113";
+import { api, read, write, escapeHtml as escape } from "./data.js?v=114";
 
 const CATEGORIES = ["技术", "操作", "判断", "习惯", "其他"];
 

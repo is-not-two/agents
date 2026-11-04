@@ -1,25 +1,25 @@
-import { bindCollaboration } from "./collaboration.js?v=113";
-import { bindAgentStudio } from "./agent-studio.js?v=113";
-import { bindBackup } from "./backup.js?v=113";
+import { bindCollaboration } from "./collaboration.js?v=114";
+import { bindAgentStudio } from "./agent-studio.js?v=114";
+import { bindBackup } from "./backup.js?v=114";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=113";
-import { bindModelConnection } from "./model-connection.js?v=113";
-import { bindTree } from "./tree-actions.js?v=113";
-import { bindAutomation } from "./automation-actions.js?v=113";
-import { bindLessons } from "./lessons.js?v=113";
-import { bindJobs } from "./jobs.js?v=113";
-import { bindCapabilities } from "./company-capabilities.js?v=113";
-import { bindLearning } from "./learning.js?v=113";
-import { bindJobInsights } from "./job-insights.js?v=113";
-import { bindServerStatus } from "./server-status.js?v=113";
-import { bindEvaluation } from "./evaluation.js?v=113";
-import { startTour } from "./tour.js?v=113";
-import { toggleDirector, directorActive } from "./director.js?v=113";
-import { initMotion } from "./motion.js?v=113";
-import { initOrbit } from "./orbit.js?v=113";
+} from "./private-view.js?v=114";
+import { bindModelConnection } from "./model-connection.js?v=114";
+import { bindTree } from "./tree-actions.js?v=114";
+import { bindAutomation } from "./automation-actions.js?v=114";
+import { bindLessons } from "./lessons.js?v=114";
+import { bindJobs } from "./jobs.js?v=114";
+import { bindCapabilities } from "./company-capabilities.js?v=114";
+import { bindLearning } from "./learning.js?v=114";
+import { bindJobInsights } from "./job-insights.js?v=114";
+import { bindServerStatus } from "./server-status.js?v=114";
+import { bindEvaluation } from "./evaluation.js?v=114";
+import { startTour } from "./tour.js?v=114";
+import { toggleDirector, directorActive } from "./director.js?v=114";
+import { initMotion } from "./motion.js?v=114";
+import { initOrbit } from "./orbit.js?v=114";
 import {
   api,
   state,
@@ -30,13 +30,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=113";
+} from "./data.js?v=114";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=113";
+} from "./views.js?v=114";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -117,11 +117,15 @@ function updatePosition() {
 }
 function paintSidebar() {
   $("#sidebar").innerHTML = sidebar();
-  /* 回收站入口在侧栏底部：展开后把侧栏滚到底，否则列表落在视口外，点了像没反应。 */
+  /* 回收站入口在侧栏底部：展开后把入口对齐到侧栏顶部，
+     让按钮和最新条目一起进入视口，而不是滚到列表最末端。 */
   if (state.trashOpen)
     requestAnimationFrame(() => {
-      const bar = $("#sidebar");
-      if (bar) bar.scrollTop = bar.scrollHeight;
+      const bar = $("#sidebar"),
+        section = bar?.querySelector(".sidebar-trash");
+      if (bar && section)
+        bar.scrollTop +=
+          section.getBoundingClientRect().top - bar.getBoundingClientRect().top;
     });
 }
 function renderPage({ restore = false } = {}) {
