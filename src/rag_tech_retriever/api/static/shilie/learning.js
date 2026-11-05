@@ -1,5 +1,5 @@
 /* 到期复习与通知：确认、评分、队列状态均以服务端返回为准。 */
-import { api, escapeHtml as esc } from "./data.js?v=115";
+import { api, escapeHtml as esc } from "./data.js?v=117";
 
 const cache = { cards: null, notifications: null, preview: null, error: "", noticeError: "", loading: false, noticeLoading: false, busy: false, trash: false, filter: "due", selected: "", revealed: new Set(), reviews: null, requests: new Map() };
 let paint = () => {};
@@ -98,6 +98,7 @@ export function bindLearning({ renderPage, toast }) {
         const result = await api(`learning/cards/${row.id}/review`, request);
         cache.requests.delete(row.id); cache.revealed.delete(row.id); cache.reviews = null;
         await loadCards(); toast(`已记录复习，下次 ${date(result.card.data.due_at)}`);
+        if (!cache.error) document.dispatchEvent(new CustomEvent("shilie:semantic-effect", { detail: { name: "learning-reviewed", id: row.id } }));
       }
       if (action === "archive" && row && confirm("归档此卡片？复习记录仍会保留。")) { await api(`records/${row.id}?version=${row.version}`, undefined, "DELETE"); await loadCards(); }
       if (action === "restore" && row && confirm("将卡片历史恢复为新版本？")) {

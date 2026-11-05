@@ -1,7 +1,7 @@
 /* 私密管理：愿望清单与私密日记。
    口令不存浏览器——每次访问都由后端校验，明文只在当前页面内存中存在。
    因此本模块不做路由级缓存，刷新即重新要求口令。 */
-import { api, state } from "./data.js?v=115";
+import { api, state } from "./data.js?v=117";
 
 const esc = (x) =>
   String(x ?? "").replace(
@@ -280,18 +280,17 @@ function setupView() {
       <input name="password" type="password" required minlength="4" placeholder="设置口令（至少 4 位）" autocomplete="new-password">
       <button class="primary-button" ${v.busy ? "disabled" : ""}>${v.busy === "setup" ? "设置中…" : "设置并继续"}</button>
     </form>
-    <small class="gate-hint">口令遗失将无法恢复内容。设置后会给你一串恢复码，请立刻保存。</small>
+    <small class="gate-hint">请妥善保存原口令。当前没有可用的口令找回流程，口令遗失可能无法恢复内容。</small>
   </div>`);
 }
 
 function recoveryView() {
   return shell(`<div class="private-gate">
     <div class="lock-mark">✓</div>
-    <h2>请立刻保存恢复码</h2>
-    <p>这串码只在下面显示这一次。把它抄下来或存到安全的地方。</p>
-    <code class="recovery-code">${esc(v.setupCode)}</code>
-    <form id="private-recovery-form"><button class="primary-button">我已保存</button></form>
-    <small class="gate-hint">口令遗失且没有这串码，内容将无法恢复。</small>
+    <h2>请妥善保存原口令</h2>
+    <p>当前没有可用的口令找回流程。请将原口令保存在安全的地方，不要依赖系统返回的恢复码解密。</p>
+    <form id="private-recovery-form"><button class="primary-button">我已了解</button></form>
+    <small class="gate-hint">此提示不会改变或重置你的私密数据。</small>
   </div>`);
 }
 

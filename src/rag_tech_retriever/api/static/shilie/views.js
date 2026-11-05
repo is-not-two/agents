@@ -1,35 +1,35 @@
-import { collaborationView } from "./collaboration.js?v=115";
-import { corpusSelect } from "./public-corpus.js?v=115";
-import { agentStudioView } from "./agent-studio.js?v=115";
-import { backupView } from "./backup.js?v=115";
-import { privateView } from "./private-view.js?v=115";
-import { modelConnectionView } from "./model-connection.js?v=115";
-import { treeView, treeDialog } from "./tree.js?v=115";
+import { collaborationView } from "./collaboration.js?v=117";
+import { corpusSelect } from "./public-corpus.js?v=117";
+import { agentStudioView } from "./agent-studio.js?v=117";
+import { backupView } from "./backup.js?v=117";
+import { privateView } from "./private-view.js?v=117";
+import { modelConnectionView } from "./model-connection.js?v=117";
+import { treeView, treeDialog } from "./tree.js?v=117";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=115";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=115";
-import { jobsView, jobsDialog } from "./jobs.js?v=115";
+} from "./automation-views.js?v=117";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=117";
+import { jobsView, jobsDialog } from "./jobs.js?v=117";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=115";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=115";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=115";
-import { serverStatusView } from "./server-status.js?v=115";
-import { evaluationView } from "./evaluation.js?v=115";
-import { directorActive } from "./director.js?v=115";
-import { icon, orbitIcon } from "./icons.js?v=115";
+} from "./company-capabilities.js?v=117";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=117";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=117";
+import { serverStatusView } from "./server-status.js?v=117";
+import { evaluationView } from "./evaluation.js?v=117";
+import { directorActive } from "./director.js?v=117";
+import { icon, orbitIcon } from "./icons.js?v=117";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=115";
+} from "./data.js?v=117";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -169,7 +169,7 @@ function orbitStage() {
     ...ORBIT_OUTER.map((n) => orbitListItem(n, "category")),
     ...ORBIT_INNER.map((n) => orbitListItem(n, "module")),
   ].join("");
-  return `<div class="home-orbit-wrap"><nav class="sl-orbit" aria-label="工作区入口环轨" data-orbit-speed="running"><div class="sl-orbit__halo" aria-hidden="true"></div><div class="sl-orbit__track sl-orbit__track--inner" aria-hidden="true"></div><div class="sl-orbit__track sl-orbit__track--outer" aria-hidden="true"></div><div class="sl-orbit__spokes" aria-hidden="true"></div><div class="sl-orbit__ring sl-orbit__ring--inner">${inner}</div><div class="sl-orbit__ring sl-orbit__ring--outer">${outer}</div><button class="sl-orbit__hub" type="button" aria-label="进入工作台" aria-describedby="sl-orbit-hint"><span class="sl-orbit__hub-label">进入</span><span class="sl-orbit__hub-state">环轨运行中</span></button><p id="sl-orbit-hint" class="sl-sr-only">环轨上的入口正在自动旋转。按此键进入工作台视图；也可以直接用键盘聚焦到某个入口。</p><p id="sl-orbit-status" role="status" class="sl-sr-only"></p></nav><nav class="sl-orbit-list" aria-label="工作区入口">${list}</nav></div>`;
+  return `<div class="home-orbit-wrap"><nav class="sl-orbit" aria-label="工作区入口环轨" data-orbit-speed="running"><div class="sl-orbit__halo" aria-hidden="true"></div><div class="sl-orbit__track sl-orbit__track--inner" aria-hidden="true"></div><div class="sl-orbit__track sl-orbit__track--outer" aria-hidden="true"></div><div class="sl-orbit__spokes" aria-hidden="true"></div><div class="sl-orbit__ring sl-orbit__ring--inner">${inner}</div><div class="sl-orbit__ring sl-orbit__ring--outer">${outer}</div><div class="sea-breeze" aria-hidden="true" data-asset-root="/static/shilie/assets/sea-breeze/"><div class="sea-breeze__base"></div><div class="sea-breeze__hair"></div><div class="sea-breeze__skirt"></div><div class="sea-breeze__glow"></div><svg class="sea-breeze__fallback" viewBox="0 0 200 240" focusable="false"><circle cx="100" cy="98" r="64" fill="#fffaf2"/><path class="sea-breeze__wind" d="M10 129 C48 109 67 120 95 111 C126 100 151 108 191 88 M18 153 C62 133 83 143 116 132 C149 120 164 125 195 109" fill="none" stroke="#c9a227" stroke-width="2"/><path class="sea-breeze__hair-shape" d="M70 146 C62 113 62 74 90 54 C113 37 143 55 146 83 C148 109 129 121 137 151 C119 145 93 139 70 146Z" fill="#8d573b" opacity=".9"/><path d="M79 104 C76 82 86 68 103 68 C119 68 128 82 125 103 C122 120 112 127 102 127 C92 127 82 119 79 104Z" fill="#ffe6cf"/><path d="M74 93 C72 66 86 51 103 51 C124 51 139 68 135 91 C119 79 108 70 101 66 C96 80 85 89 74 93Z" fill="#79452d"/><path class="sea-breeze__skirt-shape" d="M66 190 C72 149 84 128 102 128 C121 128 136 151 142 190Z" fill="#f3ba8c"/><path class="sea-breeze__ribbon" d="M58 171 C90 151 127 157 163 138 M49 183 C83 165 116 169 154 153" fill="none" stroke="#fffaf2" stroke-width="7" stroke-linecap="round"/><circle cx="51" cy="91" r="3" fill="#c9a227"/><circle cx="156" cy="113" r="2" fill="#c2622a"/></svg></div><button class="sl-orbit__hub" type="button" aria-label="进入工作台" aria-describedby="sl-orbit-hint"><span class="sl-orbit__hub-label">进入</span><span class="sl-orbit__hub-state">环轨运行中</span></button><p id="sl-orbit-hint" class="sl-sr-only">环轨上的入口正在自动旋转。按此键进入工作台视图；也可以直接用键盘聚焦到某个入口。</p><p id="sl-orbit-status" role="status" class="sl-sr-only"></p></nav><nav class="sl-orbit-list" aria-label="工作区入口">${list}</nav></div>`;
 }
 function workspacePage() {
   const stats = homeStats();
@@ -553,7 +553,7 @@ export function dialogs() {
     capabilitiesDialog() +
     learningDialogs() +
     jobProfileDialog() +
-    `${dialog("knowledge", "笔记", `${field("标题", "title")}${textarea("正文", "content")}<label class="form-field">标签（用逗号分隔）<input name="tags"></label>${field("来源", "source")}${actions()}`)}${dialog("bookmark", "网页收藏", `${field("标题", "title")}<label class="form-field">网址<input name="url" type="url" inputmode="url" required maxlength="2048" placeholder="https://example.com"><small>只接受完整的 http/https 链接</small></label><label class="form-field">分类（留空为未分类）<input name="category" maxlength="24" placeholder="例如：文档与教程"></label><label class="form-field">标签（用逗号分隔）<input name="tags"></label>${textarea("备注", "note", "", 5)}${actions()}`)}${dialog("stage", "阶段记录", `${field("阶段名称", "title")}${textarea("目标", "objective", "", 4)}${actions()}`)}`
+    `${dialog("knowledge", "笔记", `${field("标题", "title")}${textarea("正文", "content")}<label class="form-field">标签（用逗号分隔）<input name="tags"></label>${field("来源", "source")}${actions()}`)}${dialog("bookmark", "网页收藏", `${field("标题", "title")}<label class="form-field">网址<input name="url" type="url" inputmode="url" required maxlength="2048" placeholder="输入完整网址"><small>只接受完整的 http/https 链接</small></label><label class="form-field">分类（留空为未分类）<input name="category" maxlength="24" placeholder="例如：文档与教程"></label><label class="form-field">标签（用逗号分隔）<input name="tags"></label>${textarea("备注", "note", "", 5)}${actions()}`)}${dialog("stage", "阶段记录", `${field("阶段名称", "title")}${textarea("目标", "objective", "", 4)}${actions()}`)}`
   );
 }
 export function detail(title, html) {

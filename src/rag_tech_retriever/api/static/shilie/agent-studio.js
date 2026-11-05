@@ -1,5 +1,5 @@
 /* Explicit memory decisions and versioned sessions. Business data is never localStorage. */
-import { api, escapeHtml as esc } from "./data.js?v=115";
+import { api, escapeHtml as esc } from "./data.js?v=117";
 
 const cache = { loaded: false, loading: false, busy: false, agents: [], memories: [], runs: [], selected: "", run: null, configured: false, error: "", caps: null, skills: [], servers: [], toolCatalog: null };
 let generation = 0;

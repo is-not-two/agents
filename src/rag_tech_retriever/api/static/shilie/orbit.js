@@ -13,6 +13,8 @@
    优先级：reduced-motion > 用户暂停 > 入口获得键盘焦点 > 指针停在某个入口上 > 无交互。
    页面隐藏时停 rAF，恢复时从当前角度继续（不回位）。 */
 
+import { MOTION_CONFIG } from "./motion-config.js?v=117";
+
 const NOMINAL_IN = 5; // 内环 °/s，顺时针
 const NOMINAL_OUT = -3.75; // 外环 °/s，逆时针
 const TAU = 0.2; // 速度插值的时间常数 200ms
@@ -56,11 +58,13 @@ export function initOrbit() {
   let entryFocus = false;
   let visible = document.visibilityState !== "hidden";
   let litTimer = 0;
+  let enterTimer = 0;
 
   /* ---- 状态推导 ---- */
 
   function computeTarget() {
     if (mq.matches) return 0; // 优先级 1：减少动画
+    if (document.documentElement.dataset.motion === "off") return 0;
     if (mode !== "running") return 0; // 优先级 2：用户暂停 / 从未启动
     if (entryFocus) return 0; // 优先级 3：键盘聚焦到任一入口
     /* 优先级 4：指针停在入口上 → 完全静止。不是"降速"，是 0：
@@ -83,8 +87,8 @@ export function initOrbit() {
   function syncHub() {
     /* 开始页语义：中心按钮是"进入工作台"，不是播放控制。
        环轨一进页就在转，暂停交给"指针停到入口上"。 */
-    if (hubLabel) hubLabel.textContent = "进入";
-    if (hubState) hubState.textContent = "环轨运行中";
+    if (hubLabel) hubLabel.textContent = "进入工作台";
+    if (hubState) hubState.textContent = target === 0 ? "环轨已静止" : "环轨运行中";
     if (hub) hub.setAttribute("aria-label", "进入工作台");
   }
   function announce(text) {
@@ -189,7 +193,17 @@ export function initOrbit() {
     event.preventDefault();
     if (location.hash === "#home/workspace") return;
     announce("进入工作台");
-    location.hash = "#home/workspace";
+    if (enterTimer) return;
+    const finish = () => {
+      enterTimer = 0;
+      if (!stage.isConnected) return;
+      location.hash = "#home/workspace";
+      window.dispatchEvent(new Event("shilie:entered-workspace"));
+    };
+    if (mq.matches || document.documentElement.dataset.motion === "off") return finish();
+    stage.classList.add("is-entering");
+    window.dispatchEvent(new Event("shilie:entering-workspace"));
+    enterTimer = setTimeout(finish, MOTION_CONFIG.enterMilliseconds);
   };
   const onVisibility = () => {
     if (document.visibilityState === "hidden") {
@@ -216,6 +230,7 @@ export function initOrbit() {
   hub.addEventListener("click", onHubClick);
   document.addEventListener("visibilitychange", onVisibility);
   mq.addEventListener("change", onReduceChange);
+  window.addEventListener("shilie:motionchange", recompute);
 
   dispose = () => {
     nodes.forEach((node) => {
@@ -227,7 +242,9 @@ export function initOrbit() {
     hub.removeEventListener("click", onHubClick);
     document.removeEventListener("visibilitychange", onVisibility);
     mq.removeEventListener("change", onReduceChange);
+    window.removeEventListener("shilie:motionchange", recompute);
     clearTimeout(litTimer);
+    clearTimeout(enterTimer);
   };
 
   /* ---- 首帧 ---- */

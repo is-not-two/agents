@@ -1,5 +1,5 @@
 /* 求职闭环：真实记录优先，业务内容不写 localStorage。 */
-import { api, escapeHtml as esc } from "./data.js?v=115";
+import { api, escapeHtml as esc } from "./data.js?v=117";
 
 const labels = { collected: "已收藏", applied: "已投递", following: "跟进中", interviewing: "面试中", offered: "已获 offer", rejected: "已结束" };
 const paths = { job_lead: "leads", application: "applications", interview_report: "reports", resume_version: "resumes" };
@@ -178,6 +178,7 @@ export function bindJobs({ renderPage, toast }) {
       const id = d.dataset.recordId;
       const row = await api(`jobs/${paths[kind]}${id ? "/" + id : ""}`, { data, ...(id ? { version: Number(d.dataset.version) } : {}) }, id ? "PUT" : "POST");
       cache.selected = row.id; cache.history = null; d.close(); await load(); toast(cache.error ? "已保存，但列表读取失败，请刷新列表，不要重复提交" : "已保存");
+      if (!cache.error) document.dispatchEvent(new CustomEvent("shilie:semantic-effect", { detail: { name: "job-saved", id: row.id } }));
     } catch (error) { errorBox.textContent = error.message + (error.status === 409 ? "。当前输入已保留，请复制需要的内容后取消并重新打开最新记录。" : ""); errorBox.hidden = false; }
     finally { cache.busy = false; submit.disabled = false; submit.textContent = "保存"; repaint(); }
   });

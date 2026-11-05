@@ -1,0 +1,56 @@
+/* 时列样式：单一入口。
+   由 base.css / demo.css / tree.css / automation.css 机械拼接而成，
+   规则顺序与合并前完全一致，因此渲染结果逐属性相同。
+   不要在此文件内做跨区去重或属性合并——同文件内的重复定义是有意的层叠。
+   原始文件已移出页面加载，仅作归档参考；重新生成见 scripts/merge_css.py。 */
+
+/* 求职主从视图沿用工作台字体与色彩；状态与时间优先，不引入六列横滚看板。 */
+.jobs-toolbar, .jobs-actions, .jobs-resumes { display: flex; flex-wrap: wrap; gap: 10px; margin-block: 16px; }
+.jobs-filter { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-block: 20px; }
+.jobs-filter label { display: grid; gap: 6px; }
+.jobs-filter input, .jobs-filter select { padding: 9px; border: 1px solid #ede4dc; background: #fff; border-radius: 6px; max-width: 100%; }
+.jobs-layout { display: grid; grid-template-columns: minmax(230px, .8fr) minmax(0, 1.6fr); gap: 20px; align-items: start; }
+.jobs-layout > *, .jobs-dialog, .jobs-dialog fieldset { min-width: 0; }
+.jobs-list { display: grid; padding: 8px; }
+.jobs-row { display: grid; gap: 7px; padding: 16px; text-align: left; border: 0; border-bottom: 1px solid #ede4dc; background: transparent; overflow-wrap: anywhere; }
+.jobs-row[aria-pressed="true"] { background: #f8f3ef; box-shadow: inset 3px 0 #874808; }
+.jobs-row span, .jobs-row small, .jobs-caption { color: #68594b; }
+.jobs-detail { padding: 22px; overflow-wrap: anywhere; }
+.jobs-detail h2 { font-size: 20px; margin-bottom: 8px; }
+.jobs-detail h3 { margin-top: 28px; }
+.jobs-detail h4 { margin-block: 14px 6px; }
+.jobs-facts { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; }
+.jobs-facts dd { margin: 0; }
+.jobs-prose { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.7; max-width: 100%; }
+.jobs-source { text-decoration: underline; display: inline-block; margin-bottom: 16px; }
+.jobs-report { border-top: 1px solid #ede4dc; padding-top: 16px; margin-bottom: 24px; }
+.jobs-dialog fieldset { border: 1px solid #ede4dc; border-radius: 6px; padding: 14px; margin: 14px 0; }
+.jobs-history p { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.learning-grades { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 20px; }
+.learning-grades button { min-height: 44px; min-width: 65px; }
+.learning-answer { border-block: 1px solid #ede4dc; padding-block: 20px; margin-top: 20px; }
+.learning-candidates { display: grid; gap: 14px; margin-block: 20px; }
+.learning-candidates label { display: flex; align-items: start; gap: 10px; overflow-wrap: anywhere; }
+.learning-candidates input { flex: none; margin-top: 4px; }
+.notice-row { border-top: 1px solid #ede4dc; margin-top: 20px; padding-top: 16px; overflow-wrap: anywhere; }
+.insight-requirement { padding-block: 16px; border-top: 1px solid #ede4dc; overflow-wrap: anywhere; }
+.insight-requirement blockquote { margin: 12px 0; border-left: 2px solid #874808; padding-left: 12px; white-space: pre-wrap; }
+.profile-skill, .profile-fact { min-width: 0; padding: 14px; margin-block: 18px; border: 1px solid #ede4dc; border-radius: 6px; }
+@media (max-width: 1279px) { .jobs-layout { grid-template-columns: minmax(0, 1fr); } .jobs-filter label { width: 100%; } .jobs-detail { padding: 16px; } .jobs-facts { grid-template-columns: 85px minmax(0, 1fr); } }
+/* 求职漏斗：四阶段统计条，窄屏改为两列 / 单列，不横向滚动。 */
+.jobs-funnel { padding: 20px; margin-block: 20px; }
+.jobs-funnel header { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: baseline; }
+.jobs-funnel header span { color: #68594b; }
+.funnel-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; list-style: none; padding: 0; margin: 16px 0 0; }
+.funnel-steps li { display: grid; gap: 4px; padding: 14px; border: 1px solid #ede4dc; border-radius: 6px; background: #fff; min-width: 0; }
+.funnel-steps strong { font-size: 13px; color: #68594b; }
+.funnel-steps b { font-size: 24px; line-height: 1.1; }
+.funnel-steps small { color: #68594b; overflow-wrap: anywhere; }
+.capability-list { display: grid; gap: 12px; list-style: none; padding: 0; margin-block: 16px; }
+.capability-item { border: 1px solid #ede4dc; border-radius: 6px; padding: 14px; background: #fff; overflow-wrap: anywhere; }
+.capability-item header { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: baseline; }
+.capability-item h4 { margin: 0; }
+.capability-row { min-width: 0; }
+@media (max-width: 1279px) { .funnel-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .jobs-funnel { padding: 16px; } }
+@media (max-width: 420px) { .funnel-steps { grid-template-columns: minmax(0, 1fr); } }
+

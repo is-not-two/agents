@@ -1,0 +1,3799 @@
+/* ==================== 自动化（原 automation.css） ==================== */
+
+.automation-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.workflow-list {
+  display: grid;
+  gap: 8px;
+}
+.workflow-list button {
+  text-align: left;
+  padding: 18px;
+  border: 1px solid #e3e0dc;
+  border-radius: 12px;
+  display: grid;
+  gap: 7px;
+  background: #fff;
+}
+.workflow-list button[aria-pressed="true"] {
+  background: #e8efe9;
+  border-color: #a99b8d;
+  color: #443a2f;
+}
+.workflow-list button strong {
+  overflow-wrap: anywhere;
+}
+.workflow-list small,
+.workflow-list span {
+  font-size: 12px;
+  color: #736c65;
+}
+.workflow-workspace {
+  min-width: 0;
+  background: #fff;
+  border: 1px solid #dce4dd;
+  border-radius: 16px;
+  padding: 24px;
+}
+.workflow-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 22px;
+}
+.workflow-heading h2 {
+  margin: 0;
+}
+.pipeline-rail {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 28px;
+}
+.pipeline-rail li {
+  border-top: 2px solid #b9aea2;
+  padding: 12px 8px;
+  font-size: 13px;
+  display: grid;
+  gap: 7px;
+  color: #665a4d;
+}
+.pipeline-rail li span {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  color: #9a8c7f;
+}
+.workflow-agent {
+  font-size: 12px;
+  color: #7b6f63;
+}
+.ingest-input-head {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ingest-input-head > .form-field {
+  flex: 1;
+  min-width: 140px;
+}
+.file-import {
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.file-import input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.file-import:focus-within {
+  outline: 3px solid #ffa449;
+}
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.agent-config {
+  border: 1px solid #dce4dd;
+  border-radius: 16px;
+  background: #fff;
+  padding: 22px;
+}
+.agent-config header {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+}
+.agent-monogram {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: #f2ebe4;
+  color: #8b7055;
+  border-radius: 12px;
+  flex: none;
+  font-size: 18px;
+}
+.agent-config header > div {
+  flex: 1;
+  min-width: 0;
+}
+.agent-config h2 {
+  margin-bottom: 5px;
+  overflow-wrap: anywhere;
+}
+.agent-config small {
+  font-size: 12px;
+  color: #748076;
+}
+.agent-instruction {
+  margin: 20px 0;
+  line-height: 1.9;
+}
+.agent-config footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid #e6ebe6;
+  padding-top: 18px;
+  margin-top: 20px;
+  color: #6f7b72;
+  font-size: 12px;
+}
+.scope-checkboxes {
+  border: 1px solid #dbe2dc;
+  padding: 14px;
+  border-radius: 8px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.scope-checkboxes input {
+  accent-color: #856443;
+}
+.scope-checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.scope-checkboxes legend {
+  color: #607463;
+  font-size: 12px;
+  padding: 0 5px;
+}
+.run-result {
+  margin-top: 26px;
+  border-top: 1px solid #dce4dd;
+  padding-top: 24px;
+  min-width: 0;
+}
+.run-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.run-result-head h2 {
+  margin: 7px 0;
+}
+.run-result-head small {
+  color: #657568;
+  font-size: 12px;
+}
+.run-badge {
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: #eaf0e9;
+  color: #705c47;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.run-badge.fallback,
+.run-badge.awaiting_confirmation {
+  background: #f7eddc;
+  color: #9c6a2e;
+}
+.run-badge.failed {
+  background: #f8e6e4;
+  color: #ae4d43;
+}
+.run-badge.running {
+  background: #f3ede7;
+  color: #8a6e51;
+}
+.run-steps {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+.run-steps li {
+  display: flex;
+  gap: 13px;
+  align-items: start;
+  padding: 13px 0;
+  border-bottom: 1px solid #e9ede9;
+}
+.run-steps li > div {
+  flex: 1;
+  min-width: 0;
+}
+.run-steps p {
+  font-size: 13px;
+  margin: 5px 0;
+  overflow-wrap: anywhere;
+}
+.run-steps small {
+  font-size: 12px;
+  color: #7c877f;
+  white-space: nowrap;
+}
+.step-indicator {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  background: #e9f1e8;
+  color: #705c47;
+  border-radius: 50%;
+  flex: none;
+}
+.step-indicator.fallback,
+.step-indicator.failed {
+  background: #f7eddf;
+  color: #98692e;
+}
+.step-indicator.skipped {
+  background: #eff1ed;
+  color: #7d867e;
+}
+.run-context summary {
+  padding: 12px 0;
+  cursor: pointer;
+  font-size: 13px;
+  color: #647568;
+}
+.run-context pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 13px/1.8 inherit;
+  max-height: 240px;
+  overflow: auto;
+  background: #f4f6f1;
+  padding: 14px;
+  border-radius: 8px;
+}
+.result-notice {
+  background: #f7f2e7;
+  padding: 13px 15px;
+  border-radius: 9px;
+  font-size: 13px;
+  color: #877047;
+}
+.run-citations details,
+.ingest-chunk {
+  border: 1px solid #dfe7df;
+  border-radius: 10px;
+  margin-top: 12px;
+}
+.run-citations summary,
+.ingest-chunk summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  cursor: pointer;
+}
+.run-citations summary span,
+.ingest-chunk summary strong {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+.run-citations small,
+.ingest-chunk small {
+  font-size: 12px;
+  color: #778476;
+}
+.run-citations p,
+.ingest-chunk p {
+  padding: 0 16px;
+  max-height: 320px;
+  overflow: auto;
+}
+.run-citations details > small {
+  display: block;
+  padding: 0 16px 14px;
+  overflow-wrap: anywhere;
+}
+.ingest-chunk input {
+  width: 17px;
+  height: 17px;
+  accent-color: #856443;
+}
+.run-list {
+  display: grid;
+  gap: 10px;
+}
+.run-list button {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #dce4dd;
+  border-radius: 10px;
+  text-align: left;
+}
+.run-list button > span:nth-child(2) {
+  flex: 1;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.run-list strong {
+  overflow-wrap: anywhere;
+}
+.run-list small {
+  font-size: 12px;
+  color: #7a867c;
+}
+@media (max-width: 1279px) {
+  .agent-grid {
+    grid-template-columns: 1fr;
+  }
+  .automation-layout {
+    grid-template-columns: 1fr;
+  }
+  .workflow-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .workflow-list button {
+    padding: 15px;
+  }
+}
+@media (max-width: 639px) {
+  .workflow-workspace {
+    padding: 16px;
+  }
+  .pipeline-rail {
+    gap: 5px;
+  }
+  .pipeline-rail li {
+    font-size: 12px;
+    padding: 10px 2px;
+  }
+  .workflow-heading {
+    align-items: start;
+  }
+  .workflow-heading h2 {
+    font-size: 17px;
+  }
+  .run-list button {
+    gap: 10px;
+    padding: 13px;
+    flex-wrap: wrap;
+  }
+  .run-list button > span:last-child {
+    display: none;
+  }
+  .agent-config {
+    padding: 16px;
+  }
+  .agent-config header {
+    flex-wrap: wrap;
+  }
+  .run-result-head {
+    flex-wrap: wrap;
+  }
+  .run-citations summary,
+  .ingest-chunk summary {
+    padding: 12px;
+    gap: 8px;
+  }
+}
+
+.run-input-label {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.workflow-workspace,
+.agent-config {
+  padding: var(--panel-space, 24px);
+}
+
+/* 节点工具按钮内嵌：原 right:-17px 的悬空设计在卡片收窄后贴边，
+   按钮右缘会溢出卡片 17px。改为贴合卡片右上角内侧，层级关系仍由缩进表达。 */
+.tree-node-tools {
+  right: 8px;
+  top: 8px;
+  flex-direction: row;
+  gap: 6px;
+}
+.tree-fold {
+  margin-left: 0;
+}
+
+/* ================= 人生规划：同页展开列表 ================= */
+/* 由画布改为纵向列表：点方向或节点在下方展开，不跳页。
+   层级靠缩进与竖线表达，方向行常驻进度条，收起时也能看到完成度。 */
+.tree-list {
+  padding: 22px 26px 26px;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.dir-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px #3931280a;
+}
+.dir-card.is-empty .dir-desc {
+  padding: 0 20px 18px;
+  margin: 0;
+}
+.dir-head {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 19px;
+}
+.dir-title {
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+}
+.dir-title.plain {
+  font-weight: 600;
+  flex: 1;
+}
+.dir-tw {
+  width: 21px;
+  height: 21px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: #87725c;
+  font-size: 11px;
+  transition: transform 0.18s;
+  border-radius: 4px;
+}
+.dir-tw[hidden] {
+  visibility: hidden;
+}
+.dir-card.is-open .dir-tw,
+.dir-tw[aria-expanded="true"] {
+  transform: rotate(90deg);
+}
+.dir-tw:hover {
+  background: #f2eee9;
+}
+.dir-track {
+  width: 104px;
+  height: 6px;
+  background: #ece8e3;
+  border-radius: 4px;
+  overflow: hidden;
+  flex: none;
+}
+.dir-track i {
+  display: block;
+  height: 100%;
+  background: var(--accent, #84582b);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.tree-list.is-side .dir-track i {
+  background: #9a7f4a;
+}
+.dir-count {
+  font-size: 12px;
+  color: #8b7b6c;
+  width: 48px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+.dir-tools,
+.node-tools {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+.node-tool {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: #b6a89a;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+}
+.node-tool:hover {
+  background: #f4f1ee;
+  color: #734f2b;
+}
+.node-tool.danger:hover {
+  background: #fbeeea;
+  color: #a4595a;
+}
+.dir-desc {
+  margin: 0;
+  padding: 0 19px 15px 53px;
+  font-size: 13px;
+  color: #8a7a6b;
+}
+.dir-empty {
+  padding: 14px 19px 18px 53px;
+  font-size: 13px;
+  color: #a6988a;
+  margin: 0;
+}
+.dir-kids {
+  border-top: 1px solid #f3f0ee;
+  background: #fdfcfb;
+  padding: 5px 0;
+}
+.dir-kids[hidden] {
+  display: none;
+}
+
+/* 节点行 */
+.node-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 11px 19px 11px 22px;
+  position: relative;
+}
+.node-row:hover {
+  background: #faf7f4;
+}
+.node-tw {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: #87725c;
+  font-size: 10px;
+  margin-top: 4px;
+  transition: transform 0.18s;
+  border-radius: 4px;
+}
+.node-tw[hidden] {
+  visibility: hidden;
+}
+.node-tw[aria-expanded="true"] {
+  transform: rotate(90deg);
+}
+.node-tw:hover {
+  background: #efeae4;
+}
+.node-tick {
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  border: 2px solid #d1c4b7;
+  flex: none;
+  margin-top: 1px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  transition: 0.15s;
+}
+.node-tick:hover:not(:disabled) {
+  border-color: var(--accent, #84582b);
+  background: #f3eee9;
+}
+.node-tick[aria-pressed="true"] {
+  background: #4a8f5e;
+  border-color: #4a8f5e;
+}
+.node-tick:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.node-body {
+  flex: 1;
+  min-width: 0;
+}
+.node-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.node-title {
+  font-size: 14.5px;
+  text-align: left;
+  color: inherit;
+  padding: 0;
+}
+.node-title:disabled {
+  cursor: default;
+}
+.node-row.is-done .node-title {
+  color: #94887d;
+  text-decoration: line-through;
+}
+.node-tag {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #f4f1ee;
+  color: #84725f;
+}
+.node-tag.wait {
+  background: #f8f0e0;
+  color: #8a6b2e;
+}
+.node-pri {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #f4f2f0;
+  color: #9a8a7b;
+  font-weight: 500;
+}
+.node-mark {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4a8f5e;
+  flex: none;
+  width: 13px;
+  text-align: center;
+}
+.node-mark.no {
+  color: #b08a5a;
+}
+.node-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9a8a7b;
+}
+.node-meta .due {
+  color: #8a7a6b;
+}
+
+/* 层级缩进与竖线：depth-N 为真实深度，每层缩进 32px。
+   竖线用 padding + ::before 绘制，::after 是横向引出线。 */
+.node-kids {
+  padding: 0;
+}
+.node-kids[hidden] {
+  display: none;
+}
+.node-row.depth-1 {
+  padding-left: 53px;
+}
+.node-row.depth-2 {
+  padding-left: 85px;
+}
+.node-row.depth-3 {
+  padding-left: 117px;
+}
+.node-row.depth-4 {
+  padding-left: 149px;
+}
+.node-row[class*="depth-"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e8ded5;
+}
+.node-row.depth-1::before {
+  left: 33px;
+}
+.node-row.depth-2::before {
+  left: 65px;
+}
+.node-row.depth-3::before {
+  left: 97px;
+}
+.node-row.depth-4::before {
+  left: 129px;
+}
+.node-row[class*="depth-"]::after {
+  content: "";
+  position: absolute;
+  top: 26px;
+  width: 14px;
+  height: 2px;
+  background: #e8ded5;
+}
+.node-row.depth-1::after {
+  left: 33px;
+}
+.node-row.depth-2::after {
+  left: 65px;
+}
+.node-row.depth-3::after {
+  left: 97px;
+}
+.node-row.depth-4::after {
+  left: 129px;
+}
+/* 子树容器自带一条连接父级的竖线 */
+.node-kids .node-kids {
+  position: relative;
+}
+.node-kids .node-kids::before {
+  content: "";
+  position: absolute;
+  left: 33px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #e8ded5;
+}
+
+/* 方向行的新建按钮 */
+.tree-new {
+  margin-left: auto;
+}
+@media (max-width: 639px) {
+  .tree-list {
+    padding: 16px 14px 20px;
+  }
+  .dir-head {
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+  .dir-title {
+    flex-basis: 100%;
+    order: -1;
+  }
+  .dir-track {
+    width: 80px;
+  }
+  .dir-tools {
+    margin-left: auto;
+  }
+  .node-row.depth-1 {
+    padding-left: 42px;
+  }
+  .node-row.depth-2 {
+    padding-left: 66px;
+  }
+  .node-row.depth-3 {
+    padding-left: 90px;
+  }
+  .node-row.depth-4 {
+    padding-left: 114px;
+  }
+  .node-row.depth-1::before,
+  .node-row.depth-1::after {
+    left: 25px;
+  }
+  .node-row.depth-2::before,
+  .node-row.depth-2::after {
+    left: 49px;
+  }
+  .node-row.depth-3::before,
+  .node-row.depth-3::after {
+    left: 73px;
+  }
+  .node-row.depth-4::before,
+  .node-row.depth-4::after {
+    left: 97px;
+  }
+  .node-kids .node-kids::before {
+    left: 25px;
+  }
+}
+
+/* ================= 私密管理 ================= */
+.private-studio {
+  min-width: 0;
+}
+.private-loading {
+  color: #8b7b6c;
+  padding: 24px;
+}
+.private-gate {
+  max-width: 420px;
+  margin: 34px auto;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  box-shadow: 0 10px 34px #453a3014;
+}
+.lock-mark {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: #f3ecf1;
+  color: #a4596b;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  margin: 0 auto 18px;
+}
+.private-gate h2 {
+  font-size: 19px;
+  margin: 0 0 9px;
+}
+.private-gate > p {
+  font-size: 13px;
+  color: #8a7a6b;
+  margin: 0 0 20px;
+  line-height: 1.75;
+}
+.private-gate-form {
+  display: grid;
+  gap: 11px;
+}
+.private-gate-form input {
+  padding: 12px;
+  border: 1px solid #d2c4b6;
+  border-radius: 9px;
+  font: inherit;
+  text-align: center;
+  letter-spacing: 2px;
+}
+.gate-hint {
+  display: block;
+  margin-top: 15px;
+  font-size: 12px;
+  color: #a6988a;
+  line-height: 1.7;
+}
+.recovery-code {
+  display: block;
+  padding: 15px;
+  margin: 16px 0;
+  background: #f7f6f4;
+  border: 1px dashed #c2b09d;
+  border-radius: 9px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.private-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #eae3dd;
+  border-radius: 10px;
+  margin: 0 0 18px;
+  width: max-content;
+}
+.private-tabs button {
+  padding: 9px 22px;
+  border-radius: 7px;
+  font-size: 13px;
+  color: #725f4c;
+}
+.private-tabs button[aria-pressed="true"] {
+  background: #fff;
+  color: #4a3e33;
+  font-weight: 600;
+  box-shadow: 0 1px 4px #3931281f;
+}
+.private-filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.private-filters .search-field {
+  flex: 1;
+  min-width: 150px;
+}
+.private-filters .primary-button {
+  margin-left: auto;
+}
+
+/* 愿望卡片墙 */
+.wish-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
+  gap: 14px;
+}
+.wish-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: 0.16s;
+}
+.wish-card:hover {
+  box-shadow: 0 5px 16px #453a3016;
+  transform: translateY(-2px);
+}
+.wish-card.is-done {
+  background: #fbfdfb;
+}
+.wish-card.is-done .wish-title {
+  color: #9a928b;
+  text-decoration: line-through;
+}
+.wish-badge {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  background: #fff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: #4a8f5e;
+  font-size: 13px;
+  box-shadow: 0 1px 5px #39312826;
+  z-index: 1;
+}
+.wish-cover {
+  height: 80px;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  border-bottom: 1px solid #f3f0ee;
+}
+.wish-body {
+  padding: 11px 13px;
+  flex: 1;
+  display: grid;
+  gap: 5px;
+}
+.wish-title {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.wish-note {
+  font-size: 12px;
+  color: #9a8a7b;
+  overflow-wrap: anywhere;
+}
+.wish-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  margin-top: auto;
+}
+.wish-cat {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #f3ecf1;
+  color: #8b5f6e;
+}
+.wish-price {
+  margin-left: auto;
+  color: #84725f;
+  font-variant-numeric: tabular-nums;
+}
+.wish-ops {
+  display: flex;
+  gap: 3px;
+  padding: 0 9px 9px;
+}
+.wish-op {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: #b6a89a;
+  font-size: 14px;
+}
+.wish-op:hover {
+  background: #f4f1ee;
+  color: #734f2b;
+}
+
+/* 日记 */
+.diary-list {
+  display: grid;
+  gap: 10px;
+}
+.diary-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 15px 18px;
+}
+.diary-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-wrap: wrap;
+}
+.diary-date {
+  font-size: 12px;
+  color: #8a7a6b;
+  font-variant-numeric: tabular-nums;
+}
+.diary-title {
+  font-size: 15px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.diary-lock {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: #f5f0ea;
+  color: #8c735a;
+}
+.diary-body {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #6c5c4b;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 639px) {
+  .private-gate {
+    margin: 18px auto;
+    padding: 22px;
+  }
+  .wish-wall {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 11px;
+  }
+  .wish-cover {
+    height: 62px;
+    font-size: 23px;
+  }
+  .private-tabs {
+    width: 100%;
+  }
+  .private-tabs button {
+    flex: 1;
+  }
+}
+
+/* ================= 解锁滑块 ================= */
+/* 滑块只防误触，不构成安全边界：能打开浏览器就能拖动。
+   真正的保护是内容加密——拖到底换票据，票据仍需服务端口令才能解密。 */
+.slide-unlock {
+  position: relative;
+  height: 46px;
+  margin: 24px 0 0;
+}
+.slide-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 23px;
+  background: #f0ece7;
+  border: 1px solid #e3d9cf;
+  overflow: hidden;
+  touch-action: none;
+}
+.slide-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: linear-gradient(90deg, #eee5dc, #e4d6c9);
+  transition: width 0.05s linear;
+}
+.slide-track::after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c9b8a8;
+  transform: translateY(-50%);
+  box-shadow:
+    -11px 0 0 #c9b8a8,
+    -22px 0 0 #c9b8a8;
+}
+/* 滑块与轨道同高并垂直居中：top 用百分比而非固定像素，避免改高度后错位 */
+.slide-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #c2b09d;
+  color: #734f2b;
+  font-size: 17px;
+  box-shadow: 0 2px 7px #39312826;
+  cursor: grab;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: box-shadow 0.15s;
+  z-index: 2;
+}
+.slide-unlock .slide-thumb:active {
+  transform: translateY(-50%);
+  cursor: grabbing;
+  box-shadow: 0 4px 14px #3931283d;
+}
+.slide-thumb:focus-visible {
+  outline: 3px solid #996d41;
+  outline-offset: 2px;
+}
+.slide-hint {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #a6988a;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* base.css 有全局 `button{overflow:hidden}`，会让绝对定位的滑块圆形被裁切，
+   并使指针命中区异常。此处显式放开，并给出足够的拖动命中高度。 */
+.slide-unlock button {
+  overflow: visible;
+}
+.slide-thumb {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.slide-track {
+  touch-action: none;
+}
+
+/* ================= v82 · 深度与动效系统（2026-10-24 深夜各轮固化 + 2026-10-25 重建） ================= */
+
+/* --- 海拔体系：双层叠加模拟真实光照 --- */
+:root {
+  --ele-1: 0 1px 2px #443a2f0a, 0 2px 6px #443a2f0d;
+  --ele-2: 0 2px 4px #443a2f0d, 0 8px 24px #443a2f14;
+  --ele-3: 0 4px 8px #443a2f12, 0 18px 44px #443a2f1f;
+}
+
+/* --- 层叠修复（v73）：底色由 html 承载、body 透明——极光与萤火虫画在底色之上、内容之下 --- */
+body {
+  background: transparent;
+}
+@keyframes aurora-drift {
+  0% {
+    transform: translate3d(-4%, -3%, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(3%, 2%, 0) scale(1.08);
+  }
+  50% {
+    transform: translate3d(5%, -2%, 0) scale(1.04);
+  }
+  75% {
+    transform: translate3d(-2%, 4%, 0) scale(1.1);
+  }
+  100% {
+    transform: translate3d(-4%, -3%, 0) scale(1);
+  }
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(420px 340px at 12% 18%, #f3d9b8aa, transparent 70%),
+    radial-gradient(520px 380px at 78% 12%, #e8c8e2a0, transparent 70%),
+    radial-gradient(460px 400px at 30% 82%, #d9e4d2a0, transparent 70%),
+    radial-gradient(380px 320px at 88% 78%, #f0dcc2aa, transparent 70%);
+  filter: blur(34px);
+  animation: aurora-drift 26s ease-in-out infinite alternate;
+}
+
+/* --- 萤火虫：14 点漂浮光斑，z=-1 内容之下，4px 减淡 --- */
+#fireflies {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+#fireflies i {
+  position: absolute;
+  left: var(--fx);
+  top: var(--fy);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e8b96a;
+  opacity: 0;
+  box-shadow: 0 0 8px 2px #e8b96a55;
+  animation:
+    fly-drift 24s ease-in-out infinite alternate,
+    fire-breath 5s ease-in-out infinite;
+}
+@keyframes fly-drift {
+  0% {
+    transform: translate(0, 0);
+  }
+  30% {
+    transform: translate(30px, -24px);
+  }
+  60% {
+    transform: translate(-24px, 18px);
+  }
+  100% {
+    transform: translate(26px, -40px);
+  }
+}
+@keyframes fire-breath {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* --- 花瓣：7 片错峰飘落（国风插画氛围） --- */
+.petal {
+  position: fixed;
+  top: -24px;
+  z-index: -1;
+  width: 14px;
+  height: 12px;
+  pointer-events: none;
+  background: #f3c9d4;
+  border-radius: 70% 30% 65% 35%/60% 65% 35% 40%;
+  opacity: 0.75;
+  animation: petal-fall linear infinite;
+}
+@keyframes petal-fall {
+  0% {
+    transform: translateY(-4vh) rotate(0);
+  }
+  100% {
+    transform: translateY(106vh) rotate(320deg);
+  }
+}
+
+/* --- 光标辉光：280px 暖色光晕跟随（mix-blend 防洗白，v73 减淡口径） --- */
+.cursor-glow {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle, #e8b96a26, transparent 65%);
+  mix-blend-mode: multiply;
+  transition: transform 0.18s ease-out;
+}
+
+/* --- 点击粒子：金色碎片 620ms 飞散自清 --- */
+.particle {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 60;
+  background: linear-gradient(135deg, #e8b96a, #c98a3e);
+  animation: particle-burst 0.62s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes particle-burst {
+  0% {
+    transform: translate(0, 0) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--px), var(--py)) rotate(var(--pr));
+    opacity: 0;
+  }
+}
+
+/* --- 顶栏毛玻璃景深 --- */
+.topbar {
+  background: #3b3229e8;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* --- 页面转场（只纵向）+ 滚动渐显 --- */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+#content.page-enter {
+  animation: page-enter 0.26s ease-out;
+}
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out;
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* --- 海拔接入：面板/卡片分级使用；按钮按压反馈 --- */
+.module-surface,
+.settings-surface,
+.search-panel,
+.document,
+.answer-card {
+  box-shadow: var(--ele-1);
+}
+.stat-block,
+.portal-entry,
+.note-card,
+.lesson-row,
+.result-card {
+  box-shadow: var(--ele-2);
+}
+.form-dialog {
+  box-shadow: var(--ele-3);
+  animation: dialog-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.toast {
+  animation: toast-float 0.24s ease-out;
+}
+@keyframes toast-float {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.primary-button,
+.small-button {
+  overflow: hidden;
+}
+.primary-button:active {
+  transform: scale(0.97);
+}
+.small-button:active {
+  transform: scale(0.97);
+}
+.primary-button {
+  position: relative;
+  isolation: isolate;
+}
+.primary-button:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    #ffffff52 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+}
+.primary-button:hover:after {
+  animation: button-sheen 0.55s ease-out;
+}
+@keyframes button-sheen {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+/* --- 涟漪 tap-wave --- */
+.tap-wave {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: #ffffff70;
+  transform: translate(-50%, -50%);
+  animation: tap-wave 0.5s ease-out forwards;
+  z-index: 1;
+}
+@keyframes tap-wave {
+  to {
+    width: 220px;
+    height: 220px;
+    opacity: 0;
+  }
+}
+.portal-entry,
+.lesson-chip {
+  position: relative;
+  overflow: hidden;
+}
+
+/* --- 3D 倾斜卡片 + 光斑追踪 --- */
+.portal-entry,
+.note-card,
+.lesson-row,
+.stat-block {
+  transition:
+    translate 0.2s,
+    box-shadow 0.2s,
+    border-color 0.2s;
+  transform-style: preserve-3d;
+}
+.portal-entry[data-tilted="1"],
+.note-card[data-tilted="1"],
+.lesson-row[data-tilted="1"],
+.stat-block[data-tilted="1"] {
+  box-shadow: var(--ele-3);
+  border-color: #c6b29d;
+}
+.portal-entry:before,
+.stat-block:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    220px circle at var(--mx, 50%) var(--my, 50%),
+    #f0dcc266,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.portal-entry[data-tilted="1"]:before,
+.stat-block[data-tilted="1"]:before {
+  opacity: 1;
+}
+
+/* --- 首页 v2：190px 信息横幅 + ken-burns + 今日概览 + 2×2 入口 --- */
+.home-hero {
+  position: relative;
+  height: 190px;
+  border-radius: 18px;
+  overflow: hidden;
+  isolation: isolate;
+  margin: 0 0 22px;
+  background: #eee8e2;
+}
+.home-hero picture,
+.home-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 52%;
+  display: block;
+}
+@keyframes ken-burns {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.07);
+  }
+}
+.home-hero img {
+  animation: ken-burns 24s ease-in-out infinite alternate;
+}
+.home-hero:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    #3b3229c9 0%,
+    #3b322969 55%,
+    transparent 100%
+  );
+}
+.home-heading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 28px;
+  color: #faf2e9;
+}
+.home-brand {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  letter-spacing: 6px;
+}
+.home-greet {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.92;
+}
+.home-quick {
+  align-self: flex-start;
+}
+/* 工作台是独立视图：给显式的“回到开始页”入口，导航条不再承担返回。 */
+.home-back-start {
+  align-self: flex-start;
+}
+.home-main:focus {
+  outline: none;
+}
+.home-main:focus-visible {
+  outline: 2px solid #996d41;
+  outline-offset: 4px;
+}
+/* 个人工作台：提示词优化卡；只在点击时调用模型，结果需人工应用。 */
+.prompt-optimizer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 22px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #e6ded4;
+  border-radius: 14px;
+}
+.prompt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.prompt-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.prompt-head span,
+.prompt-status {
+  font-size: 12px;
+  color: #8b7c6e;
+}
+.prompt-optimizer textarea,
+.prompt-result textarea {
+  width: 100%;
+  min-height: 76px;
+  padding: 10px 12px;
+  border: 1px solid #e1d8ce;
+  border-radius: 8px;
+  background: #fffdfa;
+  color: #3a3128;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.prompt-optimizer textarea:focus,
+.prompt-result textarea:focus {
+  outline: 2px solid #bd9659;
+  outline-offset: 1px;
+}
+.prompt-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.prompt-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed #e1d8ce;
+}
+.prompt-result label {
+  font-size: 12px;
+  color: #7b726a;
+}
+.today-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0 0 22px;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.stat-block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  overflow: hidden;
+}
+.stat-block b {
+  font-size: 24px;
+  line-height: 1;
+}
+.stat-block b small {
+  font-size: 13px;
+  color: #8a7a6a;
+  font-weight: 400;
+}
+.stat-block span {
+  font-size: 12px;
+  color: #8a7a6a;
+}
+.due-panel,
+.recent-notes {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 18px;
+}
+.due-panel h2,
+.recent-notes h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.due-panel ul,
+.recent-notes nav {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.due-panel li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+.due-panel li small {
+  color: #8a7a6a;
+}
+.recent-notes nav {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.recent-notes a {
+  background: #f6efe8;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+}
+.portal-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* --- 检索 hero：初始态大标题 + 16px 大搜索框（焦点高亮圈）+ 示例/最近 chips --- */
+.search-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 64px 20px 40px;
+  text-align: center;
+}
+.search-hero h1 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 30px;
+}
+.search-hero-sub {
+  margin: 0;
+  color: #8a7a6a;
+  font-size: 14px;
+}
+.search-hero-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(680px, 100%);
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.hero-search-input {
+  width: 100%;
+  font-size: 16px;
+  padding: 14px 18px;
+  border: 1px solid #d9cbbd;
+  border-radius: 14px;
+  background: #fff;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.hero-search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px #87480826;
+}
+.search-hero-form .search-options {
+  justify-content: center;
+}
+.example-chips,
+.recent-search-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+.example-chip {
+  background: #fff;
+  border: 1px solid #d9cbbd;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #6b5b4a;
+  transition:
+    border-color 0.2s,
+    translate 0.2s,
+    box-shadow 0.2s;
+}
+.example-chip:hover {
+  border-color: var(--accent);
+  translate: 0 -1px;
+  box-shadow: var(--ele-1);
+}
+.example-chip.recent {
+  background: #f6efe8;
+}
+.result-meta {
+  margin: 0 0 12px;
+  color: #6b5b4a;
+}
+.result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.result-card {
+  background: #fff;
+  border: 1px solid #e6e3e0;
+  border-left: 3px solid #bd9659;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.result-card h3 {
+  margin: 4px 0 6px;
+  font-size: 15px;
+}
+.result-card p {
+  margin: 0;
+  color: #5d5044;
+  font-size: 13px;
+}
+
+/* --- 谨记名单 --- */
+.lesson-toolbar {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.lesson-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.lesson-chip {
+  background: #fff;
+  border: 1px solid #d9cbbd;
+  border-radius: 999px;
+  padding: 5px 13px;
+  font-size: 13px;
+}
+.lesson-chip[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.lesson-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lesson-row {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.lesson-row header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.lesson-row h3 {
+  margin: 0;
+  font-size: 15px;
+  flex: 1;
+}
+.lesson-row time {
+  font-size: 12px;
+  color: #8a7a6a;
+}
+.lesson-row p {
+  margin: 6px 0 0;
+  color: #5d5044;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+.lesson-remedy span {
+  display: inline-block;
+  background: #eef3ea;
+  border: 1px solid #cfdcc6;
+  border-radius: 6px;
+  padding: 0 8px;
+  margin-right: 8px;
+  font-size: 12px;
+}
+.lesson-cat {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #f6efe8;
+}
+.lesson-cat[data-cat="技术"] {
+  background: #fdeede;
+  border-color: #e8c9a8;
+}
+.lesson-cat[data-cat="操作"] {
+  background: #e8f0fb;
+  border-color: #c3d4ee;
+}
+.lesson-cat[data-cat="判断"] {
+  background: #fdeaea;
+  border-color: #eec3c3;
+}
+.lesson-cat[data-cat="习惯"] {
+  background: #eef3ea;
+  border-color: #cfdcc6;
+}
+.lesson-form-error {
+  margin: 8px 0 0;
+}
+.lesson-row footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* --- 知识页空态示意卡 --- */
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 16px;
+}
+.demo-card {
+  border: 1.5px dashed #d9cbbd;
+  border-radius: 14px;
+  padding: 18px;
+  background: #fffdf9;
+}
+.demo-card h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.demo-card p {
+  margin: 0;
+  font-size: 13px;
+  color: #8a7a6a;
+}
+
+/* --- 服务状态卡 + 验收观测 --- */
+.server-status {
+  margin-top: 16px;
+}
+.server-status h2,
+.settings-surface h2 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+.status-table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  width: 100%;
+  max-width: 520px;
+  font-size: 13px;
+}
+.status-table th,
+.status-table td {
+  border: 1px solid var(--line);
+  padding: 5px 10px;
+  text-align: left;
+}
+.status-tools {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.status-tools li small {
+  color: #8a7a6a;
+  margin-left: 8px;
+}
+.observability-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.settings-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #8a7a6a;
+}
+
+/* --- 巡游目标高亮圈 --- */
+.tour-target {
+  outline: 3px solid #d97f2e;
+  outline-offset: 3px;
+  border-radius: 12px;
+  transition: outline-color 0.2s;
+}
+
+/* --- 减少动画总闸：氛围层不创建、动画全部静止（与回归脚本的减少动画检查兼容） --- */
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+  #fireflies,
+  .petal,
+  .cursor-glow,
+  .particle {
+    display: none;
+  }
+  .home-hero img {
+    animation: none;
+  }
+  #content.page-enter,
+  .form-dialog,
+  .toast,
+  .reveal {
+    animation: none;
+    transition: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .portal-entry:before,
+  .stat-block:before {
+    display: none;
+  }
+  .primary-button:after {
+    display: none;
+  }
+  .tap-wave {
+    display: none;
+  }
+  .portal-entry,
+  .note-card,
+  .lesson-row,
+  .stat-block {
+    transform: none !important;
+  }
+}
+
+/* --- 390px 溢出修复：检索面板单列收进容器 + 选项行换行（隔离回归曾抓到 150px 横向溢出） --- */
+.search-panel{grid-template-columns:minmax(0,1fr)}
+.search-options{flex-wrap:wrap}
+
+.agent-studio { min-width: 0; overflow-wrap: anywhere; }
+.agent-studio form { margin-block: 1.2rem; }
+.agent-studio pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+.agent-studio article { margin-block: 1rem; }
+
+.collaboration-page { min-width: 0; overflow-wrap: anywhere; }
+.collaboration-page form, .collaboration-page fieldset { margin-block: 1rem; min-width: 0; }
+.collaboration-page pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+.collaboration-page [data-collab-form="members"] .form-field > span { display: flex; align-items: center; gap: .5rem; }
+.collaboration-page input[type="checkbox"] { width: auto; flex: 0 0 auto; }
+
+/* ==========================================================================
+   首页环轨入口（.sl-orbit / .sl-orbit-list）· 2026-11-01「焦墨视界」轮
+   --------------------------------------------------------------------------
+   母题：焦墨视界（事件视界）+ 暖金吸积盘 + 绕行暖白星体。
+   替换上一轮「暖铜印章 + 木刻度盘」：中心不再是一枚铜印，而是一个吞噬光的黑体；
+   两圈入口不再是木盘上的刻度，而是绕着它公转、被吸积盘照亮的暖白星体。
+
+   ── 本轮的判据（决定了下面所有细节的方向）────────────────────────────
+   浅底上放一个黑圆，第一眼读作"一滴墨"。真实黑洞的辨识度**不来自周围有多暗，
+   来自边缘有多亮**——环外的天空只比环暗一点点，是白热光子环"定义"了阴影边界。
+   所以页面底色 #f8f3ef 原样保留，只加一条从视界到 r=288 精确归零的色调斜坡；
+   黑不靠"大面积压暗"，靠 ① 硬的圆形轮廓 ② 紧贴轮廓的光子环 ③ 固定的明暗不对称。
+
+   ── 三条硬约束（改动前先读）──────────────────────────────────────────
+   1. 全段禁止 filter: blur() / backdrop-filter / mix-blend-mode。
+      576×576 舞台上这些属性每帧重算，会直接把帧率拖垮；
+      多普勒的压暗用 rgba 直接叠在盘上（盘在该半径已有 26~44% 不透明度，
+      alpha 叠加效果等价、代价为零）。
+   2. 只有 .sl-orbit__spokes::after（盘内气流弧）带 will-change: transform，别处不加。
+   3. 盘面唯一在动的东西是那条气流弧，它消费 orbit.js 每帧写的 --sl-a-in
+      （rotate: calc(var(--sl-a-in) * 2.8)）。本段不含任何 CSS animation 驱动公转，
+      所以默认静止态 getAnimations({subtree:true}) 必须仍返回空。
+
+   ── 层叠表（沿用上一轮编号，新增两层的插入位已标注）──────────────────
+     z0  .sl-orbit::before       （新增）引力坑：视界 → 纸面连续归零，r=288 精确到
+                                 transparent。它是首个子盒，与 .sl-orbit__halo 同 z0 时
+                                 画在 halo 之下——这是要的：暖光叠在坑上，不是坑压光。
+     z0  .sl-orbit__halo         暖金气晕（沿用）
+     z1  .sl-orbit__track--outer 外轨（星轨）+ ::before 一圈极淡的内辉
+     z2  .sl-orbit__track--inner 内轨（原 15° 刻度已删，见下）
+     z2  .sl-orbit::after        （新增）尘粒 + 暗角。它是末个子盒，与内轨同 z2 时
+                                 画在内轨之上——尘粒浮在轨道线上，符合"尘"的物理。
+     z3  .sl-orbit__spokes       吸积盘本体（原 6 条辐条整体改制）
+                                  ::before 多普勒明暗不对称 / ::after 盘内气流弧
+     z4  .sl-orbit__ring         两圈星体；__slot::before 是切向拖影（仅运行态）
+     z5  .sl-orbit__hub          事件视界；::before 光子环 / ::after 运行态脉冲环
+
+   ── 伪元素占用表（新增前必查）────────────────────────────────────────
+     .sl-orbit                ::before 引力坑      ::after 尘粒+暗角
+     .sl-orbit__halo          ::before 空          ::after 空
+     .sl-orbit__spokes        ::before 多普勒      ::after 气流弧（唯一 will-change）
+     .sl-orbit__hub           ::before 光子环      ::after 运行态脉冲环（沿用）
+     .sl-orbit__track--inner  ::before content:none（原 15° 刻度已废弃）
+     .sl-orbit__track--outer  ::before 内辉
+     .sl-orbit__slot          ::before 切向拖影
+     .sl-orbit__node          有 overflow:hidden，未占用伪元素
+   ========================================================================== */
+
+/* --- 无障碍：项目里只有 .sr-only（base 区），这里补一个命名空间隔离的同类工具类 --- */
+.sl-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- 容器查询基准：显隐由「内容区宽度」而不是「视口宽度」决定 -------------
+   portal / sidebar 两套布局同视口下内容区差约 260px，视口断点会误判。
+   容器查询的尺寸轴只声明在这一层 wrapper 上，绝不加到 #content 或更上层——
+   那会创建包含块，波及 toast / cursor-glow / petal / fireflies 等 fixed 元素。 */
+.home-orbit-wrap {
+  container-type: inline-size;
+}
+
+/* --- 舞台与几何变量 -------------------------------------------------------
+   只有一档（≥ 内容区 610px 时显示），所有尺寸恒定，不做任何等比缩放：
+   缩到 0.857 就把 11px 标题压成 9.4px，直接打穿字号地板。
+   外环节点外缘 250+32=282 < 288，留 6px 余量。
+   不设 overflow:hidden——外缘一旦溢出需要看见，而不是被裁掉。
+
+   --sl-hub 本轮 160 → 132（半径 66）：视界缩小，给吸积盘腾出径向空间。
+   吸积盘外缘正好 132 = 内环节点的内切边（170 − 76/2 = 132），两者相切不重叠。
+   这也是盘必须做**正圆**而不是斜椭圆的原因：斜椭圆的长轴一超过 132 就顶到节点，
+   130 > 132 只差 2px，没有任何余量；而 M87* / Sgr A* 的观测像本来就是近正视环。 */
+.sl-orbit {
+  /* 本轮色板：焦墨 3 级 + 赭/琥珀 3 级 + 暖金 4 级 + 一档冷调高光 */
+  --sl-ink-900: #0b0704;
+  --sl-ink-800: #120c07;
+  --sl-ink-700: #1d1409;
+  --sl-umber-600: #4a3018;
+  --sl-ember-500: #7a4419;
+  --sl-ember-400: #b8672a;
+  --sl-gold-400: #e8944a;
+  --sl-gold-300: #ffc678;
+  --sl-gold-200: #ffe6bd;
+  --sl-gold-100: #fff6e2;
+  --sl-beam-100: #e8f0ff;
+  --sl-paper-hi: #fdf8f0;
+
+  --sl-r-in: 170px;
+  --sl-r-out: 250px;
+  --sl-node-in: 76px;
+  --sl-node-out: 64px;
+  --sl-hub: 132px;
+  /* 吸积盘复用 .sl-orbit__spokes 的 132×2 = 264 舞台（上一轮这条是"辐条外径"，
+     本轮语义变成"盘外径"，几何数学一个字没改）。 */
+  --sl-spoke-in: 88px;
+  --sl-spoke-out: 132px;
+  --sl-a-in: 0deg;
+  --sl-a-out: 0deg;
+  --sl-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  width: 576px;
+  height: 576px;
+  /* 首屏纵向预算：topbar 76 + padding 32 + hero 190 + 22 + today-overview(≈76)
+     → 环轨顶 y≈420，舞台中心 y≈708，内环底部节点下沿 y≈916。
+     ∵ today-overview 的 margin-bottom(22) 与本节 margin-top(24) 相邻折叠取 max=24，
+     ∴ 改 -12 的真实效果是上提 14px（22-12=10 为实际间距），内环底部节点落到
+     826–902，1440×900 的折叠线只切 2px，读作"贴边"而非"被切断"。
+     注意：只修 900 这个高度；864 高视口仍会切 38px，间距解决不了，属几何决定。 */
+  margin: -12px auto 32px;
+  /* nav 自身不可点击：装饰层虽然都设了 none，但这个 576×576 的盒子默认是 auto，
+     一旦与上方元素重叠会吞掉点击。交互权只留给节点与中心按钮。 */
+  pointer-events: none;
+}
+
+/* --- 引力坑：把"黑"从一个圆摊成一条斜坡 -----------------------------------
+   视界到纸面的过渡不是 4px 羽化，而是 226px 的连续斜坡（66 → 288px）。
+   浅底上这么长的斜坡如果做糙了就是"咖啡渍"，所以三处都被钉死：
+     · 内段（0–84px）几乎不透光，先把视界的轮廓立住；
+     · 中段（104–150px）用暖褐而不是冷灰——冷灰在 #f8f3ef 上会读成脏；
+     · 末段（190–288px）的 alpha 已经掉到 3% 以下，288px 处精确 transparent，
+       不留任何"边缘"，所以看不出它是个圆。
+   z-index:0 且作为首个子盒：与 .sl-orbit__halo 同层时画在 halo 之下。 */
+.sl-orbit::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle 268px at 50% 50%,
+    #0b0704 0 62px,
+    #120c07 70px,
+    rgba(29, 20, 9, 0.9) 84px,
+    rgba(58, 40, 24, 0.4) 104px,
+    rgba(96, 72, 48, 0.22) 132px,
+    rgba(160, 120, 70, 0.14) 164px,
+    rgba(180, 140, 96, 0.08) 196px,
+    rgba(200, 170, 135, 0.04) 228px,
+    rgba(220, 200, 175, 0.015) 250px,
+    rgba(248, 243, 239, 0) 268px
+  );
+}
+
+/* --- 尘粒 + 暗角 ----------------------------------------------------------
+   浅底上的"星尘"必须用墨色点，不能用白色星点——白点在宣纸上读作脏点。
+   尘粒只有 5~9% 不透明度，作用是把空白的 88% 舞台填出一点颗粒，而不是"星空"。 */
+.sl-orbit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle closest-side, transparent 62%, rgba(184, 142, 96, 0.06) 100%),
+    radial-gradient(1.5px 1.5px at 22% 31%, rgba(58, 40, 24, 0.09), transparent),
+    radial-gradient(1px 1px at 71% 18%, rgba(58, 40, 24, 0.07), transparent),
+    radial-gradient(1.5px 1.5px at 84% 63%, rgba(58, 40, 24, 0.08), transparent),
+    radial-gradient(1px 1px at 13% 72%, rgba(58, 40, 24, 0.06), transparent),
+    radial-gradient(1px 1px at 46% 8%, rgba(58, 40, 24, 0.05), transparent),
+    radial-gradient(1.5px 1.5px at 62% 91%, rgba(58, 40, 24, 0.07), transparent),
+    radial-gradient(40px 40px at 27% 66%, rgba(196, 158, 116, 0.07), transparent),
+    radial-gradient(52px 52px at 76% 39%, rgba(184, 103, 42, 0.05), transparent);
+}
+
+/* --- 装饰层：全部不可点击、不进无障碍树、不抢指针 --- */
+.sl-orbit__halo,
+.sl-orbit__track,
+.sl-orbit__spokes {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+}
+
+/* 气晕：φ320，静止。
+   原来这里有一句 filter: blur(2px)，本轮按硬约束 1 撤掉——底色是已在 288px 处
+   归零的长斜坡，这层只负责在 r<160 的范围里补一点暖，radial 自带柔边，
+   blur 对它的视觉贡献是 0，代价却是整层栅格化。 */
+.sl-orbit__halo {
+  z-index: 4;
+  width: 320px;
+  height: 320px;
+  margin: -160px 0 0 -160px;
+  border-radius: 50%;
+  /* 本体不再发光：z-order 表把 halo 顶到 z4（盘之上），若它还带着原来那层
+     320px 暖光，就会把刚验过的 7 段色带整片洗白。暖底已经由引力坑承担，
+     halo 现在只负责承载球顶/球底那两道窄弧。 */
+  background: none;
+}
+/* 球顶弧：r 134–152（mask 84%–95% × closest-side 160），跨 302°…32°。
+   ⚠ 半径必须落在盘的环带**之外**：盘是 264 正圆/半径 132，弧若画在 r82–96，
+   就压在环带里面，只能把盘面提亮一圈（实测 +32 lum），物理上不可能"独立成弧"。
+   现在弧内缘 137.6、盘外缘 132，中间 5.6px 暗隙——这才是真实引力透镜次级像的位置。
+   两道弧都在 z4、低于 hub(z5)；节点也在 z4 且 DOM 在后，会盖住弧的外侧部分，
+   读作"弧从星体背后穿出"。 */
+.sl-orbit__halo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  /* ⚠ conic-gradient 的色标位置必须单调不减。原始写法（348deg 之后接 10deg）
+     是想"跨过 360 回绕"，但 CSS 不会回绕：小于前一个位置的值会被钳到前一个，
+     于是 10/22/32deg 全部变成 348deg，整条弧被压进 312°–348° 这 36°，球顶完全空着
+     （实测：竖切 x=0 在 r 82–96 没有任何隆起）。
+     改成 from 302deg + 相对偏移，角度落点一模一样（302…392 ≡ 302…32）。 */
+  background: conic-gradient(
+    from 302deg,
+    transparent 0deg,
+    rgba(255, 206, 150, 0.25) 10deg,
+    rgba(255, 230, 190, 0.65) 26deg,
+    rgba(255, 246, 226, 0.78) 46deg,
+    rgba(255, 230, 190, 0.63) 68deg,
+    rgba(255, 206, 150, 0.23) 80deg,
+    transparent 90deg 360deg
+  );
+  -webkit-mask-image: radial-gradient(
+    circle closest-side,
+    transparent 51%,
+    #000 53.5%,
+    #000 57.5%,
+    transparent 60%
+  );
+  mask-image: radial-gradient(
+    circle closest-side,
+    transparent 51%,
+    #000 53.5%,
+    #000 57.5%,
+    transparent 60%
+  );
+}
+/* 球底窄弧：r 78–93，跨 128°…232°，峰值 .42（=0.68×上弧） */
+.sl-orbit__halo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 128deg,
+    rgba(255, 206, 150, 0.21) 138deg,
+    rgba(255, 226, 180, 0.55) 160deg,
+    rgba(255, 206, 150, 0.47) 180deg,
+    rgba(255, 226, 180, 0.55) 200deg,
+    rgba(255, 206, 150, 0.21) 222deg,
+    transparent 232deg 360deg
+  );
+  -webkit-mask-image: radial-gradient(
+    circle closest-side,
+    transparent 49%,
+    #000 51.5%,
+    #000 55.5%,
+    transparent 58%
+  );
+  mask-image: radial-gradient(
+    circle closest-side,
+    transparent 49%,
+    #000 51.5%,
+    #000 55.5%,
+    transparent 58%
+  );
+}
+
+/* 内轨：发丝线。原来这里有每 15° 一条的刻度（::before + repeating-conic），
+   本轮明确废弃——刻度＝仪表，与"星体运行"的语义冲突，且它和 6 条辐条是
+   「木刻度盘」仅剩的两处语法。
+   留 content:none 而不是直接删规则，是为了让"这里没有东西"在代码里可被检索到，
+   避免下一轮又往这个槽位塞装饰。 */
+.sl-orbit__track--inner {
+  z-index: 1;
+  width: calc(var(--sl-r-in) * 2);
+  height: calc(var(--sl-r-in) * 2);
+  margin: calc(var(--sl-r-in) * -1) 0 0 calc(var(--sl-r-in) * -1);
+  border: 1px solid rgba(255, 226, 180, 0.22);
+  border-radius: 50%;
+}
+.sl-orbit__track--inner::before {
+  content: none;
+}
+
+/* 外轨：实线星轨（上一轮的虚线盘面整体撤掉）。::before 往外扩 24px 做一圈极淡
+   的内辉，让最外圈读作"轨道内侧更亮"而不是一条孤零零的线。 */
+.sl-orbit__track--outer {
+  z-index: 1;
+  width: calc(var(--sl-r-out) * 2);
+  height: calc(var(--sl-r-out) * 2);
+  margin: calc(var(--sl-r-out) * -1) 0 0 calc(var(--sl-r-out) * -1);
+  background: none;
+  border: 1px solid rgba(140, 100, 60, 0.18);
+  border-radius: 50%;
+}
+.sl-orbit__track--outer::before {
+  content: "";
+  position: absolute;
+  inset: -24px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle closest-side,
+    rgba(184, 103, 42, 0.05) 46%,
+    rgba(196, 158, 116, 0.03) 72%,
+    transparent 100%
+  );
+}
+
+/* ==========================================================================
+   z3 · 吸积盘（原 .sl-orbit__spokes 的 6 条辐条整体改制）
+   盘面整体不转（原来这里的 rotate: var(--sl-a-in) 已移除）：整条环若绕圆心转，
+   同心环的纹理跟着转，就成了一张被拨动的唱片；真正在流的是气流弧（::after）。
+
+   四段径向 + 一条暗车道：
+     50% 的白热环   = 光子环外侧的第一道高温带，它定义了视界的边界
+     55.5%~66.6%    = 主辐射带，暖金
+     67%~68.1%      = 暗车道（间隙），把盘分成两股气流——没有它，盘就是一整块金
+     70%~96.9%      = 逐渐冷却的外盘，alpha 掉到 6%
+   closest-side = 132px，所以 50% 正好落在 66px = 视界半径上，两者严丝合缝。 */
+.sl-orbit__spokes {
+  filter: none; /* 盘面 blur 会把内缘白热散成灰白雾 */
+  z-index: 3;
+  /* 倾斜厚盘 300×150，−3°。三条要点：
+     ① 必须 `ellipse closest-side`（=150/75）。用 `circle` 会取短边 75px，
+        盘整条退化成 r=75 的圆、被 φ132 的视界吃掉（实测页面中央一片空白）。
+     ② 尺寸三行不能省：本元素靠宽高撑出椭圆，radial 再由它映射色标；
+        少了宽高就是 0×0 的点（实测 getBoundingClientRect 返回 0×0）。
+     ③ rotate(−3deg) 是本轮"打破对称"的主手段：盘＋上弧＋下弧三者若上下完全对称，
+        围出来的封闭轮廓就是一只杏仁眼/贝壳；真实吸积盘是倾斜的，倾斜 = 天体。
+        用了 transform 就不能再在独立 rotate 属性上做别的事；气流弧在 ::after 上，不受影响。
+     ⚠ 色标从 % 改成 px：盘只有 120→150 这 30px 放全部色带，% 会把 2px 暗车道压到
+       0.7px 直接消失。px 直接锁死每段厚度。 */
+  width: 300px;
+  height: 150px;
+  margin: -75px 0 0 -150px;
+  border-radius: 50%;
+  transform: rotate(-3deg);
+  /* 内孔边界 120px（半轴 120 × 60，因椭圆比例垂直方向自动压到 60）：
+     水平露出 120−66=54px 暗隙，垂直 60 < 视界半径 66 → 无暗隙，读作"环被阴影咬住"。
+     色带（横向 1px = 1px，竖向被压到 0.5px）：
+       121–122.4  白热内壁
+       122.4–125  奶油金
+       125–133    主辐射带（本轮往高温偏：255,190,105）
+       133–141    橙（238,140,62）
+       141–143    暗车道 2px
+       143–146.5  余烬（196,100,40）
+       146.5–149  焦褐收边
+       150        归零 */
+  background: radial-gradient(
+    ellipse closest-side,
+    transparent 0 120px,
+    #fff6e2 121px 122.4px,
+    rgba(255, 230, 189, 0.92) 122.4px 125px,
+    rgba(255, 190, 105, 0.7) 125px 133px,
+    rgba(238, 140, 62, 0.5) 133px 141px,
+    rgba(29, 20, 9, 0.32) 141px 143px,
+    rgba(196, 100, 40, 0.26) 143px 146.5px,
+    rgba(74, 48, 24, 0.06) 146.5px 149px,
+    transparent 150px
+  );
+}
+
+/* 多普勒：暗侧压暗 + 亮侧提亮，同一层遮罩约束（只作用在盘的环带上）。
+   不用 mix-blend-mode（硬约束 1）：盘在 48%~80% 这段本就有 26~44% 的不透明度，
+   把 rgba 直接叠上去，合成结果与 multiply/screen 的差别肉眼不可辨，代价为零。
+   径向遮罩 48%~80% 保证它只染到盘面，不污染视界内部与轨道之间的空白。 */
+.sl-orbit__spokes::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    linear-gradient(118deg, rgba(12, 8, 4, 0.62) 6%, rgba(12, 8, 4, 0.3) 34%, transparent 56%),
+    conic-gradient(
+      from 0deg,
+      transparent 82deg,
+      rgba(255, 246, 226, 0.34) 108deg,
+      rgba(232, 240, 255, 0.52) 132deg,
+      rgba(255, 255, 255, 0.3) 152deg,
+      transparent 176deg
+    );
+  -webkit-mask-image: radial-gradient(
+    ellipse closest-side,
+    transparent 74%,
+    #000 77%,
+    #000 99%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse closest-side,
+    transparent 74%,
+    #000 77%,
+    #000 99%,
+    transparent 100%
+  );
+}
+
+/* 盘内气流弧：盘面上唯一在转的东西，开普勒 2.8×（内圈快、外圈慢的近似）。
+   用 rotate 属性消费 --sl-a-in，不是 CSS animation——所以它不进
+   getAnimations() 的动画列表，默认静止态仍是"零常驻动画"。
+   will-change 只给这一处（硬约束 2）。 */
+.sl-orbit__spokes::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 318deg,
+    rgba(255, 236, 200, 0.42) 330deg,
+    rgba(255, 214, 150, 0.62) 340deg,
+    rgba(255, 236, 200, 0.3) 352deg,
+    transparent 360deg
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse closest-side,
+    transparent 76%,
+    #000 80%,
+    #000 92%,
+    transparent 96%
+  );
+  mask-image: radial-gradient(
+    ellipse closest-side,
+    transparent 76%,
+    #000 80%,
+    #000 92%,
+    transparent 96%
+  );
+  rotate: calc(var(--sl-a-in) * 2.8);
+  will-change: transform;
+}
+
+/* ==========================================================================
+   z4 · 两圈星体
+   定位链是整套几何的关键：--sl-base + --sl-i*--sl-step 这一项绝不能省，
+   省了 6 个节点会全叠在同一个位置。
+
+   --sl-base 的算式：rotate(θ) translateY(-r) rotate(-θ) 的落点是 (r·sinθ, −r·cosθ)，
+   所以 θ=0 才是 12 点。（早期实施单给内环写的是"负 90 度"，那是配 translateX(+r)
+   时才成立的偏移量，代进来会让整环逆时针偏 90°、节点 0 落到 9 点、12 点空着。）
+   最终：内环 0deg 落 12/2/4/6/8/10 点，外环 45deg 落 1:30/4:30/7:30/10:30。
+   外环不能落在 12/3/6/9 四个正位：两环都从 12 点起时 12 点与 6 点各有一对节点
+   径向对齐，中心距 250−170=80，而节点半径和 38+32=70，边缘只剩 10px，
+   首屏静止时会被读成「贴在一起」。偏 45° 后最紧一对间隙 26.5px，四个方向等距。
+   ========================================================================== */
+.sl-orbit__ring {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.sl-orbit__ring--inner {
+  --sl-r: var(--sl-r-in);
+  --sl-node: var(--sl-node-in);
+  --sl-step: 60deg;
+  --sl-base: 0deg;
+  --sl-a: var(--sl-a-in);
+}
+.sl-orbit__ring--outer {
+  --sl-r: var(--sl-r-out);
+  --sl-node: var(--sl-node-out);
+  --sl-step: 90deg;
+  /* +45deg（不是 −45）：点集相同，但节点 0「个人工作台」落在 1:30 而不是 10:30，
+     与 DOM / Tab 顺序（外环从 12 点顺时针）一致；−45 会让键盘第一跳出现在
+     12 点逆时针方向，读序是反的。 */
+  --sl-base: 45deg;
+  --sl-a: var(--sl-a-out);
+}
+
+.sl-orbit__slot {
+  /* 椭圆轨道：用 CSS 的 sin()/cos() 直接算出坐标。
+     θ = 基准 + 序号×步长 + 公转角；x = r·sinθ，y = −r·k·cosθ。
+     k 是轨道倾角的余弦（k=1 是正圆，k<1 是俯视压扁的椭圆）。
+     节点不再参与旋转链 —— 坐标算出来的，朝向天然是正的。 */
+  --sl-th: calc(var(--sl-base) + var(--sl-i) * var(--sl-step) + var(--sl-a));
+  --sl-d: calc((1 - cos(var(--sl-th))) / 2);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform: translate(calc(var(--sl-r) * sin(var(--sl-th))),
+                       calc(-1 * var(--sl-r) * var(--sl-k) * cos(var(--sl-th))));
+  /* 入场只能用独立的 translate 属性：__slot 的 transform 已被定位占用。
+     位移只做纵向（motion.js 律①：横向位移会把视口顶出横向滚动条）。 */
+  translate: 0 8px;
+  opacity: 0;
+}
+.sl-orbit.is-lit .sl-orbit__slot {
+  translate: 0 0;
+  opacity: 1;
+}
+
+/* 切向拖影：只在运行态出现——静止的物体没有拖影，所以默认 opacity:0。
+   它住在 __slot 里，天然继承 slot 的旋转坐标系（公转 + 自转抵消之后的角度），
+   内环再 +180deg 让它指向"被甩在身后"的方向，外环不加（两环反向，拖影方向随之相反）。
+   长度 = 节点直径，粗细 = 直径的 20%，是能被看见但不至于糊住轨道的量级。 */
+.sl-orbit__slot::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(var(--sl-node) * -0.1);
+  /* 长度 ×1.4、起色点 44%→10%、峰值 .42→.30：
+     原来一半长度被节点自己盖住，露出来的那截从 44% 才起色、又短又方，2× 下读作
+     "小旗子"。拉长后可见段（节点半径 38px 之外）正好落在渐变的上坡段。 */
+  width: calc(var(--sl-node) * 1.4);
+  height: calc(var(--sl-node) * 0.2);
+  border-radius: 999px;
+  transform-origin: 0 50%;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0 10%,
+    rgba(255, 198, 120, 0.3) 56%,
+    rgba(255, 168, 74, 0.16) 80%,
+    transparent 100%
+  );
+  rotate: calc(var(--sl-base) + var(--sl-i) * var(--sl-step) + var(--sl-a) + 180deg);
+  transition: opacity 0.22s var(--sl-ease);
+}
+.sl-orbit__ring--outer .sl-orbit__slot::before {
+  rotate: calc(var(--sl-base) + var(--sl-i) * var(--sl-step) + var(--sl-a));
+}
+.sl-orbit[data-orbit-speed="running"] .sl-orbit__slot::before {
+  opacity: 0; /* 实测这条拖影像米色碎片，先关掉；要恢复改成 0.35 */
+}
+
+/* 星体本体：暖白球，仍然留在浅底上——它们是"被吸积盘照亮的星体"，不是黑洞。
+   底色三档 alpha 必须为 1（硬约束 3）：半透明会让内轨/盘面从字缝里穿过去。
+   受光面在 34% 26%（盘的左上方向），外发光用暖金而不用纯白，
+   半径压在 20px 内：两环净距只有 80−70=10px，光晕再大两圈就糊成一片。 */
+.sl-orbit__node {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: var(--sl-node);
+  height: var(--sl-node);
+  padding: 6px;
+  border: 1px solid rgba(196, 150, 100, 0.42);
+  border-radius: 50%;
+  /* 必须不透明：半透明会让内轨/吸积盘从字缝里穿过去 */
+  background: radial-gradient(circle at 34% 26%, #fffefa 0 46%, #fdf7ee 68%, #f1e5d6 100%);
+  /* 裁到圆：两行标题在圆弧之外会被自动收掉，不会冒出圆外 */
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(88, 58, 30, 0.14),
+    0 0 6px rgba(255, 196, 124, 0.4),
+    0 0 20px rgba(255, 182, 106, 0.16);
+  /* 纯图标形态的覆盖规则在文件末尾「环轨节点：纯图标形态」一节 */
+  pointer-events: auto;
+  /* 居中与缩放分开写：transform 留给定位，scale 单独一层，缩放时圆心不动 */
+  translate: -50% -50%;
+  scale: 1;
+  transition:
+    scale 0.18s var(--sl-ease),
+    background 0.18s var(--sl-ease),
+    border-color 0.18s var(--sl-ease),
+    box-shadow 0.18s var(--sl-ease);
+}
+.sl-orbit__ring--outer .sl-orbit__node {
+  border-color: rgba(196, 150, 100, 0.34);
+}
+/* hover / focus 只作用于该节点，不带动整环。
+   外发光是常驻的（它是"星"），悬停只把它提亮半档，不额外扩半径——
+   扩半径才是两圈粘连的真正原因。 */
+.sl-orbit__node:hover,
+.sl-orbit__node:focus-visible {
+  background: radial-gradient(circle at 34% 26%, #fffefa 0 40%, #fff3e0 70%, #f7e3c8 100%);
+  border-color: #d99a5c;
+  scale: 1.06;
+  box-shadow:
+    inset 0 0 0 1px #fff,
+    0 0 8px rgba(255, 196, 124, 0.62),
+    0 0 26px rgba(255, 168, 74, 0.3);
+}
+.sl-orbit__node:focus-visible {
+  outline: 3px solid #996d41;
+  outline-offset: 3px;
+}
+/* 顺手修一处既有不达标的对比度：hover 时图标 #b95b13 压在 #fff0dc 上只有 4.16:1，
+   压到 #a04d0d 后过 4.5:1。 */
+.sl-orbit__node:hover .sl-orbit__node-icon,
+.sl-orbit__node:focus-visible .sl-orbit__node-icon {
+  color: #a04d0d;
+}
+
+.sl-orbit__node-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sl-orbit__ring--inner .sl-orbit__node-icon {
+  color: #a4661f;
+}
+.sl-orbit__ring--inner .sl-orbit__node-icon .icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.5;
+}
+.sl-orbit__ring--outer .sl-orbit__node-icon {
+  color: #8b7558;
+}
+.sl-orbit__ring--outer .sl-orbit__node-icon .icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.5;
+}
+
+/* 字号一律不低于 11px：宁可换两行，不为单行缩字号。
+   刻意不用 display:-webkit-box 那套行数裁切 —— 该布局下 text-wrap:balance
+   不参与断行计算，断行退化成贪心填满，5 字标题会断成 4+1（「个人工作」/「台」）。
+   改用高度裁切（2 行高度）把行数交给 balance 分配。
+   字晕用**纸色**（硬约束 4）：星体底色是暖白偏纸色，用纸色光晕等于把字从
+   渐变底上"托"起来；深色阴影在浅底上会直接把 11px 中文糊成一团脏边。 */
+.sl-orbit__node-label {
+  max-height: calc(2 * 1.3em);
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  color: #2b2118;
+  text-align: center;
+  text-shadow:
+    0 0 2px var(--sl-paper-hi),
+    0 0 4px var(--sl-paper-hi);
+  /* 不用 text-wrap: balance：它只平衡两行长度、不理解中文词边界，
+     会把「技术文档检索」推回成「技术文/档检索」。断行点改由文案里的 | 转 <wbr> 控制
+     （见 views.js 的 wrappedTitle）。max-height 兜住"最多两行"。 */
+}
+.sl-orbit__ring--outer .sl-orbit__node-label {
+  line-height: 1.35;
+  max-height: calc(2 * 1.35em);
+  font-weight: 500;
+  color: #5a4a3a;
+}
+
+/* 私密节点：投屏/旁人可见场景下要一眼区分，用虚线描边而不是另一个高亮色
+   （#d99a5c 已经被 hover 占用）。不显示任何数量、摘要或角标——φ64 没空间。 */
+.sl-orbit__node--private {
+  border-style: dashed;
+  border-color: #c9a882;
+}
+.sl-orbit__ring--outer .sl-orbit__node--private .sl-orbit__node-label {
+  color: #6b5a48;
+}
+.sl-orbit__node--private:hover,
+.sl-orbit__node--private:focus-visible {
+  border-style: solid;
+  border-color: #d99a5c;
+}
+
+/* ==========================================================================
+   z5 · 事件视界
+   φ132（半径 66）。原来那圈 0 0 0 6px #fffdfacc / 0 0 0 7px #bd9a73aa 的
+   "纸缝环"必须删掉——那是印章的语法：白底 + 深棕描边在浅纸上读作一枚盖下的印。
+   黑洞的边界改由光子环定义：环内是深黑，环外是引力坑的斜坡，中间没有白。
+   本体用 42% 36% 起的径向渐层而不是纯色：焦墨不怕亮，怕的是均匀；
+   均匀的纯黑在任何底上都是"抠图"。 */
+.sl-orbit__hub {
+  --sl-hub-scale: 0.96;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: var(--sl-hub);
+  height: var(--sl-hub);
+  /* 文字块整体上提 8px：盘加厚到 130 后它的上缘会顶到胶囊下沿
+     （padding-bottom 16 → 内容盒中心上移 8px；gap 7px 不动）。 */
+  padding: 0 0 16px;
+  border: 0;
+  border-radius: 50%;
+  /* 父级 .sl-orbit 是 pointer-events:none，这里必须恢复，否则中心按钮点不动 */
+  pointer-events: auto;
+  /* 不加 rotate：中心按钮参与自转会让文字跟着倒转 */
+  translate: -50% calc(-50% + 8px);
+  scale: var(--sl-hub-scale);
+  opacity: 0;
+  background: radial-gradient(circle at 42% 36%, #1d1409 0%, #140d07 44%, #0b0704 100%);
+  /* 光子环的辉光必须挂在**本体**上：::before 带 mask-image，而 mask 的绘制范围
+     只有 border-box，会把框外 box-shadow 整个裁掉（实测换成红色 18px 辉光后
+     环外一点红都没有）。本体没有 mask，辉光才能真的 bloom 到盘面上。 */
+  box-shadow:
+    0 0 3px 1px rgba(255, 226, 170, 0.34),
+              0 0 11px 3px rgba(255, 168, 74, 0.16),
+              0 0 26px 7px rgba(214, 120, 40, 0.08);
+  transition:
+    translate 0.32s var(--sl-ease),
+    scale 0.18s var(--sl-ease),
+    opacity 0.32s var(--sl-ease),
+    box-shadow 0.18s var(--sl-ease);
+}
+.sl-orbit.is-lit .sl-orbit__hub {
+  --sl-hub-scale: 1;
+  translate: -50% -50%;
+  opacity: 1;
+}
+
+/* 光子环：硬环 + 一段 70° 的白热扇区。
+   多普勒增亮钉死在 4–5 点方向（本段 CSS 的 conic 从 0deg 顺时针铺到 136deg），
+   这个固定不对称是"黑洞"与"甜甜圈"最省事的分界线。
+   掩膜只留最外 2.4px，所以环是硬的：软边 + 深色 = 墨渍，硬边 + 亮环 = 洞。 */
+.sl-orbit__hub::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  /* ⚠ 从 206deg 起算，不是 from 0deg。原来的写法 206°–360° 全透明、0deg 突然跳到
+     .50，接缝正落在正上方——2× 图上球顶边缘能看见一个白色台阶。
+     改后 206° 处是透明的两端衔接点，0° 的 .50 变成 154° 处的渐变，跳变消失。
+     落点不变：206+154=360≡0；206+220=426≡66；206+290=496≡136；206+332=538≡178。 */
+  background: conic-gradient(
+    from 206deg,
+    transparent 0deg,
+    rgba(255, 246, 226, 0.5) 154deg,
+    #fff 220deg 290deg,
+    rgba(255, 246, 226, 0.46) 332deg,
+    transparent 360deg
+  );
+  -webkit-mask-image: radial-gradient(
+    circle closest-side,
+    transparent calc(100% - 2.4px),
+    #000 calc(100% - 2.4px)
+  );
+  mask-image: radial-gradient(
+    circle closest-side,
+    transparent calc(100% - 2.4px),
+    #000 calc(100% - 2.4px)
+  );
+  /* 这里不放 box-shadow：mask 会把框外的阴影裁掉，写了也是 0 渲染（已验证）。
+     辉光在本体上。 */
+}
+.sl-orbit__hub:hover,
+.sl-orbit.is-lit .sl-orbit__hub:hover {
+  box-shadow:
+    0 0 8px 2px rgba(255, 232, 180, 0.7),
+    0 0 26px 8px rgba(255, 168, 74, 0.42),
+    0 0 60px 18px rgba(214, 120, 40, 0.22);
+}
+.sl-orbit__hub:active,
+.sl-orbit.is-lit .sl-orbit__hub:active {
+  --sl-hub-scale: 0.97;
+  transition-duration: 0.12s;
+}
+.sl-orbit__hub:focus-visible {
+  outline: 2px solid #ffd79a;
+  outline-offset: 4px;
+}
+
+.sl-orbit__hub-label {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: normal;
+  /* letter-spacing 会在末字之后多留 4px，等量右移补回视觉居中 */
+  margin-right: -4px;
+  color: var(--sl-gold-200);
+}
+/* 副标：视界内部用 10% 白胶囊托底，不用实色——实色胶囊会在黑体上切出一块矩形 */
+.sl-orbit__hub-state {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  line-height: 1;
+  letter-spacing: 0.4px;
+  color: #f4dfc4;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 运行态脉冲：默认静止态不呼吸（否则按钮看着像"正在加载"，与「开始」语义打架）。
+   这是整棵环轨子树里唯一允许常驻的无限 animation，且只在 data-orbit-speed="running"
+   下挂载，默认静止态 getAnimations({subtree:true}) 里 iterations:Infinity 必须是 0。 */
+.sl-orbit__hub::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border: 2px solid #c86a1e;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.sl-orbit[data-orbit-speed="running"] .sl-orbit__hub::after {
+  animation: sl-pulse 4.2s ease-out infinite;
+}
+@keyframes sl-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(1.28);
+    opacity: 0;
+  }
+}
+
+/* --- 降级形态：2 列静态入口网格（默认显示，宽容器由 @container 切回环轨） ---
+   <960px 时环轨整体隐藏，中心「开始」按钮随之消失——这是预期行为：
+   「开始」的语义是启动环轨，环轨都不存在了，按钮点了没有对象。
+   窄屏就是纯入口列表，每条直接可点。
+   这一块刻意保持浅色：它不在环轨母题里，页面其余部分仍是宣纸。 */
+.sl-orbit {
+  display: none;
+}
+.sl-orbit-list {
+  --sl-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 20px 0 12px;
+  padding: 0;
+}
+.sl-orbit-list__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #e1d8ce;
+  border-radius: 10px;
+  background: #fffdfa;
+  font-size: 12px;
+  color: #3a3128;
+  transition:
+    background-color 0.18s var(--sl-ease),
+    border-color 0.18s var(--sl-ease);
+}
+.sl-orbit-list__item > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sl-orbit-list__item > .icon:first-child {
+  width: 18px;
+  height: 18px;
+  color: #a4661f;
+}
+.sl-orbit-list__item > .icon:last-child {
+  width: 14px;
+  height: 14px;
+  color: #b7a794;
+}
+/* 窄屏列表里的主入口：环轨隐藏后，这是进入工作台视图的唯一入口。 */
+.sl-orbit-list__item--enter {
+  grid-column: 1 / -1;
+  background: #fff4e4;
+  border-color: #d99a5c;
+  font-weight: 600;
+}
+.sl-orbit-list__item:hover,
+.sl-orbit-list__item:focus-visible {
+  background: #fff0dc;
+  border-color: #d99a5c;
+}
+.sl-orbit-list__item:focus-visible {
+  outline: 3px solid #996d41;
+  outline-offset: 3px;
+}
+
+/* --- 显隐切换用容器查询，不用视口断点 -------------------------------------
+   项目有 portal / sidebar 两套布局（documentElement.dataset.layout），同一视口
+   宽度下内容区可用宽度差约 260px（sidebar 模式 #content 有 margin-left:224px）。
+   纯视口断点会让 1000px 视口在侧栏模式下把 576 舞台塞进约 700px 容器。
+   610 = 576 舞台 + 左右各 17px 余量。
+   容器查询的尺寸轴只加在 .home-orbit-wrap 上：加到 #content 或更上层会创建包含块，
+   波及 toast / cursor-glow / petal / fireflies 这些 fixed 定位元素。 */
+@container (min-width: 610px) {
+  .sl-orbit {
+    display: block;
+  }
+  .sl-orbit-list {
+    display: none;
+  }
+}
+
+/* --- 窄屏形态完全交给上面的内容区容器查询 -------------------------------
+   历史上这里还有一条 `@media (max-width: 959px)` 强制列表，导致 portal 模式
+   在 910px 视口（内容区约 830px，足够放下 576 舞台）也被误判为窄屏，
+   用户打开首页只看到列表、看不到环轨。现在只保留默认隐藏 + @container 切换：
+   容器 <610px 时列表照旧；容器 ≥610px 时环轨显示，两套布局按各自真实宽度判断。
+   不要用 transform:scale 缩环轨——缩到 0.857 就把 11px 标题压成 9.4px。 */
+
+/* --- 减少动画：角度恒 0、所有过渡/动画置 none、入场位移直接取消。
+   orbit.js 在 reduce 分支里不启动 rAF 且移除内联角度变量，
+   slot 于是回落到 --sl-base + i*--sl-step 的静态均布，10 个入口一个不少。
+   本轮追加两条：
+     · 气流弧的角度归 0（reduce 下 rAF 不跑，变量不存在，calc 会退回 0，
+       但显式写死可以避免将来变量被别处赋值时它又转起来）；
+     · 切向拖影整条隐藏——拖影是"运动"的视觉承诺，静止态下它就是错的语义。 --- */
+@media (prefers-reduced-motion: reduce) {
+  .sl-orbit {
+    --sl-a-in: 0deg;
+    --sl-a-out: 0deg;
+  }
+  .sl-orbit__slot,
+  .sl-orbit__hub,
+  .sl-orbit__node,
+  .sl-orbit-list__item {
+    transition: none;
+    animation: none;
+  }
+  .sl-orbit__slot {
+    opacity: 1;
+    translate: 0 0;
+  }
+  .sl-orbit__hub {
+    --sl-hub-scale: 1;
+    opacity: 1;
+    translate: -50% -50%;
+  }
+  .sl-orbit__hub::after {
+    display: none;
+  }
+  .sl-orbit__spokes::after {
+    rotate: 0deg;
+  }
+  .sl-orbit__slot::before {
+    display: none;
+  }
+}
+
+/* --- 首页 hero 文字可读性修复（2026-10-30 环轨轮顺带发现） ---
+   .home-brand 在 1564 行设了深色 #443a30，5645 行那段只改字号与字距、
+   没有再声明 color，于是深色字压在深色山水插画上几乎不可见（首屏左上角一片空白）。
+   父级 .home-heading 已是 #faf2e9，这里让品牌名与问候语显式继承它。 */
+.home-brand,
+.home-greet {
+  color: #faf2e9;
+}
+.home-greet {
+  opacity: 0.92;
+}
+
+/* ==========================================================================
+   环轨节点 · 纯图标形态（2026-11-01 方案 C：深底金图）
+   节点改为深色球体 + 金色图标，与中心黑洞同一族语言；视觉文字移除，
+   但 .sl-orbit__node-label 用 sr-only 保留给读屏（aria-label 仍是完整名称）。
+   环是行星的标识：倾斜椭圆，后半（球上方）压暗，读作从球背后绕过。
+   ========================================================================== */
+.sl-orbit__node {
+  padding: 0;
+  border: 0;
+  /* 环要溢出到球外，必须解除圆角裁切；背景仍受 border-radius 约束 */
+  overflow: visible;
+  background: radial-gradient(circle at 36% 28%, #3a2a1c 0%, #241812 52%, #150e09 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 220, 170, 0.18),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.5),
+    0 6px 16px rgba(40, 24, 12, 0.3);
+}
+.sl-orbit__node::before,
+.sl-orbit__node::after {
+  content: "";
+  position: absolute;
+  left: -14%;
+  right: -14%;
+  top: 62%;
+  height: 54%;
+  margin-top: -27%;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: rotate(-16deg) scaleY(0.3);
+}
+/* 环本体：深底上必须提亮，否则与球体明度接近会整条消失 */
+.sl-orbit__node::after {
+  z-index: 0;
+  border: 2px solid rgba(240, 184, 105, 0.78);
+  box-shadow:
+    0 0 0 3.5px rgba(255, 246, 226, 0.3),
+    0 0 0 6px rgba(206, 146, 78, 0.2);
+}
+/* 环的后半：压暗，形成从球背后绕过的前后关系 */
+.sl-orbit__node::before {
+  z-index: 0;
+  border: 2px solid rgba(150, 104, 52, 0.55);
+  -webkit-mask: linear-gradient(to bottom, transparent 0 52%, #000 52%);
+  mask: linear-gradient(to bottom, transparent 0 52%, #000 52%);
+}
+.sl-orbit__node-icon {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f0b869;
+}
+.sl-orbit__ring--inner .sl-orbit__node-icon .sl-ic { width: 34px; height: 34px; }
+.sl-orbit__ring--outer .sl-orbit__node-icon .sl-ic { width: 29px; height: 29px; }
+.sl-orbit__node:hover .sl-orbit__node-icon,
+.sl-orbit__node:focus-visible .sl-orbit__node-icon { color: #ffd79a; }
+
+.sl-orbit__node:hover,
+.sl-orbit__node:focus-visible {
+  background: radial-gradient(circle at 36% 28%, #4a3524 0%, #2c1d14 52%, #1a1108 100%);
+  border-color: transparent;
+  box-shadow:
+    inset 0 2px 3px rgba(255, 220, 170, 0.22),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.5),
+    0 8px 20px rgba(40, 24, 12, 0.36);
+}
+
+/* 视觉隐藏文字：读屏与键盘用户仍能听到，视觉上让位给图标 */
+.sl-orbit__node-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 私密节点：深底上改用亮金虚线区分，与其它节点不同族 */
+.sl-orbit__node--private {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(240, 184, 105, 0.5),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.5),
+    0 6px 16px rgba(40, 24, 12, 0.3);
+}
+
+/* --- 环的前后分层修正 ---
+   伪元素默认画在节点背景之上，导致环被自己的背景压住（整条看不见）。
+   改为：::before 在球后（z-index:-1，上半），::after 在球前（z-index:1，下半）。
+   节点需要 isolation:isolate 建立独立层叠上下文，否则 z-index:-1 会沉到页面背景之下。
+   环比球宽 28%，所以上半那截在球外侧仍然可见，读作从球背后绕出来。 */
+.sl-orbit__node { isolation: isolate; }
+.sl-orbit__node::before,
+.sl-orbit__node::after {
+  top: 58%;
+  height: 62%;
+  margin-top: -31%;
+}
+.sl-orbit__node::before {
+  z-index: -1;
+  border: 2px solid rgba(150, 96, 42, 0.85);
+  -webkit-mask: linear-gradient(to bottom, #000 0 48%, transparent 48%);
+          mask: linear-gradient(to bottom, #000 0 48%, transparent 48%);
+}
+.sl-orbit__node::after {
+  z-index: 1;
+  border: 2px solid rgba(176, 114, 52, 0.95);
+  -webkit-mask: linear-gradient(to bottom, transparent 0 48%, #000 48%);
+          mask: linear-gradient(to bottom, transparent 0 48%, #000 48%);
+  box-shadow: 0 0 0 3.5px rgba(180, 124, 62, 0.22);
+}
+
+/* --- 环的尺寸修正（关键） ---
+   之前用 transform: scaleY(0.3) 把圆压成椭圆，但 scaleY 会连边框一起压扁：
+   2px 的上下边框被压到 0.6px，环线等于消失（左右两端保住 2px 但只有很短一截）。
+   改为直接用真实椭圆尺寸（宽 128%、高 22px、border-radius:50%），边框保持均匀 2px。 */
+.sl-orbit__node::before,
+.sl-orbit__node::after {
+  top: 54%;
+  height: 18px;
+  margin-top: -9px;
+  left: -8%;
+  right: -8%;
+  border-radius: 50%;
+  transform: rotate(-14deg);
+}
+.sl-orbit__node::before {
+  z-index: -1;
+  border: 2px solid rgba(146, 92, 40, 0.9);
+  -webkit-mask: linear-gradient(to bottom, #000 0 46%, transparent 46%);
+          mask: linear-gradient(to bottom, #000 0 46%, transparent 46%);
+}
+.sl-orbit__node::after {
+  z-index: 1;
+  border: 2px solid rgba(184, 120, 56, 0.98);
+  -webkit-mask: linear-gradient(to bottom, transparent 0 46%, #000 46%);
+          mask: linear-gradient(to bottom, transparent 0 46%, #000 46%);
+  box-shadow: 0 0 0 2.5px rgba(190, 132, 68, 0.18);
+}
+
+/* ==========================================================================
+   首页 · 开始页形态（2026-11-01）
+   进站首屏只放黑洞与行星，占满视口；点中心「进入」再平滑滚到下面的工作台。
+   ========================================================================== */
+.home-start {
+  min-height: calc(100vh - 76px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+/* container-type:inline-size 的元素宽度不能靠内容撑开，
+   在 grid 的 auto 列里会与 width:100% 形成循环依赖、解析成 0，
+   于是 @container(min-width:610px) 不成立、环轨退化成列表。改用 flex 撑满。 */
+.home-start .home-orbit-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.home-start .sl-orbit {
+  margin: 0 auto;
+}
+.home-main {
+  padding-top: 4px;
+  scroll-margin-top: 76px;
+}
+
+/* ==========================================================================
+   环轨 · 透视层次（2026-11-01）
+   两条轨道用不同倾角的椭圆（同一个俯视平面），节点沿椭圆走：
+   近端放大、远端缩小并变淡 —— 层次来自几何，不是来自加装饰。
+   --sl-k 是轨道倾角的余弦：k=1 正圆，k<1 俯视压扁。
+   ========================================================================== */
+.sl-orbit {
+  --sl-k-in: 0.966;  /* 内环倾角 15° */
+  --sl-k-out: 0.866; /* 外环倾角 30° */
+}
+.sl-orbit__ring--inner { --sl-k: var(--sl-k-in); }
+.sl-orbit__ring--outer { --sl-k: var(--sl-k-out); }
+
+/* 近大远小 + 远处更淡：--sl-d 由 slot 算出（0=最远，1=最近） */
+.sl-orbit__node {
+  scale: calc((1 + 0.3 * var(--sl-d, 0)) * var(--sl-h, 1));
+  opacity: calc(0.7 + 0.3 * var(--sl-d, 0));
+}
+.sl-orbit__node:hover,
+.sl-orbit__node:focus-visible { --sl-h: 1.08; }
+
+/* 轨道线：与节点轨迹严格一致的椭圆，用 translate 居中而不是固定 margin */
+.sl-orbit__track--inner,
+.sl-orbit__track--outer {
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+.sl-orbit__track--inner {
+  width: calc(var(--sl-r-in) * 2);
+  height: calc(var(--sl-r-in) * 2 * var(--sl-k-in));
+  border-radius: 50%;
+}
+.sl-orbit__track--outer {
+  width: calc(var(--sl-r-out) * 2);
+  height: calc(var(--sl-r-out) * 2 * var(--sl-k-out));
+  border-radius: 50%;
+}
+
+/* 方框根因：.sl-orbit 的装饰层是 inset:0 的方盒，它们渐变到盒子边缘时
+   alpha 有一处突变，在浅纸底上就显出一条 576×576 的方形边界。
+   把这两层裁成圆形，边界就消失在圆里，不再有直角。 */
+.sl-orbit::before,
+.sl-orbit::after {
+  border-radius: 50%;
+  overflow: hidden;
+}
+/* ==========================================================================
+   环轨 · 周围的三层氛围（2026-11-01）
+   远景星点 / 中景星云 / 近景轨道微光。
+   星点用墨色不用白色 —— 浅宣纸底上白点会读成脏点，��点是宣纸本身的杂质感。
+   ========================================================================== */
+.sl-orbit::after {
+  background:
+    /* 近景：轨道微光 —— 两条轨道线上各有一段更亮的辉光，追着节点跑 */
+    radial-gradient(ellipse 62% 30% at 50% 26%, rgba(236, 190, 122, 0.16), transparent 70%),
+    radial-gradient(ellipse 46% 22% at 30% 74%, rgba(236, 190, 122, 0.11), transparent 70%),
+    /* 中景：星云 —— 两团暖雾，椭圆且不对称，给轨道一个"漂浮在气体里"的空间 */
+    radial-gradient(ellipse 56% 40% at 50% 50%, rgba(206, 150, 88, 0.1) 0%, rgba(206, 150, 88, 0.04) 54%, transparent 78%),
+    radial-gradient(ellipse 34% 26% at 33% 66%, rgba(176, 124, 74, 0.09) 0%, transparent 72%),
+    radial-gradient(ellipse 26% 20% at 72% 30%, rgba(196, 150, 100, 0.07) 0%, transparent 74%),
+    /* 远景：星点 —— 大小不一、疏密不均，暖色几颗像远处恒星 */
+    radial-gradient(1.5px 1.5px at 22% 31%, rgba(58, 40, 24, 0.09), transparent),
+    radial-gradient(1px 1px at 71% 18%, rgba(58, 40, 24, 0.07), transparent),
+    radial-gradient(1.5px 1.5px at 84% 63%, rgba(58, 40, 24, 0.08), transparent),
+    radial-gradient(1px 1px at 13% 72%, rgba(58, 40, 24, 0.06), transparent),
+    radial-gradient(1px 1px at 46% 8%, rgba(58, 40, 24, 0.05), transparent),
+    radial-gradient(1.5px 1.5px at 62% 91%, rgba(58, 40, 24, 0.07), transparent),
+    radial-gradient(1px 1px at 38% 24%, rgba(58, 40, 24, 0.05), transparent),
+    radial-gradient(1px 1px at 8% 52%, rgba(58, 40, 24, 0.06), transparent),
+    radial-gradient(1.5px 1.5px at 93% 28%, rgba(58, 40, 24, 0.07), transparent),
+    radial-gradient(1px 1px at 55% 84%, rgba(58, 40, 24, 0.05), transparent),
+    radial-gradient(1px 1px at 29% 58%, rgba(58, 40, 24, 0.06), transparent),
+    radial-gradient(1.5px 1.5px at 78% 88%, rgba(58, 40, 24, 0.07), transparent),
+    radial-gradient(1px 1px at 66% 42%, rgba(58, 40, 24, 0.05), transparent),
+    radial-gradient(2px 2px at 17% 24%, rgba(212, 148, 82, 0.34), transparent),
+    radial-gradient(1.5px 1.5px at 88% 46%, rgba(206, 140, 78, 0.26), transparent),
+    radial-gradient(1.5px 1.5px at 42% 94%, rgba(206, 140, 78, 0.2), transparent);
+}
+/* 中心黑洞周围那圈灰白雾：来自 hub 本体与光子环的两组大范围外发光，
+   在浅纸底上散成一层脏灰。把外发光收窄压淡，只留贴着视界的那一圈亮边。 */
+.sl-orbit__hub,
+.sl-orbit__hub::before {
+  box-shadow:
+    0 0 3px 1px rgba(255, 226, 170, 0.34),
+    0 0 10px 3px rgba(255, 168, 74, 0.15) !important;
+}
+
+/* ── 检索质量评测页 ──────────────────────────────────────────
+   信息密度优先：召回率表格一眼可读，逐题明细按需展开。
+   展开状态由 evaluation.js 持有，这里只管样式。 */
+.eval-surface {
+  display: grid;
+  gap: 18px;
+}
+.eval-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.eval-head h2 {
+  margin: 0 0 6px;
+}
+.eval-head p {
+  margin: 0;
+  max-width: 62ch;
+  color: #6b5c4c;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.eval-controls {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.eval-switch {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.eval-switch input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--sl-ember-500, #7a4419);
+  cursor: pointer;
+}
+.eval-summary {
+  display: grid;
+  gap: 8px;
+}
+.eval-recall {
+  border-collapse: collapse;
+  font-size: 13px;
+  width: 100%;
+  max-width: 560px;
+}
+.eval-recall th,
+.eval-recall td {
+  border: 1px solid var(--line);
+  padding: 7px 12px;
+  text-align: left;
+}
+.eval-recall th {
+  font-weight: 600;
+  background: rgba(122, 68, 25, 0.04);
+}
+.eval-recall td small {
+  margin-left: 5px;
+  color: #8a7a6a;
+  font-size: 11px;
+}
+.eval-pass {
+  color: #2b6b3f;
+  font-weight: 600;
+}
+.eval-part {
+  color: #9a6a12;
+  font-weight: 600;
+}
+.eval-fail {
+  color: #a02a1e;
+  font-weight: 600;
+}
+.eval-warn {
+  color: #9a6a12;
+}
+.eval-ok {
+  color: #2b6b3f;
+}
+.eval-none {
+  color: #b0a292;
+}
+.eval-note,
+.eval-hint {
+  margin: 0;
+  color: #6b5c4c;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.eval-error {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 14px 16px;
+  border: 1px solid rgba(160, 42, 30, 0.3);
+  border-left-width: 3px;
+  background: rgba(160, 42, 30, 0.04);
+  font-size: 13px;
+}
+.eval-error p {
+  margin: 0;
+}
+.eval-questions {
+  display: grid;
+  gap: 8px;
+}
+.eval-question {
+  border: 1px solid var(--line);
+  background: rgba(255, 252, 246, 0.6);
+}
+.eval-question > header {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13.5px;
+}
+.eval-question > header:hover {
+  background: rgba(122, 68, 25, 0.035);
+}
+.eval-question > header:focus-visible {
+  outline: 2px solid var(--sl-ember-500, #7a4419);
+  outline-offset: -2px;
+}
+.eval-qid {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--sl-ember-500, #7a4419);
+}
+.eval-qtext {
+  line-height: 1.55;
+}
+.eval-qmeta {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.eval-move {
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.eval-move-up {
+  color: #2b6b3f;
+  background: rgba(43, 107, 63, 0.09);
+}
+.eval-move-down {
+  color: #a02a1e;
+  background: rgba(160, 42, 30, 0.08);
+}
+.eval-qbody {
+  padding: 0 14px 12px 74px;
+  font-size: 12.5px;
+  color: #5e5044;
+}
+.eval-qbody p {
+  margin: 0 0 4px;
+}
+.eval-anchors code,
+.eval-qbody code {
+  font-size: 11.5px;
+  padding: 1px 5px;
+  background: rgba(122, 68, 25, 0.07);
+  border-radius: 3px;
+  word-break: break-all;
+}
+.eval-hits {
+  border-collapse: collapse;
+  margin-top: 8px;
+  width: 100%;
+  font-size: 12px;
+  background: #fffdf9;
+}
+.eval-hits th,
+.eval-hits td {
+  border: 1px solid var(--line);
+  padding: 5px 9px;
+  text-align: left;
+  vertical-align: top;
+}
+.eval-hits th {
+  background: rgba(122, 68, 25, 0.05);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.eval-hits td:nth-child(1),
+.eval-hits td:nth-child(5),
+.eval-hits td:nth-child(6) {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.eval-anchor-row {
+  background: rgba(232, 148, 74, 0.13);
+  font-weight: 600;
+}
+@media (max-width: 639px) {
+  .eval-question > header {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .eval-qbody {
+    padding-left: 14px;
+  }
+  .eval-hits {
+    display: block;
+    overflow-x: auto;
+  }
+}
+/* ── 登录页：账号/令牌双方式 ──────────────────────────────── */
+.login-panel .form-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0;
+  font-size: 13.5px;
+  color: #5e5044;
+  cursor: pointer;
+}
+.login-panel .form-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--sl-ember-500, #7a4419);
+  cursor: pointer;
+}
+.login-panel .login-switch {
+  display: block;
+  margin: 12px auto 0;
+}
+
+/* ── 知识详情：相关笔记 ──────────────────────────────────── */
+.related-notes {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--sl-line, #e4ddd2);
+}
+.related-notes h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b5d50;
+}
+.related-notes > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.related-note {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 150px;
+  max-width: 240px;
+  padding: 10px 12px;
+  border: 1px solid var(--sl-line, #e4ddd2);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.related-note:hover {
+  border-color: var(--sl-ember-500, #7a4419);
+}
+.related-note strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.related-note span {
+  font-size: 11px;
+  color: #8a7b6d;
+}
+
+/* ── 响应式断点表（v107 收敛，2026-11-03）────────────────────────
+   S 移动        <640px      底部主导航、侧栏隐藏、单列、触摸目标 ≥44px
+   M 平板/窄桌面  640–1279px  主从布局堆叠、紧凑间距、环轨强制列表
+   L 桌面        ≥1280px     完整双栏与宽屏规划画布
+   子断点：<960px 环轨强制列表（576 舞台 + 侧栏宽度）、<420px 漏斗单列。
+   新增规则只使用 639/1279/1280 三个边界，不再使用 700/760/800/900/1050/1100/1500。 */
+.mobile-nav {
+  display: none;
+}
+@media (max-width: 639px) {
+  body {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+  .mobile-nav {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 40;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
+    background: rgba(250, 250, 244, 0.96);
+    border-top: 1px solid #dce3dd;
+    backdrop-filter: blur(14px);
+  }
+  .mobile-nav a {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #504234;
+    text-decoration: none;
+  }
+  .mobile-nav a[aria-current="page"] {
+    background: #f2e9dd;
+    color: #7a4419;
+    font-weight: 600;
+  }
+  /* 移动端触摸目标不小于 44px（WCAG 2.5.8 最低 24px，这里按设计规范抬高） */
+  .primary-button,
+  .small-button,
+  .icon-button,
+  .segmented button {
+    min-height: 44px;
+  }
+}
+
+/* 首屏骨架：替换“正在连接”纯文字，列表区先给出结构（加载态三态之一） */
+.loading-panel {
+  display: grid;
+  gap: 12px;
+  padding: 28px;
+}
+.loading-panel > p {
+  color: #7a6e62;
+}
+.skeleton-row {
+  height: 56px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f1ece4 25%, #f8f4ee 37%, #f1ece4 63%);
+  background-size: 400% 100%;
+  animation: shilie-skeleton 1.4s ease-in-out infinite;
+}
+@keyframes shilie-skeleton {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-row {
+    animation: none;
+  }
+}
+/* ── 网页收藏：分类筛选 + 外链卡片 ────────────────────────── */
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.category-chip {
+  padding: 7px 12px;
+  border: 1px solid #e2ddd8;
+  border-radius: 999px;
+  background: #fff;
+  color: #6b5d50;
+  font-size: 12.5px;
+}
+.category-chip[aria-pressed="true"] {
+  border-color: #7d5834;
+  background: #7d5834;
+  color: #fff;
+}
+.bookmark-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.bookmark-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e7e3df;
+  border-radius: 12px;
+  background: #fff;
+}
+.bookmark-card header {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.bookmark-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #3c332a;
+  overflow-wrap: anywhere;
+}
+.bookmark-title:hover {
+  color: #7d5834;
+  text-decoration: underline;
+}
+.bookmark-title .icon {
+  flex: none;
+  color: #8a5e33;
+}
+.bookmark-domain {
+  font-size: 11.5px;
+  color: #8b7f72;
+  overflow-wrap: anywhere;
+}
+.bookmark-note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: #6b5d50;
+  overflow-wrap: anywhere;
+}
+.bookmark-card footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid #f0ece7;
+}
+.bookmark-category {
+  padding: 4px 9px;
+  border-radius: 5px;
+  background: #f3ece4;
+  color: #795129;
+  font-size: 11px;
+}
+.bookmark-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  color: #8b7f72;
+}
+.bookmark-tags span::before {
+  content: "#";
+}
+.bookmark-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+@media (max-width: 639px) {
+  .bookmark-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Start page: a single persistent canvas, with accessible DOM navigation above it. */
+.skip-to-content { position: fixed; z-index: 1001; left: 12px; top: -80px; padding: 10px 16px; background: #fff; color: #2a211b; }
+.skip-to-content:focus { top: 12px; outline: 3px solid #c2622a; }
+#temporal-canvas { position: fixed; z-index: 3; pointer-events: none; }
+#temporal-canvas[hidden] { display: none; }
+.motion-toggle { min-height: 40px; padding: 6px 12px; border: 1px solid #eadfd2; border-radius: 6px; background: #fff; color: #2a211b; }
+.motion-toggle:focus-visible { outline: 3px solid #c2622a; outline-offset: 3px; }
+.sl-orbit.webgl-ready::before, .sl-orbit.webgl-ready::after,
+.sl-orbit.webgl-ready .sl-orbit__halo, .sl-orbit.webgl-ready .sl-orbit__track,
+.sl-orbit.webgl-ready .sl-orbit__spokes { opacity: 0; }
+.sl-orbit { --sl-r-in: 155px; --sl-r-out: 270px; }
+.sea-breeze { display: block; position: absolute; z-index: 4; left: 50%; top: calc(50% - 128px); width: 164px; height: 197px; transform: translateX(-50%); pointer-events: none; }
+.sea-breeze__fallback { display: block; width: 100%; height: 100%; overflow: visible; }
+.sea-breeze__fallback[hidden], .sea-breeze video[hidden] { display: none; }
+.sea-breeze__base, .sea-breeze__hair, .sea-breeze__skirt, .sea-breeze__glow { position: absolute; inset: 0; pointer-events: none; background-position: center; background-repeat: no-repeat; background-size: contain; }
+.sea-breeze__base video { width: 100%; height: 100%; object-fit: contain; }
+.sl-orbit .sl-orbit__hub { top: calc(50% + 91px); width: 116px; height: 38px; min-height: 38px; border-radius: 19px; border: 1px solid #c2622a; background: #fffaf2; color: #7a3716; box-shadow: 0 4px 14px rgb(42 33 27 / 12%); }
+.sl-orbit .sl-orbit__hub::before, .sl-orbit .sl-orbit__hub::after { display: none; }
+.sl-orbit .sl-orbit__hub-label { color: #7a3716; font: 600 15px/1.1 var(--font-sans); }
+.sl-orbit .sl-orbit__hub-state { display: none; }
+.sl-orbit .sl-orbit__node { scale: var(--sl-h, 1); opacity: 1; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.webgl-ready .sl-orbit__node { background: transparent; border: 1px solid transparent; box-shadow: none; }
+.webgl-ready .sl-orbit__node::before, .webgl-ready .sl-orbit__node::after { display: none; }
+.webgl-ready .sl-orbit__node-icon { color: #fffaf2; }
+.webgl-ready .sl-orbit__node-label { color: #7a3716; background: rgb(255 250 242 / 92%); border-radius: 3px; padding-inline: 3px; }
+.sl-orbit .sl-orbit__node-icon .sl-ic { width: 20px; height: 20px; }
+.sl-orbit .sl-orbit__node-label { position: static; width: auto; height: auto; max-height: none; margin: 0; overflow: visible; clip-path: none; white-space: normal; font-size: var(--font-small); line-height: 1.1; text-shadow: none; }
+.webgl-ready .sl-orbit__node-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.webgl-ready .sl-orbit__node-label { position: absolute; top: calc(50% + 26px); left: 50%; transform: translateX(-50%); width: max-content; max-width: 100px; }
+.sl-orbit:not(.webgl-ready) .sl-orbit__node-label { color: #fff6e2; }
+.sl-orbit.webgl-ready .sl-orbit__node--private .sl-orbit__node-label { color: #7a3716; }
+.sl-orbit .sl-orbit__node--private { border-style: dashed; }
+.webgl-ready .sl-orbit__node:focus-visible { outline: 3px solid #c2622a; outline-offset: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  html[data-motion="on"] .sea-breeze__wind { animation: breeze-sway 5s ease-in-out infinite alternate; transform-origin: center; }
+  html[data-motion="on"] .sea-breeze__ribbon { animation: breeze-sway 3.5s ease-in-out infinite alternate-reverse; transform-origin: center; }
+  html[data-motion="on"] .sea-breeze__hair, html[data-motion="on"] .sea-breeze__hair-shape { animation: breeze-sway 4s ease-in-out infinite alternate; transform-origin: 50% 30%; }
+  html[data-motion="on"] .sea-breeze__skirt, html[data-motion="on"] .sea-breeze__skirt-shape { animation: breeze-sway 5.2s ease-in-out infinite alternate-reverse; transform-origin: 50% 60%; }
+}
+@keyframes breeze-sway { from { transform: translateX(-3px); } to { transform: translateX(3px); } }
+@keyframes sea-breeze-leave { to { opacity: 0; filter: blur(5px); transform: translateX(-50%) scale(1.08); } }
+html[data-motion="on"] .sl-orbit.is-entering .sea-breeze { animation: sea-breeze-leave var(--motion-enter-duration, 500ms) ease-in both; }
+html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="off"] *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
+
+/* Each workspace keeps its own semantic visual cue; settings remain quiet. */
+#content[data-module="knowledge"] .note-card.active { border-inline-start: 3px solid var(--color-orange); }
+#content[data-module="documents"] .search-space { height: 120px; margin-block: 14px; border: 1px solid var(--color-divider); border-radius: var(--radius-medium); background: radial-gradient(circle at 8% 50%, #c9a227 0 3px, transparent 4px), linear-gradient(110deg, #fffaf2, #fff); }
+#content[data-module="documents"] .result-list { border-inline-start: 2px solid var(--color-gold); padding-inline-start: 16px; }
+#content[data-module="documents"] .result-card { position: relative; border-color: var(--color-divider); }
+#content[data-module="documents"] .result-card::before { content: ""; position: absolute; inset-inline-start: -22px; top: 24px; width: 8px; height: 8px; border-radius: 50%; background: var(--color-gold); }
+#content[data-module="planning"] .story-space { perspective: 1200px; }
+#content[data-module="planning"] .story-canvas { transform-style: preserve-3d; }
+#content[data-module="planning"] .story-main { translate: 0 0 8px; }
+#content[data-module="planning"] .story-side { translate: 0 0 2px; }
+#content[data-module="jobs"] .jobs-funnel { border-inline-start: 3px solid var(--color-orange); }
+#content[data-module="jobs"] .funnel-steps li { border-block-start: 3px solid var(--color-gold); }
+#content[data-module="learning"] .learning-card { perspective: 900px; font-variant-numeric: tabular-nums; }
+#content[data-module="learning"] .learning-card h2::before { content: ""; display: inline-block; width: 16px; height: 16px; margin-inline-end: 8px; border: 3px solid var(--color-divider); border-top-color: var(--color-orange); border-radius: 50%; vertical-align: -2px; }
+#content[data-module="stages"] .stage-list { border-inline-start: 2px solid var(--color-divider); padding-inline-start: 18px; }
+#content[data-module="stages"] .history-entry { border-inline-start: 3px solid var(--color-gold); padding-inline-start: 12px; }
+#content[data-module="private"] .private-gate { background: rgb(255 250 242 / 88%); backdrop-filter: blur(8px); }
+
+/* Optional home wallpaper: media is configured locally; UI remains above it. */
+#home-wallpaper { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: #fbf7f2; }
+#home-wallpaper[hidden] { display: none; }
+#home-wallpaper img, #home-wallpaper video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+#home-wallpaper video { visibility: hidden; }
+#home-wallpaper[data-mode="video"] video { visibility: visible; }
+.home-wallpaper__veil { position: absolute; inset: 0; background: rgba(251, 247, 242, .48); }
+body.wallpaper-active #content { position: relative; z-index: 1; }
+body.wallpaper-active .sea-breeze { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  #home-wallpaper[data-mode="image-motion"] img { animation: wallpaper-drift 28s ease-in-out infinite alternate; }
+}
+@keyframes wallpaper-drift { from { transform: scale(1.02) translateX(-.3%); } to { transform: scale(1.07) translateX(.3%); } }

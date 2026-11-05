@@ -1,5 +1,5 @@
 /* 数据恢复：文件只在内存中暂存，预览后明确确认，后端事务再次校验版本。 */
-import { api, state } from "./data.js?v=115";
+import { api, state } from "./data.js?v=117";
 const escape = (x) =>
   String(x ?? "").replace(
     /[&<>"']/g,

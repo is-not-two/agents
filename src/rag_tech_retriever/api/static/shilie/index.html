@@ -4,18 +4,23 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>时列 · 工作区</title>
-    <link rel="icon" href="/static/shilie/favicon.svg?v=115" />
-    <link rel="stylesheet" href="/static/shilie/app.css?v=115" />
-    <script type="module" src="/static/shilie/app.js?v=115"></script>
-    <link rel="stylesheet" href="/static/shilie/story.css?v=115" />
+    <link rel="icon" href="/static/shilie/favicon.svg?v=117" />
+    <link rel="stylesheet" href="/static/shilie/app.css?v=117" />
+    <script type="module" src="/static/shilie/app.js?v=117"></script>
+    <script type="module" src="/static/shilie/home-wallpaper.js?v=117"></script>
+    <link rel="stylesheet" href="/static/shilie/story.css?v=117" />
   </head>
   <body>
+    <div id="home-wallpaper" hidden aria-hidden="true"><img alt="" /><video muted loop playsinline preload="none"></video><div class="home-wallpaper__veil"></div></div>
+    <a class="skip-to-content" href="#content">跳到主要内容</a>
+    <canvas id="temporal-canvas" aria-hidden="true" hidden></canvas>
     <header class="topbar">
       <a class="brand" href="#home"
         ><span class="brand-mark">时</span><strong>时列</strong></a
       ><span class="preview-label">个人工作区</span>
       <nav class="position" id="position" aria-label="当前位置"></nav>
       <div class="top-actions">
+        <button class="motion-toggle" id="motion-toggle" type="button" aria-pressed="false">关闭动效</button>
         <button class="quick-trigger" id="quick-open">
           快速打开 <kbd>Ctrl K</kbd>
         </button>

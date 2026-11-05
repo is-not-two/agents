@@ -1,53 +1,49 @@
-"""把 base/demo/tree/automation 四个样式表合并为单一 app.css。
+"""Rebuild the current CSS by concatenating canonical, order-preserving segments."""
+from __future__ import annotations
 
-设计取舍：只做机械拼接，不做规则去重或属性合并。
+import argparse
+import hashlib
+import os
+import tempfile
+from pathlib import Path
 
-为什么不去重：CSS 的层叠结果由「规则出现的先后顺序」决定，而非选择器是否重复。
-本项目多处存在有意的层叠——例如 .topbar 在 base.css 里定义了两次
-（主样式 + 移动端微调），.tree-viewport 先定义 height:520px 再被后续覆盖。
-一旦按选择器去重或按属性合并，这些顺序语义就会被破坏。实测记录：
-  · 按选择器去重 → .tree-viewport 的 overflow:auto 被整体删除，
-    390px 视口出现横向滚动；
-  · 按属性合并 → :root 的 font-family 被丢弃，页面回退 Times New Roman，
-    且半透明顶栏背景覆盖了用户要求的纯黑。
+PARTS = ("00-header-and-product.css", "10-base.css", "20-demo.css", "30-tree.css",
+         "40-automation-and-later.css")
+DEFAULT_ROOT = (Path(__file__).resolve().parent.parent / "src" / "rag_tech_retriever"
+                / "api" / "static" / "shilie")
 
-机械拼接的代价是文件体积（约 61KB），换来的是渲染结果与合并前逐属性一致，
-可用浏览器计算样式 diff 严格验证。体积在本地应用可接受；
-若将来需要瘦身，应在具备完整回归验证手段的前提下单独处理。
-"""
 
-FILES = ['base.css', 'demo.css', 'tree.css', 'automation.css']
-LABELS = {
-    'base.css': '基础与布局',
-    'demo.css': '内容与组件',
-    'tree.css': '规划树与视觉',
-    'automation.css': '自动化',
-}
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--css-root", type=Path, default=DEFAULT_ROOT)
+    parser.add_argument("--check", action="store_true", help="compare only; do not write")
+    args = parser.parse_args()
+    root = args.css_root.resolve()
+    try:
+        data = b"".join((root / "css_sources" / name).read_bytes() for name in PARTS)
+        destination = root / "app.css"
+        if args.check:
+            if not destination.is_file() or destination.read_bytes() != data:
+                print("FAIL: app.css differs from ordered CSS sources")
+                return 1
+            print(f"OK: app.css matches {len(PARTS)} ordered sources; sha256={hashlib.sha256(data).hexdigest()}")
+            return 0
+        descriptor, name = tempfile.mkstemp(prefix=".app-css-", dir=root)
+        try:
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(data)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(name, destination)
+        finally:
+            if os.path.exists(name):
+                os.unlink(name)
+        print(f"Wrote app.css from {len(PARTS)} ordered sources; sha256={hashlib.sha256(data).hexdigest()}")
+        return 0
+    except OSError as exc:
+        print(f"FAIL: CSS source or output unavailable: {exc}")
+        return 2
 
-HEAD = ('/* 时列样式：单一入口。\n'
-        '   由 base.css / demo.css / tree.css / automation.css 机械拼接而成，\n'
-        '   规则顺序与合并前完全一致，因此渲染结果逐属性相同。\n'
-        '   不要在此文件内做跨区去重或属性合并——同文件内的重复定义是有意的层叠。\n'
-        '   原始文件已移出页面加载，仅作归档参考；重新生成见 scripts/merge_css.py。 */\n')
 
-parts = [HEAD]
-total = 0
-for name in FILES:
-    with open(name, encoding='utf-8') as _f:
-        src = _f.read()
-    total += len(src)
-    parts.append(f'\n/* ==================== {LABELS[name]}（原 {name}） ==================== */\n\n')
-    parts.append(src.strip())
-    parts.append('\n')
-
-text = '\n'.join(parts)
-with open('app.css', 'w', encoding='utf-8', newline='\n') as _f:
-    _f.write(text)
-
-print(f'源文件合计字节: {total}')
-print(f'app.css 字节  : {len(text)}')
-balanced = text.count('{') == text.count('}')
-print(f"花括号配平    : {text.count('{')} == {text.count('}')} {'OK' if balanced else 'FAIL'}")
-print('.toast 保留   : %s' % ('.toast{' in text.replace(' ', '')))
-print(f"font-family   : {text.count('font-family')} 处")
-print(f"overflow:auto : {text.count('overflow:auto')} 处")
+if __name__ == "__main__":
+    raise SystemExit(main())

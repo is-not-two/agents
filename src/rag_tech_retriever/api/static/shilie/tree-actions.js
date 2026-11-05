@@ -1,5 +1,5 @@
-import { bindBranch } from "./branch-actions.js?v=115";
-import { api, state, write } from "./data.js?v=115";
+import { bindBranch } from "./branch-actions.js?v=117";
+import { api, state, write } from "./data.js?v=117";
 import {
   treeState as s,
   treePlan,
@@ -8,7 +8,7 @@ import {
   esc,
   isFolded,
   setFolded,
-} from "./tree.js?v=115";
+} from "./tree.js?v=117";
 
 export function bindTree({ renderPage, refresh, toast }) {
   const $ = (q) => document.querySelector(q),
@@ -357,6 +357,7 @@ export function bindTree({ renderPage, refresh, toast }) {
           );
           await refresh();
           toast(node.done ? "已恢复为未完成" : "已完成");
+          if (!node.done) document.dispatchEvent(new CustomEvent("shilie:semantic-effect", { detail: { name: "planning-completed", id } }));
         } catch (error) {
           toast(error.message, true);
         } finally {

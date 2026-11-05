@@ -1,25 +1,26 @@
-import { bindCollaboration } from "./collaboration.js?v=115";
-import { bindAgentStudio } from "./agent-studio.js?v=115";
-import { bindBackup } from "./backup.js?v=115";
+import { bindCollaboration } from "./collaboration.js?v=117";
+import { bindAgentStudio } from "./agent-studio.js?v=117";
+import { bindBackup } from "./backup.js?v=117";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=115";
-import { bindModelConnection } from "./model-connection.js?v=115";
-import { bindTree } from "./tree-actions.js?v=115";
-import { bindAutomation } from "./automation-actions.js?v=115";
-import { bindLessons } from "./lessons.js?v=115";
-import { bindJobs } from "./jobs.js?v=115";
-import { bindCapabilities } from "./company-capabilities.js?v=115";
-import { bindLearning } from "./learning.js?v=115";
-import { bindJobInsights } from "./job-insights.js?v=115";
-import { bindServerStatus } from "./server-status.js?v=115";
-import { bindEvaluation } from "./evaluation.js?v=115";
-import { startTour } from "./tour.js?v=115";
-import { toggleDirector, directorActive } from "./director.js?v=115";
-import { initMotion } from "./motion.js?v=115";
-import { initOrbit } from "./orbit.js?v=115";
+} from "./private-view.js?v=117";
+import { bindModelConnection } from "./model-connection.js?v=117";
+import { bindTree } from "./tree-actions.js?v=117";
+import { bindAutomation } from "./automation-actions.js?v=117";
+import { bindLessons } from "./lessons.js?v=117";
+import { bindJobs } from "./jobs.js?v=117";
+import { bindCapabilities } from "./company-capabilities.js?v=117";
+import { bindLearning } from "./learning.js?v=117";
+import { bindJobInsights } from "./job-insights.js?v=117";
+import { bindServerStatus } from "./server-status.js?v=117";
+import { bindEvaluation } from "./evaluation.js?v=117";
+import { startTour } from "./tour.js?v=117";
+import { toggleDirector, directorActive } from "./director.js?v=117";
+import { initMotion } from "./motion.js?v=117";
+import { initOrbit } from "./orbit.js?v=117";
+import { refreshTemporalCanvas } from "./temporal-webgl.js?v=117";
 import {
   api,
   state,
@@ -30,13 +31,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=115";
+} from "./data.js?v=117";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=115";
+} from "./views.js?v=117";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -47,6 +48,10 @@ const $ = (s) => document.querySelector(s),
     ),
   ),
   toastBox = $("#toast");
+document.querySelector(".skip-to-content")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  content.focus();
+});
 toastBox.id = "toast";
 toastBox.className = "toast";
 toastBox.hidden = true;
@@ -74,6 +79,7 @@ function toast(message, error = false) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => (toastBox.hidden = true), 4200);
 }
+window.addEventListener("shilie:entered-workspace", () => toast("已进入工作台"));
 function persistRoute() {
   write("note", state.selectedNote);
   write("plan", state.selectedPlan);
@@ -137,6 +143,7 @@ function renderPage({ restore = false } = {}) {
     : "full";
   document.body.dataset.layout = state.mode;
   const moduleId = location.hash.split("/")[1];
+  content.dataset.module = location.hash.startsWith("#module/") ? moduleId : "";
   /* 首页两层：`#home` 开始页（环轨）、`#home/workspace` 工作台。
      只有真正跨层跳转时才播放入场过渡；同层刷新/重绘不闪。 */
   const route = location.hash || "#home";
@@ -154,8 +161,19 @@ function renderPage({ restore = false } = {}) {
     ].slice(0, 4);
   content.innerHTML = render();
   content.prepend(navigationStrip);
+  if (moduleId === "documents" && state.searchResult?.hits?.length) {
+    const list = content.querySelector(".result-list");
+    if (list) {
+      const visual = document.createElement("div");
+      visual.className = "search-space";
+      visual.setAttribute("aria-hidden", "true");
+      visual.dataset.hits = String(state.searchResult.hits.length);
+      list.before(visual);
+    }
+  }
   /* 首页环轨：内容已落地，交给 orbit.js 接管角度与交互（非首页时内部直接返回）。 */
   initOrbit();
+  refreshTemporalCanvas();
   modelConnectionController?.ensure();
   backupController?.ensure();
   lessonsController?.ensure();
@@ -366,7 +384,8 @@ function showFormError(form, message = "") {
     node.className = "form-error error-text";
     node.setAttribute("role", "alert");
     const actions = form.querySelector(".form-actions");
-    form.insertBefore(node, actions || null);
+    if (actions) actions.before(node);
+    else form.append(node);
   }
   node.textContent = message;
 }
@@ -440,7 +459,12 @@ async function saveForm(form) {
       });
       toast("阶段已创建，可以继续记录");
     }
-    if (knowledgeOnly) await refreshKnowledge();
+    if (knowledgeOnly) {
+      await refreshKnowledge();
+      document.dispatchEvent(new CustomEvent("shilie:semantic-effect", {
+        detail: { name: "knowledge-saved", id: state.selectedNote },
+      }));
+    }
     else if (bookmarkOnly) await refreshBookmarks();
     else await refresh();
     closeDialogs();

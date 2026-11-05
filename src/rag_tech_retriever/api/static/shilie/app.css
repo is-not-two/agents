@@ -57,13 +57,39 @@
 /* ==================== 基础与布局（原 base.css） ==================== */
 
 :root {
-  font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif;
+  /* Semantic design tokens. Existing rules keep their current cascade until
+     each visual change is reviewed independently. */
+  --color-paper: #fbf7f2;
+  --color-surface: #fff;
+  --color-ink: #2a211b;
+  --color-muted: #8a7763;
+  --color-orange: #c2622a;
+  --color-gold: #c9a227;
+  --color-divider: #eadfd2;
+  --color-deep-ink: #142f42;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --radius-small: 4px;
+  --radius-medium: 8px;
+  --radius-large: 16px;
+  --shadow-panel: 0 8px 24px rgb(42 33 27 / 8%);
+  --shadow-overlay: 0 16px 48px rgb(42 33 27 / 16%);
+  --font-sans: system-ui, "Microsoft YaHei", "Segoe UI", sans-serif;
+  --font-serif: "Songti SC", "Noto Serif SC", "SimSun", serif;
+  --font-small: 14px;
+  --font-medium: 18px;
+  --font-large: 28px;
+  --font-display: 54px;
+  font-family: var(--font-sans);
   color: #393027;
   background: #f8f3ef;
   --space: 24px;
   --accent: #874808;
   --line: #ede4dc;
-  font-size: 14px;
+  font-size: var(--font-small);
   color-scheme: light;
 }
 * {
@@ -975,7 +1001,7 @@ kbd {
   overflow-wrap: anywhere;
 }
 .file-changes {
-  font-family: Consolas, monospace;
+  font-family: var(--font-sans);
   font-size: 12px !important;
 }
 .backup-sections > .fold-section:last-child {
@@ -1579,16 +1605,16 @@ kbd {
 }
 .home-brand {
   display: block;
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--font-serif);
   font-size: 54px;
-  letter-spacing: 10px;
+  letter-spacing: normal;
   color: #443a30;
   margin-bottom: 14px;
 }
 .home-landscape h1 {
   font-size: 18px;
   font-weight: 500;
-  letter-spacing: 4px;
+  letter-spacing: normal;
   color: #5d4e3e;
 }
 .portal-entry {
@@ -1646,7 +1672,7 @@ kbd {
   }
   .home-brand {
     font-size: 42px;
-    letter-spacing: 7px;
+    letter-spacing: normal;
   }
   .home-landscape h1 {
     font-size: 16px;
@@ -1675,7 +1701,7 @@ kbd {
 /* ==================== 内容与组件（原 demo.css） ==================== */
 
 :root {
-  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-sans);
   color: #3c332a;
   background: #f5f5f0;
   color-scheme: light;
@@ -3144,11 +3170,7 @@ select:focus-visible {
   letter-spacing: 2px;
 }
 .studio-heading h1 {
-  font:
-    600 32px/1.3 "Noto Serif SC",
-    "Songti SC",
-    "SimSun",
-    serif;
+  font: 600 32px/1.3 var(--font-serif);
   letter-spacing: 3px;
 }
 .studio-heading .primary-button {
@@ -3426,7 +3448,7 @@ select:focus-visible {
   justify-content: space-between;
   font-size: 11px;
   color: #998979;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 1px;
 }
 .tree-icon-button {
@@ -3522,9 +3544,7 @@ select:focus-visible {
   background: linear-gradient(120deg, #f5f2eef2, #f6f7f0e8);
 }
 .tree-empty-mark {
-  font:
-    24px "SimSun",
-    serif;
+  font: 24px var(--font-serif);
   display: grid;
   place-items: center;
   width: 60px;
@@ -3594,7 +3614,7 @@ select:focus-visible {
   border-color: #e1d6cb;
 }
 .page-head h1 {
-  font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  font-family: var(--font-serif);
   letter-spacing: 1px;
 }
 .module-option:nth-child(2) .module-icon {
@@ -4260,7 +4280,7 @@ select:focus-visible {
   color: #665a4d;
 }
 .pipeline-rail li span {
-  font-family: serif;
+  font-family: var(--font-serif);
   font-size: 22px;
   color: #9a8c7f;
 }
@@ -5065,7 +5085,7 @@ select:focus-visible {
   background: #f7f6f4;
   border: 1px dashed #c2b09d;
   border-radius: 9px;
-  font-family: ui-monospace, Consolas, monospace;
+  font-family: var(--font-sans);
   font-size: 15px;
   letter-spacing: 1.5px;
   overflow-wrap: anywhere;
@@ -5741,7 +5761,7 @@ body::before {
   color: #faf2e9;
 }
 .home-brand {
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--font-serif);
   font-size: 26px;
   letter-spacing: 6px;
 }
@@ -5918,7 +5938,7 @@ body::before {
 }
 .search-hero h1 {
   margin: 0;
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--font-serif);
   font-size: 30px;
 }
 .search-hero-sub {
@@ -7003,11 +7023,11 @@ body::before {
 }
 
 .sl-orbit__hub-label {
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--font-serif);
   font-size: 24px;
   font-weight: 600;
   line-height: 1;
-  letter-spacing: 4px;
+  letter-spacing: normal;
   /* letter-spacing 会在末字之后多留 4px，等量右移补回视觉居中 */
   margin-right: -4px;
   color: var(--sl-gold-200);
@@ -7915,3 +7935,79 @@ body::before {
     grid-template-columns: 1fr;
   }
 }
+
+/* Start page: a single persistent canvas, with accessible DOM navigation above it. */
+.skip-to-content { position: fixed; z-index: 1001; left: 12px; top: -80px; padding: 10px 16px; background: #fff; color: #2a211b; }
+.skip-to-content:focus { top: 12px; outline: 3px solid #c2622a; }
+#temporal-canvas { position: fixed; z-index: 3; pointer-events: none; }
+#temporal-canvas[hidden] { display: none; }
+.motion-toggle { min-height: 40px; padding: 6px 12px; border: 1px solid #eadfd2; border-radius: 6px; background: #fff; color: #2a211b; }
+.motion-toggle:focus-visible { outline: 3px solid #c2622a; outline-offset: 3px; }
+.sl-orbit.webgl-ready::before, .sl-orbit.webgl-ready::after,
+.sl-orbit.webgl-ready .sl-orbit__halo, .sl-orbit.webgl-ready .sl-orbit__track,
+.sl-orbit.webgl-ready .sl-orbit__spokes { opacity: 0; }
+.sl-orbit { --sl-r-in: 155px; --sl-r-out: 270px; }
+.sea-breeze { display: block; position: absolute; z-index: 4; left: 50%; top: calc(50% - 128px); width: 164px; height: 197px; transform: translateX(-50%); pointer-events: none; }
+.sea-breeze__fallback { display: block; width: 100%; height: 100%; overflow: visible; }
+.sea-breeze__fallback[hidden], .sea-breeze video[hidden] { display: none; }
+.sea-breeze__base, .sea-breeze__hair, .sea-breeze__skirt, .sea-breeze__glow { position: absolute; inset: 0; pointer-events: none; background-position: center; background-repeat: no-repeat; background-size: contain; }
+.sea-breeze__base video { width: 100%; height: 100%; object-fit: contain; }
+.sl-orbit .sl-orbit__hub { top: calc(50% + 91px); width: 116px; height: 38px; min-height: 38px; border-radius: 19px; border: 1px solid #c2622a; background: #fffaf2; color: #7a3716; box-shadow: 0 4px 14px rgb(42 33 27 / 12%); }
+.sl-orbit .sl-orbit__hub::before, .sl-orbit .sl-orbit__hub::after { display: none; }
+.sl-orbit .sl-orbit__hub-label { color: #7a3716; font: 600 15px/1.1 var(--font-sans); }
+.sl-orbit .sl-orbit__hub-state { display: none; }
+.sl-orbit .sl-orbit__node { scale: var(--sl-h, 1); opacity: 1; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.webgl-ready .sl-orbit__node { background: transparent; border: 1px solid transparent; box-shadow: none; }
+.webgl-ready .sl-orbit__node::before, .webgl-ready .sl-orbit__node::after { display: none; }
+.webgl-ready .sl-orbit__node-icon { color: #fffaf2; }
+.webgl-ready .sl-orbit__node-label { color: #7a3716; background: rgb(255 250 242 / 92%); border-radius: 3px; padding-inline: 3px; }
+.sl-orbit .sl-orbit__node-icon .sl-ic { width: 20px; height: 20px; }
+.sl-orbit .sl-orbit__node-label { position: static; width: auto; height: auto; max-height: none; margin: 0; overflow: visible; clip-path: none; white-space: normal; font-size: var(--font-small); line-height: 1.1; text-shadow: none; }
+.webgl-ready .sl-orbit__node-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.webgl-ready .sl-orbit__node-label { position: absolute; top: calc(50% + 26px); left: 50%; transform: translateX(-50%); width: max-content; max-width: 100px; }
+.sl-orbit:not(.webgl-ready) .sl-orbit__node-label { color: #fff6e2; }
+.sl-orbit.webgl-ready .sl-orbit__node--private .sl-orbit__node-label { color: #7a3716; }
+.sl-orbit .sl-orbit__node--private { border-style: dashed; }
+.webgl-ready .sl-orbit__node:focus-visible { outline: 3px solid #c2622a; outline-offset: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  html[data-motion="on"] .sea-breeze__wind { animation: breeze-sway 5s ease-in-out infinite alternate; transform-origin: center; }
+  html[data-motion="on"] .sea-breeze__ribbon { animation: breeze-sway 3.5s ease-in-out infinite alternate-reverse; transform-origin: center; }
+  html[data-motion="on"] .sea-breeze__hair, html[data-motion="on"] .sea-breeze__hair-shape { animation: breeze-sway 4s ease-in-out infinite alternate; transform-origin: 50% 30%; }
+  html[data-motion="on"] .sea-breeze__skirt, html[data-motion="on"] .sea-breeze__skirt-shape { animation: breeze-sway 5.2s ease-in-out infinite alternate-reverse; transform-origin: 50% 60%; }
+}
+@keyframes breeze-sway { from { transform: translateX(-3px); } to { transform: translateX(3px); } }
+@keyframes sea-breeze-leave { to { opacity: 0; filter: blur(5px); transform: translateX(-50%) scale(1.08); } }
+html[data-motion="on"] .sl-orbit.is-entering .sea-breeze { animation: sea-breeze-leave var(--motion-enter-duration, 500ms) ease-in both; }
+html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="off"] *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
+
+/* Each workspace keeps its own semantic visual cue; settings remain quiet. */
+#content[data-module="knowledge"] .note-card.active { border-inline-start: 3px solid var(--color-orange); }
+#content[data-module="documents"] .search-space { height: 120px; margin-block: 14px; border: 1px solid var(--color-divider); border-radius: var(--radius-medium); background: radial-gradient(circle at 8% 50%, #c9a227 0 3px, transparent 4px), linear-gradient(110deg, #fffaf2, #fff); }
+#content[data-module="documents"] .result-list { border-inline-start: 2px solid var(--color-gold); padding-inline-start: 16px; }
+#content[data-module="documents"] .result-card { position: relative; border-color: var(--color-divider); }
+#content[data-module="documents"] .result-card::before { content: ""; position: absolute; inset-inline-start: -22px; top: 24px; width: 8px; height: 8px; border-radius: 50%; background: var(--color-gold); }
+#content[data-module="planning"] .story-space { perspective: 1200px; }
+#content[data-module="planning"] .story-canvas { transform-style: preserve-3d; }
+#content[data-module="planning"] .story-main { translate: 0 0 8px; }
+#content[data-module="planning"] .story-side { translate: 0 0 2px; }
+#content[data-module="jobs"] .jobs-funnel { border-inline-start: 3px solid var(--color-orange); }
+#content[data-module="jobs"] .funnel-steps li { border-block-start: 3px solid var(--color-gold); }
+#content[data-module="learning"] .learning-card { perspective: 900px; font-variant-numeric: tabular-nums; }
+#content[data-module="learning"] .learning-card h2::before { content: ""; display: inline-block; width: 16px; height: 16px; margin-inline-end: 8px; border: 3px solid var(--color-divider); border-top-color: var(--color-orange); border-radius: 50%; vertical-align: -2px; }
+#content[data-module="stages"] .stage-list { border-inline-start: 2px solid var(--color-divider); padding-inline-start: 18px; }
+#content[data-module="stages"] .history-entry { border-inline-start: 3px solid var(--color-gold); padding-inline-start: 12px; }
+#content[data-module="private"] .private-gate { background: rgb(255 250 242 / 88%); backdrop-filter: blur(8px); }
+
+/* Optional home wallpaper: media is configured locally; UI remains above it. */
+#home-wallpaper { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: #fbf7f2; }
+#home-wallpaper[hidden] { display: none; }
+#home-wallpaper img, #home-wallpaper video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+#home-wallpaper video { visibility: hidden; }
+#home-wallpaper[data-mode="video"] video { visibility: visible; }
+.home-wallpaper__veil { position: absolute; inset: 0; background: rgba(251, 247, 242, .48); }
+body.wallpaper-active #content { position: relative; z-index: 1; }
+body.wallpaper-active .sea-breeze { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  #home-wallpaper[data-mode="image-motion"] img { animation: wallpaper-drift 28s ease-in-out infinite alternate; }
+}
+@keyframes wallpaper-drift { from { transform: scale(1.02) translateX(-.3%); } to { transform: scale(1.07) translateX(.3%); } }
