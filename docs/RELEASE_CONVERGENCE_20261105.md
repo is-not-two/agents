@@ -19,6 +19,8 @@
 2. `scripts/check_wheel_assets.py --build` 在临时目录构建真正 wheel，禁止联网安装；
    检查运行时静态文件是否存在、与源字节一致且无重复成员。
 3. `scripts/ci_gate.py` 接入实际制品检查；负例覆盖缺视频、错内容、重复和空目录。
+4. 固定两份冻结评测 JSON 的 LF 换行，并按原始 Git blob 的规范字节更新关联 SHA256。
+   原始评测题和预期行为不变，严格哈希校验保留；用 .gitattributes 防止 Windows 再次转换。
 
 ## 验收口径
 

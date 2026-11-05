@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "version": "2026-10-30.collaboration-fixture.v1",
-  "r0_sha256": "a1f9346ff0a25c39ea62b0280fd20c8ff0582d1659981bb7c16c5510fd1b4a31",
+  "r0_sha256": "94eb8cd5b7f356be9c8cfc50b2e972b5f5603d7e26f1aecc94a06c67e2c97ce7",
   "data_source": "synthetic fixtures, not genuine usage",
   "tasks": [
     {
