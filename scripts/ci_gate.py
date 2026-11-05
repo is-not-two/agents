@@ -18,6 +18,7 @@ CHECKS: list[tuple[str, list[str]]] = [
     ("OpenAPI 契约一致", [sys.executable, "scripts/openapi_contract.py"]),
     ("前端接口契约一致", [sys.executable, "scripts/frontend_api_contract.py"]),
     ("静态资源引用完整", [sys.executable, "scripts/check_static_assets.py"]),
+    ("wheel 实际静态资产完整", [sys.executable, "scripts/check_wheel_assets.py", "--build"]),
 ]
 
 PURE_LOGIC_TESTS = [
@@ -34,6 +35,7 @@ PURE_LOGIC_TESTS = [
     "tests/test_deploy_preview_isolated.py",
     "tests/test_trash_overview.py",
     "tests/test_prompt_optimizer.py",
+    "tests/test_wheel_assets.py",
 ]
 
 

@@ -26,7 +26,7 @@ dev = ["pytest>=8.0.0", "ruff>=0.4.0", "httpx>=0.27.0", "tomli>=2.0.1,<3; python
 where = ["src"]
 
 [tool.setuptools.package-data]
-rag_tech_retriever = ["api/static/*.html", "api/static/*.css", "api/static/*.js", "api/static/*.svg", "api/static/views/*.js", "api/static/dialogs/*.js", "api/static/shilie/*"]
+rag_tech_retriever = ["api/static/*.html", "api/static/*.css", "api/static/*.js", "api/static/*.svg", "api/static/views/*.js", "api/static/dialogs/*.js", "api/static/shilie/*", "api/static/shilie/assets/**/*"]
 
 [tool.setuptools.exclude-package-data]
 # 保留本地原素材及阶段快照；页面使用 WebP，发布包不重复携带 PNG。
