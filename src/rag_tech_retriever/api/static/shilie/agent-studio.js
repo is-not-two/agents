@@ -1,5 +1,5 @@
 /* Explicit memory decisions and versioned sessions. Business data is never localStorage. */
-import { api, escapeHtml as esc } from "./data.js?v=118";
+import { api, escapeHtml as esc } from "./data.js?v=119";
 
 const cache = { loaded: false, loading: false, busy: false, agents: [], memories: [], runs: [], selected: "", run: null, configured: false, error: "", caps: null, skills: [], servers: [], toolCatalog: null };
 let generation = 0;
@@ -74,10 +74,19 @@ export function agentStudioView() {
   if (cache.loading) return '<section class="module-surface agent-studio" aria-busy="true"><p>正在读取 Agent 工作室，请稍候…</p></section>';
   if (cache.error) return `<section class="module-surface agent-studio"><p class="error-text" role="alert">${esc(cache.error)}</p><button type="button" data-studio-action="refresh">重新读取工作室</button></section>`;
   const a = owner(), d = a?.data;
-  return `<section class="module-surface agent-studio" data-owner="${esc(cache.selected)}"><div class="module-toolbar"><p>配置预算、审阅长期记忆、查看工具运行和会话追踪。</p><button data-studio-action="refresh" type="button" ${cache.loading || cache.busy ? "disabled" : ""}>刷新 Agent 工作室</button></div>
+  return `<section class="module-surface agent-studio" data-owner="${esc(cache.selected)}"><div class="module-toolbar"><p>选择助手提问，查看回答、工具步骤与待确认操作。</p><button data-studio-action="refresh" type="button" ${cache.loading || cache.busy ? "disabled" : ""}>刷新 Agent 工作室</button></div>
     ${cache.error ? `<p class="error-text" role="alert">${esc(cache.error)}</p>` : ""}
     <label class="form-field">选择 Agent<select data-studio-owner aria-label="选择 Agent">${cache.agents.map((item) => `<option value="${esc(item.id)}" ${item.id === cache.selected ? "selected" : ""}>${esc(item.data.title)}</option>`).join("")}</select></label>
     ${!a ? '<p>先到 Agent 设置新建一个助手。</p><a href="#module/agents">前往 Agent 设置</a>' : `
+    <section class="studio-task">
+    <h2>使用助手</h2><p>${cache.configured ? "已配置模型。主动提交会调用供应商并可能计费。" : "模型未配置；不会发起模型请求。可使用获准的只读草稿试运行。"}</p>
+    ${!cache.configured ? '<p><a href="#module/connections">配置模型连接后开始提问</a></p>' : !d.generate ? '<p>当前助手未启用模型回答。<a href="#module/agents">前往 Agent 设置启用</a>，或使用已授权的只读试运行。</p>' : ''}
+    <p class="studio-scope">已授权 ${d.tool_ids?.length || 0} 个工具；是否写入仍由服务端权限和逐次确认决定。</p>
+    <form data-studio-form="start">${input("新运行的问题", "query", "", 'type="text" required maxlength="4000"')}<button type="submit" class="primary-button" ${!cache.configured || !d.generate ? "disabled" : ""}>开始新运行（调用模型）</button><p class="studio-error error-text" role="alert"></p></form>
+    ${d.tool_ids?.includes("knowledge_draft") ? '<button type="button" data-studio-action="manual">只读草稿试运行（不调用模型）</button>' : ""}
+    <label class="form-field">选择运行<select data-studio-run aria-label="选择运行">${cache.runs.map((r) => `<option value="${esc(r.id)}" ${r.id === cache.run?.id ? "selected" : ""}>${esc(r.data.title)} · ${esc(r.data.status)} · ${esc(r.data.started_at)}</option>`).join("")}</select></label>${runView()}
+    </section>
+    <details class="studio-advanced" data-studio-advanced ${cache.advancedOpen ? "open" : ""}><summary>高级设置与长期记忆</summary>
     <form data-studio-form="config"><h3>模型、预算与记忆</h3><p>配置版本 ${a.version}。空值继承管理员限制，不能提高全局上限；模型与预算也用于固定检索工作流；固定流程每次独立运行，不跨运行续聊。</p>
       ${input("模型别名（管理员登记）", "alias", d.model?.alias || "", 'type="text" maxlength="64"')}
       ${input("温度（可空）", "temperature", d.model?.temperature, 'type="number" min="0" max="2" step="0.1"')}
@@ -95,15 +104,15 @@ export function agentStudioView() {
     <h3>长期记忆候选与决定</h3><p>新候选不会自动生效。确认后仅供本 Agent 参考，不改变工具权限。遗忘停止未来使用，但审计正文不物理擦除；记忆改变后须新建会话。</p>
     <form data-studio-form="memory"><label class="form-field">拟记住的内容<textarea name="content" required maxlength="2000" rows="3"></textarea></label><button type="submit" ${d.memory?.scope !== "persistent" ? "disabled" : ""}>提出记忆候选（未生效）</button><p class="studio-error error-text" role="alert"></p></form>
     <div data-studio-memory>${cache.memories.map((m) => `<article class="record-detail"><p><strong>${stateNames[m.data.state] || esc(m.data.state)}</strong> · v${m.version}</p><div class="preserve-lines">${esc(m.data.content)}</div>${m.data.state === "pending" ? `<button type="button" data-studio-action="confirm" data-id="${esc(m.id)}" ${d.memory?.scope !== "persistent" ? "disabled" : ""}>确认保存长期记忆</button> <button type="button" data-studio-action="reject" data-id="${esc(m.id)}">拒绝记忆</button>` : m.data.state === "confirmed" ? `<button type="button" data-studio-action="forget" data-id="${esc(m.id)}">确认遗忘</button>` : ""}</article>`).join("") || '<p>没有记忆条目。</p>'}</div>
-    <h3>工具型运行与会话</h3><p>${cache.configured ? "已配置模型。主动提交会调用供应商并可能计费。" : "模型未配置；不会发起模型请求。可使用获准的只读草稿试运行。"}</p>
-    <form data-studio-form="start">${input("新运行的问题", "query", "", 'type="text" required maxlength="4000"')}<button type="submit" ${!cache.configured || !d.generate ? "disabled" : ""}>开始新运行（调用模型）</button><p class="studio-error error-text" role="alert"></p></form>
-    ${d.tool_ids?.includes("knowledge_draft") ? '<button type="button" data-studio-action="manual">只读草稿试运行（不调用模型）</button>' : ""}
-    <label class="form-field">选择运行<select data-studio-run aria-label="选择运行">${cache.runs.map((r) => `<option value="${esc(r.id)}" ${r.id === cache.run?.id ? "selected" : ""}>${esc(r.data.title)} · ${esc(r.data.status)} · ${esc(r.data.started_at)}</option>`).join("")}</select></label>${runView()}`}
+    </details>`}
     </section>`;
 }
 
 export function bindAgentStudio({ renderPage, toast }) {
   paint = () => { if (location.hash === "#module/agent-studio") renderPage(); };
+  document.addEventListener("toggle", event => {
+    if (event.target.matches?.("[data-studio-advanced]")) cache.advancedOpen = event.target.open;
+  }, true);
   document.addEventListener("change", async (event) => {
     try {
       if (event.target.matches("[data-studio-owner]") && event.target.value !== cache.selected) { cache.selected = event.target.value; cache.run = null; await load(); }

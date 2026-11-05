@@ -1,26 +1,27 @@
-import { bindCollaboration } from "./collaboration.js?v=118";
-import { bindAgentStudio } from "./agent-studio.js?v=118";
-import { bindBackup } from "./backup.js?v=118";
+import { bindCollaboration } from "./collaboration.js?v=119";
+import { watchDraft, markDraftClean, allowDraftClose, allowDraftNavigation, setDraftSaving } from "./draft-guard.js?v=119";
+import { bindAgentStudio } from "./agent-studio.js?v=119";
+import { bindBackup } from "./backup.js?v=119";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=118";
-import { bindModelConnection } from "./model-connection.js?v=118";
-import { bindTree } from "./tree-actions.js?v=118";
-import { bindAutomation } from "./automation-actions.js?v=118";
-import { bindLessons } from "./lessons.js?v=118";
-import { bindJobs } from "./jobs.js?v=118";
-import { bindCapabilities } from "./company-capabilities.js?v=118";
-import { bindLearning } from "./learning.js?v=118";
-import { bindJobInsights } from "./job-insights.js?v=118";
-import { bindServerStatus } from "./server-status.js?v=118";
-import { bindEvaluation } from "./evaluation.js?v=118";
-import { startTour } from "./tour.js?v=118";
-import { toggleDirector, directorActive } from "./director.js?v=118";
-import { initMotion } from "./motion.js?v=118";
-import { initOrbit } from "./orbit.js?v=118";
-import { refreshTemporalCanvas } from "./temporal-webgl.js?v=118";
+} from "./private-view.js?v=119";
+import { bindModelConnection } from "./model-connection.js?v=119";
+import { bindTree } from "./tree-actions.js?v=119";
+import { bindAutomation } from "./automation-actions.js?v=119";
+import { bindLessons } from "./lessons.js?v=119";
+import { bindJobs } from "./jobs.js?v=119";
+import { bindCapabilities } from "./company-capabilities.js?v=119";
+import { bindLearning } from "./learning.js?v=119";
+import { bindJobInsights } from "./job-insights.js?v=119";
+import { bindServerStatus } from "./server-status.js?v=119";
+import { bindEvaluation } from "./evaluation.js?v=119";
+import { startTour } from "./tour.js?v=119";
+import { toggleDirector, directorActive } from "./director.js?v=119";
+import { initMotion } from "./motion.js?v=119";
+import { initOrbit } from "./orbit.js?v=119";
+import { refreshTemporalCanvas } from "./temporal-webgl.js?v=119";
 import {
   api,
   state,
@@ -31,13 +32,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=118";
+} from "./data.js?v=119";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=118";
+} from "./views.js?v=119";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -273,11 +274,14 @@ function showDialog(kind, values = {}, id = "") {
       );
     } else field.value = value ?? "";
   }
+  watchDraft(d);
   d.showModal();
   d.querySelector("input,textarea,select")?.focus();
 }
 function closeDialogs() {
-  document.querySelectorAll("dialog[open]").forEach((d) => d.close());
+  document.querySelectorAll("dialog[open]").forEach((d) => {
+    if (allowDraftClose(d)) d.close();
+  });
 }
 function showDetail(title, contentHtml, trigger = null) {
   const d = $("#detail-dialog");
@@ -398,6 +402,7 @@ function showConflict(error) {
 async function saveForm(form) {
   if (working) return;
   working = true;
+  setDraftSaving(form.closest("dialog"), true);
   showFormError(form);
   const submit = form.querySelector("[type=submit]");
   if (submit) {
@@ -459,6 +464,8 @@ async function saveForm(form) {
       });
       toast("阶段已创建，可以继续记录");
     }
+    markDraftClean(d);
+    setDraftSaving(d, false);
     if (knowledgeOnly) {
       await refreshKnowledge();
       document.dispatchEvent(new CustomEvent("shilie:semantic-effect", {
@@ -478,6 +485,7 @@ async function saveForm(form) {
     }
   } finally {
     working = false;
+    setDraftSaving(form.closest("dialog"), false);
     if (submit) {
       submit.disabled = false;
       submit.textContent = "保存";
@@ -736,7 +744,7 @@ function handleAction(button) {
       openStageFinish(id);
       break;
     case "close-dialog":
-      button.closest("dialog").close();
+      if (allowDraftClose(button.closest("dialog"))) button.closest("dialog").close();
       break;
     case "reload-conflict":
       closeDialogs();
@@ -894,6 +902,12 @@ document.addEventListener("change", (e) => {
 window.addEventListener("hashchange", () => {
   const route = location.hash || "#home",
     previous = stack.at(-1);
+  if (!allowDraftNavigation()) {
+    history.replaceState(null, "", previous || paintedRoute);
+    pendingBack = false;
+    return;
+  }
+  closeDialogs();
   scrolls.set(previous, window.scrollY);
   state.visits[previous] = window.scrollY;
   if (pendingBack) {

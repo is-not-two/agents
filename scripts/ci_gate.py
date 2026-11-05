@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import argparse
 import subprocess
 import sys
 import time
@@ -48,6 +49,8 @@ def run(name: str, command: list[str], timeout: int = 300) -> tuple[bool, str]:
                                 timeout=timeout)
     except subprocess.TimeoutExpired:
         return False, f"{name} 超时（{timeout}s）"
+    except OSError:
+        return False, f"{name} 执行器不可用，请检查已安装的运行时"
     elapsed = time.time() - started
     if result.returncode == 0:
         return True, f"[OK] {name} ({elapsed:.1f}s)"
@@ -57,11 +60,15 @@ def run(name: str, command: list[str], timeout: int = 300) -> tuple[bool, str]:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--desktop-ui", action="store_true", help="执行隔离桌面浏览器交互门禁（需 Node/Playwright）")
+    args = parser.parse_args()
     failures: list[str] = []
     print("=" * 56)
     print("CI 只读门禁（不依赖 PostgreSQL / Docker）")
     print("=" * 56)
-    for name, command in CHECKS:
+    checks = CHECKS + ([("桌面 Web 交互", ["node", "scripts/check_desktop_ux.mjs"])] if args.desktop_ui else [])
+    for name, command in checks:
         ok, message = run(name, command)
         print(message)
         if not ok:

@@ -1,5 +1,5 @@
 /* 求职闭环：真实记录优先，业务内容不写 localStorage。 */
-import { api, escapeHtml as esc } from "./data.js?v=118";
+import { api, escapeHtml as esc } from "./data.js?v=119";
 
 const labels = { collected: "已收藏", applied: "已投递", following: "跟进中", interviewing: "面试中", offered: "已获 offer", rejected: "已结束" };
 const paths = { job_lead: "leads", application: "applications", interview_report: "reports", resume_version: "resumes" };
@@ -54,7 +54,9 @@ function funnel(f) {
 }
 
 export function jobsView() {
-  const head = `<div class="page-head"><h1>求职记录</h1></div><div class="jobs-toolbar">${button("添加岗位", "new")}${button("登记简历版本", "resume")}${button("上传简历", "resume-upload")}${button(cache.trash ? "返回有效记录" : "回收站", "trash")}${button("刷新", "reload")}<a class="small-button" href="#module/company-capabilities">目标公司能力</a></div>`;
+  const desktop = matchMedia("(min-width: 960px)").matches;
+  const due = cache.data?.due_application_ids.length || 0;
+  const head = `<div class="page-head"><h1>求职记录</h1></div><div class="jobs-toolbar">${button("添加岗位", "new")}${desktop && cache.data && !cache.trash ? button(`待跟进 (${due})`, "due", null, `aria-pressed="${cache.filter === "due"}"`) : ""}${button("登记简历版本", "resume")}${button("上传简历", "resume-upload")}${button(cache.trash ? "返回有效记录" : "回收站", "trash")}${button("刷新", "reload")}<a class="small-button" href="#module/company-capabilities">目标公司能力</a></div>`;
   if (!cache.data) return `${head}<section class="module-surface"><p role="${cache.error ? "alert" : "status"}">${esc(cache.error || "正在读取求职记录…")}</p></section>`;
   const all = rows();
   const applications = cache.data.application;
@@ -62,7 +64,7 @@ export function jobsView() {
   const filtered = list.filter((r) => (cache.filter === "all" || (cache.filter === "due" ? cache.data.due_application_ids.includes(r.id) : r.data.status === cache.filter)) && `${r.data.title} ${r.data.company || ""}`.toLowerCase().includes(cache.query.toLowerCase()));
   const chosen = selected();
   return `${head}${cache.error ? `<p class="error-text" role="alert">${esc(cache.error)}</p>` : ""}<p class="jobs-caption">${applications.length} 条投递，${cache.data.due_application_ids.length} 条已到跟进时间。可从复盘选点建卡，在到期复习页自评；通知摘要需在通知中心明确确认。</p>
-    ${cache.trash ? "" : funnel(cache.data.funnel)}
+    ${cache.trash ? "" : desktop && cache.data.funnel ? `<details class="jobs-statistics" data-job-statistics ${cache.statsOpen ? "open" : ""}><summary>求职统计：收藏 ${cache.data.funnel.stages.collected} · 投递 ${cache.data.funnel.stages.applied} · 面试 ${cache.data.funnel.stages.interviewed} · Offer ${cache.data.funnel.stages.offered}</summary>${funnel(cache.data.funnel)}</details>` : funnel(cache.data.funnel)}
     <form id="jobs-filter" class="jobs-filter" role="search"><label>查找公司或岗位<input name="query" value="${esc(cache.query)}" maxlength="160" placeholder="输入公司或岗位"></label><label>投递状态<select name="filter">${options([["all", "全部"], ["due", "待跟进"], ...Object.entries(labels)], cache.filter)}</select></label><button class="small-button" type="submit">筛选</button></form>
     <div class="jobs-layout" aria-busy="${cache.loading || cache.busy}"><section class="module-surface jobs-list" aria-label="岗位与投递列表">${filtered.length ? filtered.map((r) => `<button type="button" class="jobs-row" data-action="job-select" data-id="${esc(r.id)}" aria-pressed="${r.id === chosen?.id}"><strong>${esc(r.data.title)}</strong><span>${esc(labels[r.data.status] || (r.kind === "resume_version" ? "简历版本" : r.kind === "interview_report" ? "复盘" : r.data.company))}</span>${r.data.follow_up_at ? `<small>${cache.data.due_application_ids.includes(r.id) ? "待跟进：" : "下次跟进："}${esc(date(r.data.follow_up_at))}</small>` : ""}</button>`).join("") : `<p>${cache.trash ? "回收站为空。" : "暂无符合条件的记录。可添加岗位，或调整筛选。"}</p>`}</section>${details(chosen)}</div>
     ${!cache.trash && cache.data.resume_version.length ? `<section class="jobs-resumes"><h2>简历版本</h2>${cache.data.resume_version.map((r) => button(r.data.title, "select", r)).join("")}</section>` : ""}`;
@@ -88,6 +90,9 @@ function questionField(question = { q: "", answer_summary: "", rating: 0 }) {
 
 export function bindJobs({ renderPage, toast }) {
   repaint = () => { if (location.hash === "#module/jobs") renderPage({ restore: true }); };
+  document.addEventListener("toggle", event => {
+    if (event.target.matches?.("[data-job-statistics]")) cache.statsOpen = event.target.open;
+  }, true);
   const dialog = () => document.querySelector('dialog[data-form="jobs"]');
   function open(kind, row = null, related = "") {
     const d = dialog();
@@ -110,6 +115,7 @@ export function bindJobs({ renderPage, toast }) {
     if (!b || cache.busy) return;
     const action = b.dataset.action.slice(4);
     const row = rows().find((r) => r.id === b.dataset.id);
+    if (action === "due") { cache.filter = "due"; cache.selected = ""; cache.history = null; repaint(); return; }
     if (action === "new") return open("job_lead");
     if (action === "resume") return open("resume_version");
     if (action === "edit" && row) return open(row.kind, row);
