@@ -37,6 +37,7 @@ PURE_LOGIC_TESTS = [
     "tests/test_prompt_optimizer.py",
     "tests/test_wheel_assets.py",
     "tests/test_release_fixture_hashes.py",
+    "tests/test_private_backup_preflight.py",
 ]
 
 
