@@ -1,35 +1,35 @@
-import { collaborationView } from "./collaboration.js?v=117";
-import { corpusSelect } from "./public-corpus.js?v=117";
-import { agentStudioView } from "./agent-studio.js?v=117";
-import { backupView } from "./backup.js?v=117";
-import { privateView } from "./private-view.js?v=117";
-import { modelConnectionView } from "./model-connection.js?v=117";
-import { treeView, treeDialog } from "./tree.js?v=117";
+import { collaborationView } from "./collaboration.js?v=118";
+import { corpusSelect } from "./public-corpus.js?v=118";
+import { agentStudioView } from "./agent-studio.js?v=118";
+import { backupView } from "./backup.js?v=118";
+import { privateView } from "./private-view.js?v=118";
+import { modelConnectionView } from "./model-connection.js?v=118";
+import { treeView, treeDialog } from "./tree.js?v=118";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=117";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=117";
-import { jobsView, jobsDialog } from "./jobs.js?v=117";
+} from "./automation-views.js?v=118";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=118";
+import { jobsView, jobsDialog } from "./jobs.js?v=118";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=117";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=117";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=117";
-import { serverStatusView } from "./server-status.js?v=117";
-import { evaluationView } from "./evaluation.js?v=117";
-import { directorActive } from "./director.js?v=117";
-import { icon, orbitIcon } from "./icons.js?v=117";
+} from "./company-capabilities.js?v=118";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=118";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=118";
+import { serverStatusView } from "./server-status.js?v=118";
+import { evaluationView } from "./evaluation.js?v=118";
+import { directorActive } from "./director.js?v=118";
+import { icon, orbitIcon } from "./icons.js?v=118";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=117";
+} from "./data.js?v=118";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();

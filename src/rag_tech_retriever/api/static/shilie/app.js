@@ -1,26 +1,26 @@
-import { bindCollaboration } from "./collaboration.js?v=117";
-import { bindAgentStudio } from "./agent-studio.js?v=117";
-import { bindBackup } from "./backup.js?v=117";
+import { bindCollaboration } from "./collaboration.js?v=118";
+import { bindAgentStudio } from "./agent-studio.js?v=118";
+import { bindBackup } from "./backup.js?v=118";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=117";
-import { bindModelConnection } from "./model-connection.js?v=117";
-import { bindTree } from "./tree-actions.js?v=117";
-import { bindAutomation } from "./automation-actions.js?v=117";
-import { bindLessons } from "./lessons.js?v=117";
-import { bindJobs } from "./jobs.js?v=117";
-import { bindCapabilities } from "./company-capabilities.js?v=117";
-import { bindLearning } from "./learning.js?v=117";
-import { bindJobInsights } from "./job-insights.js?v=117";
-import { bindServerStatus } from "./server-status.js?v=117";
-import { bindEvaluation } from "./evaluation.js?v=117";
-import { startTour } from "./tour.js?v=117";
-import { toggleDirector, directorActive } from "./director.js?v=117";
-import { initMotion } from "./motion.js?v=117";
-import { initOrbit } from "./orbit.js?v=117";
-import { refreshTemporalCanvas } from "./temporal-webgl.js?v=117";
+} from "./private-view.js?v=118";
+import { bindModelConnection } from "./model-connection.js?v=118";
+import { bindTree } from "./tree-actions.js?v=118";
+import { bindAutomation } from "./automation-actions.js?v=118";
+import { bindLessons } from "./lessons.js?v=118";
+import { bindJobs } from "./jobs.js?v=118";
+import { bindCapabilities } from "./company-capabilities.js?v=118";
+import { bindLearning } from "./learning.js?v=118";
+import { bindJobInsights } from "./job-insights.js?v=118";
+import { bindServerStatus } from "./server-status.js?v=118";
+import { bindEvaluation } from "./evaluation.js?v=118";
+import { startTour } from "./tour.js?v=118";
+import { toggleDirector, directorActive } from "./director.js?v=118";
+import { initMotion } from "./motion.js?v=118";
+import { initOrbit } from "./orbit.js?v=118";
+import { refreshTemporalCanvas } from "./temporal-webgl.js?v=118";
 import {
   api,
   state,
@@ -31,13 +31,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=117";
+} from "./data.js?v=118";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=117";
+} from "./views.js?v=118";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),

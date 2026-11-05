@@ -1,5 +1,5 @@
 /* One persistent WebGL canvas for the start page; existing DOM links remain interactive. */
-import { MOTION_CONFIG as config } from './motion-config.js?v=117';
+import { MOTION_CONFIG as config } from './motion-config.js?v=118';
 
 const canvas = document.getElementById('temporal-canvas');
 const button = document.getElementById('motion-toggle');

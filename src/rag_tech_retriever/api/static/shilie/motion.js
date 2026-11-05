@@ -1,5 +1,5 @@
 /* One quiet navigation transition and feedback only for confirmed actions. */
-import { MOTION_CONFIG as config } from "./motion-config.js?v=117";
+import { MOTION_CONFIG as config } from "./motion-config.js?v=118";
 const motionAllowed = () =>
   !matchMedia("(prefers-reduced-motion: reduce)").matches &&
   document.documentElement.dataset.motion !== "off";

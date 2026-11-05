@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>时列 · v2 首页预览（动态壁纸接口版）</title>
+<style>
+  :root{
+    --paper:#FBF7F2;--ink:#2A211B;--orange:#C2622A;--gold:#C9A227;
+    --line:#EADFD2;--deep:#142F42;--wp-loop:6s;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--paper);color:var(--ink);overflow:hidden;
+    font:14px/1.6 "PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    font-variant-numeric:tabular-nums;
+  }
+  button{font:inherit;color:inherit;cursor:pointer}
+  a{color:inherit;text-decoration:none}
+  :focus-visible{outline:3px solid var(--orange);outline-offset:4px}
+
+  /* 动态壁纸容器：img / video / 程序化动态层三态，由 wallpaper-adapter.js 接管 */
+  .wallpaper{
+    position:fixed;inset:-3%;overflow:hidden;opacity:0;
+    animation:wash-in .75s ease-out .3s forwards;
+    will-change:transform,opacity;
+    transform:scale(1.02) translate3d(var(--wx,0px),var(--wy,0px),0);
+  }
+  @keyframes wash-in{from{opacity:0}to{opacity:1}}
+  .wallpaper > img,.wallpaper > video{
+    position:absolute;inset:0;width:100%;height:100%;
+    object-fit:cover;object-position:center 44%;
+  }
+  .wallpaper > video{z-index:2}
+  .wallpaper:not([data-wp-mode="video"]) > video{display:none}
+  .wallpaper[data-wp-mode="video"] > img{opacity:.001}
+  .wallpaper[data-wp-mode="still"] .wp-procedural{display:none}
+
+  /* 程序化动态层：素材未接入时也持续在动，不是静态占位 */
+  .wp-procedural{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+  .wp-procedural[hidden]{display:none}
+  .wp-breath{
+    position:absolute;inset:0;
+    background:radial-gradient(ellipse at 72% 46%,rgba(255,238,200,.22),transparent 58%);
+    animation:breathe var(--wp-loop) ease-in-out infinite;
+  }
+  @keyframes breathe{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:.95;transform:scale(1.07)}}
+  .wp-wind{
+    position:absolute;left:-30%;width:160%;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(255,246,220,.92),rgba(201,162,39,.5),transparent);
+    transform:rotate(-10deg);
+    animation:wind-pass var(--wp-loop) linear infinite;
+  }
+  .wp-wind:nth-child(2){top:30%;animation-delay:-1.3s}
+  .wp-wind:nth-child(3){top:56%;animation-delay:-3.0s;height:1px}
+  .wp-wind:nth-child(4){top:77%;animation-delay:-4.5s;height:3px}
+  @keyframes wind-pass{0%{transform:translateX(-14%) rotate(-10deg);opacity:0}18%{opacity:.9}82%{opacity:.7}100%{transform:translateX(14%) rotate(-10deg);opacity:0}}
+  .wp-wave{
+    position:absolute;left:0;right:0;bottom:0;height:34%;
+    background:linear-gradient(0deg,rgba(255,225,160,.30),transparent);
+    animation:wave-shift calc(var(--wp-loop) * 1.7) ease-in-out infinite;
+  }
+  @keyframes wave-shift{0%,100%{transform:translateY(0) scaleY(1);opacity:.5}50%{transform:translateY(-9px) scaleY(1.14);opacity:.95}}
+  .wp-glow{
+    position:absolute;width:8px;height:8px;border-radius:50%;background:#FFF6DC;
+    box-shadow:0 0 14px 5px rgba(255,214,140,.85);
+    animation:glow-float calc(var(--wp-loop) * .8) ease-in-out infinite;
+  }
+  @keyframes glow-float{0%,100%{opacity:.2;transform:translateY(0) scale(.7)}50%{opacity:1;transform:translateY(-24px) scale(1.3)}}
+
+  .light-bands{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:4}
+  .light-bands i{
+    position:absolute;left:-40%;width:180%;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(255,236,190,.85),rgba(201,162,39,.45),transparent);
+    transform:rotate(-13deg);animation:band-drift 14s linear infinite;opacity:0;
+  }
+  .light-bands i:nth-child(1){top:24%;animation-delay:.2s}
+  .light-bands i:nth-child(2){top:52%;height:1px;animation-delay:1.1s;animation-duration:18s}
+  .light-bands i:nth-child(3){top:74%;height:3px;animation-delay:2.4s;animation-duration:22s}
+  @keyframes band-drift{0%{transform:rotate(-13deg) translateX(-10%);opacity:0}20%{opacity:.85}80%{opacity:.7}100%{transform:rotate(-13deg) translateX(10%);opacity:0}}
+
+  .sparks{position:fixed;inset:0;pointer-events:none;z-index:5}
+  .sparks b{position:absolute;width:5px;height:5px;border-radius:50%;background:#FFF3D6;box-shadow:0 0 12px 4px rgba(255,220,150,.75);animation:twinkle 3.6s ease-in-out infinite;opacity:0}
+  @keyframes twinkle{0%,100%{opacity:.15;transform:scale(.7)}50%{opacity:1;transform:scale(1.3)}}
+
+  .topbar{
+    position:fixed;top:0;left:0;right:0;height:66px;z-index:20;
+    display:flex;align-items:center;gap:18px;padding:0 32px;
+    background:rgba(255,255,255,.55);backdrop-filter:blur(8px);
+    border-bottom:1px solid rgba(234,223,210,.9);
+  }
+  .brand{font-family:"Songti SC","Noto Serif SC",serif;font-size:22px;letter-spacing:.28em;font-weight:500}
+  .topbar .tag{font-size:12px;color:#7A6A58}
+  .topbar .spacer{flex:1}
+  .ghost{border:1px solid rgba(194,98,42,.5);background:rgba(255,255,255,.7);border-radius:999px;padding:8px 16px;font-size:13px}
+
+  .stage{position:fixed;inset:66px 0 0;overflow:hidden}
+  .orbit{position:absolute;inset:0;transform:translate3d(var(--ox,0px),var(--oy,0px),0);z-index:6}
+  .ring{
+    position:absolute;left:38%;top:50%;width:60%;height:68%;
+    transform:translate(-50%,-50%) rotate(-8deg);
+    border:1px solid rgba(201,162,39,.75);border-radius:50%;
+    box-shadow:0 0 26px rgba(255,214,120,.55),inset 0 0 26px rgba(255,214,120,.25);
+    opacity:0;animation:ring-in .9s cubic-bezier(.16,1,.3,1) .8s forwards;
+  }
+  .ring--inner{
+    width:40%;height:46%;transform:translate(-50%,-50%) rotate(9deg);
+    border-color:rgba(194,98,42,.7);
+    box-shadow:0 0 22px rgba(255,176,110,.5),inset 0 0 22px rgba(255,176,110,.2);
+    animation-delay:1s;
+  }
+  @keyframes ring-in{from{opacity:0;transform:translate(-50%,-50%) rotate(-8deg) scale(.72)}to{opacity:1;transform:translate(-50%,-50%) rotate(-8deg) scale(1)}}
+
+  .node{
+    position:absolute;z-index:6;display:grid;justify-items:center;gap:7px;
+    transform:translate(-50%,-50%) scale(.6);opacity:0;
+    animation:node-in .65s cubic-bezier(.16,1,.3,1) var(--delay) forwards;
+  }
+  @keyframes node-in{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  .diamond{
+    width:22px;height:22px;transform:rotate(45deg);
+    background:linear-gradient(135deg,#FFD89B,#C2622A 55%,#9A4318);
+    border:1px solid rgba(255,240,210,.9);border-radius:4px;
+    box-shadow:0 0 18px 4px rgba(255,178,90,.7),0 6px 18px rgba(120,60,20,.28);
+    animation:diamond-turn 9s linear infinite;
+  }
+  @keyframes diamond-turn{to{transform:rotate(405deg)}}
+  .label{
+    white-space:nowrap;font-size:12px;padding:5px 12px;border-radius:999px;
+    background:rgba(255,251,245,.82);backdrop-filter:blur(6px);
+    border:1px solid rgba(194,98,42,.55);
+    box-shadow:0 0 14px rgba(255,205,140,.65),0 3px 10px rgba(90,55,25,.18);
+    color:#3A2A1C;
+  }
+  .node:hover .diamond,.node:focus-visible .diamond{box-shadow:0 0 26px 8px rgba(255,190,100,.95),0 8px 22px rgba(120,60,20,.35)}
+  .node:hover .label{border-color:var(--orange);color:var(--orange)}
+
+  .cta-wrap{
+    position:absolute;left:38%;top:50%;transform:translate(-50%,-50%);
+    display:grid;justify-items:center;gap:12px;text-align:center;z-index:12;
+    opacity:0;animation:cta-in .7s cubic-bezier(.16,1,.3,1) 1.5s forwards;
+  }
+  @keyframes cta-in{from{opacity:0;transform:translate(-50%,-42%) scale(.85)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  .cta-word{font-family:"Songti SC","Noto Serif SC",serif;font-size:26px;letter-spacing:.34em;color:#3A2A1C;text-shadow:0 0 18px rgba(255,248,225,.95),0 2px 8px rgba(255,255,255,.8)}
+  .cta{
+    border:0;background:var(--orange);color:#fff;border-radius:999px;
+    padding:14px 32px;font-size:15px;letter-spacing:.06em;
+    box-shadow:0 0 0 6px rgba(255,206,140,.35),0 0 34px 8px rgba(255,150,60,.75),0 10px 26px rgba(120,50,15,.35);
+    animation:pulse 2.6s ease-in-out infinite;
+  }
+  .cta:hover{background:#A9501F}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 6px rgba(255,206,140,.35),0 0 30px 6px rgba(255,150,60,.65),0 10px 26px rgba(120,50,15,.35)}50%{box-shadow:0 0 0 12px rgba(255,206,140,.22),0 0 46px 14px rgba(255,160,70,.9),0 10px 26px rgba(120,50,15,.35)}}
+  .hint{font-size:11px;color:#6B5A48;text-shadow:0 1px 6px rgba(255,255,255,.9)}
+
+  .caption{position:absolute;left:32px;bottom:26px;z-index:12;font-size:12px;color:#4A3A2A;text-shadow:0 1px 8px rgba(255,255,255,.95);display:grid;gap:3px}
+  .caption b{font-weight:500;font-size:13px}
+  .flat{position:absolute;right:32px;bottom:26px;z-index:12;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:flex-end;max-width:46vw}
+  .flat a{font-size:12px;color:#4A3A2A;text-shadow:0 1px 8px rgba(255,255,255,.95);border-bottom:1px solid transparent;padding:3px 1px}
+  .flat a:hover{color:var(--orange);border-bottom-color:var(--orange)}
+
+  .workspace{
+    position:fixed;inset:66px 0 0;z-index:30;overflow:auto;
+    background:var(--paper);padding:44px max(28px,calc((100vw - 1040px)/2)) 80px;
+    animation:ws-in .6s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes ws-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+  .ws-head{display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--line);padding-bottom:18px}
+  .ws-head h1{font-family:"Songti SC",serif;font-size:28px;letter-spacing:.12em;font-weight:500;margin:0}
+  .ws-head .spacer{flex:1}
+  .due{margin:26px 0;padding:20px 22px;background:#F7E7D9;border:1px solid #E8BE9B;border-left:4px solid var(--orange);border-radius:10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .due h2{font-size:15px;margin:0}
+  .due p{margin:0;color:#8A7763;font-size:13px}
+  .due .spacer{flex:1}
+  .ws-grid{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(0,1.6fr);gap:28px;margin-top:30px}
+  .ws-grid h2{font-size:13px;color:#8A7763;font-weight:500;margin:0 0 12px}
+  .ws-list ul{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+  .ws-list li{border-bottom:1px solid var(--line);padding:14px 4px;display:flex;gap:12px;align-items:baseline;animation:row-in .5s cubic-bezier(.16,1,.3,1) backwards}
+  .ws-list li:nth-child(2){animation-delay:80ms}
+  .ws-list li:nth-child(3){animation-delay:160ms}
+  @keyframes row-in{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+  .ws-list li span{margin-left:auto;font-size:12px;color:#8A7763}
+  .ws-detail{border-left:1px solid var(--line);padding-left:28px;min-height:220px}
+  .ws-detail p{color:#8A7763;margin:0}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--deep);color:#fff;border-radius:999px;padding:10px 20px;font-size:13px;z-index:50}
+
+  .mobile-list{display:none}
+  @media (max-width:760px){
+    body{overflow:auto}
+    .stage{position:relative;inset:auto;min-height:calc(100vh - 66px);padding:32px 18px 40px}
+    .wallpaper > img,.wallpaper > video{object-position:62% 40%}
+    .orbit,.caption,.flat,.light-bands{display:none}
+    .cta-wrap{position:relative;left:auto;top:auto;transform:none;opacity:1;margin:18vh auto 26px;animation:cta-in-mobile .7s cubic-bezier(.16,1,.3,1) 1.1s both}
+    @keyframes cta-in-mobile{from{opacity:0;transform:translateY(16px) scale(.9)}to{opacity:1;transform:none}}
+    .mobile-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:520px;margin:0 auto}
+    .mobile-list a{background:rgba(255,251,245,.9);border:1px solid rgba(194,98,42,.5);border-radius:12px;padding:14px;font-size:14px;text-align:center;backdrop-filter:blur(6px)}
+    .workspace{position:relative;inset:auto;padding:32px 20px 70px}
+    .ws-grid{grid-template-columns:minmax(0,1fr)}
+    .ws-detail{border-left:0;border-top:1px solid var(--line);padding:22px 0 0}
+    .topbar{padding:0 18px}
+    .topbar .tag{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001ms!important;animation-delay:0ms!important;transition-duration:.001ms!important}
+    .wallpaper,.ring,.node,.cta-wrap{opacity:1}
+    .node{transform:translate(-50%,-50%)}
+    .cta-wrap{transform:translate(-50%,-50%)}
+  }
+</style>
+</head>
+<body>
+
+<!-- 动态壁纸接口容器：三态由 wallpaper-adapter.js 接管。
+     接入真实素材只需一行：ShilieWallpaper.configure({video:'assets/wallpaper/sea-breeze.mp4'})
+     素材未放入时自动运行「程序化动态层」，画面持续有风、波光与光斑，不是静态占位。
+     自动发现：把素材与 assets/wallpaper/manifest.json 一起放进目录即可接管（浏览器不能列目录，
+     需要清单文件）；清单不存在时静默跳过，显式 configure 优先级更高。 -->
+<div class="wallpaper" id="wallpaper" aria-hidden="true" data-wp-mode="idle">
+  <img data-wp-still alt="" hidden>
+  <video data-wp-video muted loop playsinline hidden></video>
+  <div class="wp-procedural" data-wp-procedural hidden>
+    <span class="wp-breath"></span>
+    <span class="wp-wind"></span><span class="wp-wind"></span><span class="wp-wind"></span>
+    <span class="wp-wave"></span>
+    <span class="wp-glow" style="left:20%;top:34%;animation-delay:-.3s"></span>
+    <span class="wp-glow" style="left:31%;top:62%;animation-delay:-1.1s"></span>
+    <span class="wp-glow" style="left:47%;top:22%;animation-delay:-1.9s"></span>
+    <span class="wp-glow" style="left:58%;top:71%;animation-delay:-2.6s"></span>
+    <span class="wp-glow" style="left:76%;top:28%;animation-delay:-3.2s"></span>
+    <span class="wp-glow" style="left:88%;top:56%;animation-delay:-4.1s"></span>
+  </div>
+</div>
+
+<div class="light-bands" aria-hidden="true"><i></i><i></i><i></i></div>
+<div class="sparks" id="sparks" aria-hidden="true"></div>
+
+<header class="topbar">
+  <span class="brand">时列</span>
+  <span class="tag" id="wp-mode">v2 首页预览 · 壁纸接口初始化…</span>
+  <span class="spacer"></span>
+  <button class="ghost" id="motion-toggle" aria-pressed="false">关闭动效</button>
+</header>
+
+<main>
+  <section class="stage" id="stage" aria-label="开始页">
+    <div class="orbit" id="orbit">
+      <div class="ring"></div>
+      <div class="ring ring--inner"></div>
+      <div id="nodes"></div>
+    </div>
+    <div class="cta-wrap">
+      <span class="cta-word">时列</span>
+      <button class="cta" id="enter">进入工作台</button>
+      <span class="hint">移动鼠标感受视差 · 悬停查看模块</span>
+    </div>
+    <div class="caption"><b>时间层</b><span>外环是分组，内环是模块，中心是今天</span></div>
+    <nav class="flat" id="flat" aria-label="全部入口"></nav>
+    <nav class="mobile-list" id="mobile-list" aria-label="移动端入口"></nav>
+  </section>
+
+  <section class="workspace" id="workspace" hidden aria-label="工作台">
+    <div class="ws-head">
+      <h1 id="ws-title" tabindex="-1">工作台</h1>
+      <span class="spacer"></span>
+      <button class="ghost" id="back">回到开始页</button>
+    </div>
+    <div class="due"><h2>今日到期</h2><p>3 条计划节点等待处理</p><span class="spacer"></span></div>
+    <div class="ws-grid">
+      <div class="ws-list"><h2>最近记录</h2><ul><li>连接池优化验收 <span>今天</span></li><li>岗位证据对照 v3 <span>昨天</span></li><li>阶段快照复盘 <span>11-02</span></li></ul></div>
+      <div class="ws-detail"><h2>详情</h2><p>选中一条记录，内容会在这里展开。首页的 3D 与光效不搬进来。</p></div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" role="status" hidden></div>
+
+<script src="wallpaper-adapter.js"></script>
+<script>
+(function(){
+  var NAMES = ["个人工作台","个人知识库","技术文档检索","人生规划","求职记录","到期复习","阶段记录","自动化中心","系统设置","私密空间"];
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)");
+  var stage = document.getElementById("stage");
+  var nodesBox = document.getElementById("nodes");
+  var flat = document.getElementById("flat");
+  var mobileList = document.getElementById("mobile-list");
+  var toastBox = document.getElementById("toast");
+  var wallpaperEl = document.getElementById("wallpaper");
+  var orbit = document.getElementById("orbit");
+  var toggle = document.getElementById("motion-toggle");
+
+  /* 壁纸接口接入点：只接静态帧，视频/动图/序列帧槽位留空。
+     把素材放进 assets/wallpaper/ 后改这一行即可，无需改页面：
+       ShilieWallpaper.configure({ video: 'assets/wallpaper/sea-breeze.mp4' });
+       ShilieWallpaper.configure({ animated: 'assets/wallpaper/sea-breeze.webp' });
+       ShilieWallpaper.configure({ frames: { pattern:'assets/wallpaper/frame-{i}.webp', count:120, fps:24, pad:3 } }); */
+  ShilieWallpaper.on("statechange", function(s){
+    var tag = document.getElementById("wp-mode");
+    if (tag) tag.textContent = "v2 首页预览 · 壁纸接口：" + s.mode + (s.source ? " · " + s.source.split("/").pop() : "（程序化动态层运行中）");
+  });
+  ShilieWallpaper.on("error", function(e){ console.warn("[wallpaper]", e.kind, e.detail); });
+  ShilieWallpaper.configure({
+    image: "assets/wallpaper/sea-breeze-still.png",
+    video: "",
+    animated: "",
+    frames: null,
+    poster: "",
+    loopSeconds: 6
+  });
+  ShilieWallpaper.mount(wallpaperEl);
+
+  NAMES.forEach(function(name, i){
+    var a = document.createElement("a");
+    a.className = "node";
+    a.href = "#workspace";
+    a.dataset.enter = "1";
+    a.setAttribute("aria-label", "打开" + name);
+    var angle = (i / NAMES.length) * Math.PI * 2 - Math.PI / 2;
+    var outer = i % 2 === 0;
+    var rx = outer ? 0.30 : 0.20, ry = outer ? 0.34 : 0.23;
+    a.style.left = ((0.38 + Math.cos(angle) * rx) * 100).toFixed(2) + "%";
+    a.style.top = ((0.50 + Math.sin(angle) * ry) * 100).toFixed(2) + "%";
+    a.style.setProperty("--delay", (900 + i * 70) + "ms");
+    a.innerHTML = '<span class="diamond" aria-hidden="true"></span><span class="label">' + name + "</span>";
+    nodesBox.appendChild(a);
+    var f = document.createElement("a");
+    f.href = "#workspace"; f.dataset.enter = "1"; f.textContent = name;
+    flat.appendChild(f);
+    var m = document.createElement("a");
+    m.href = "#workspace"; m.dataset.enter = "1"; m.textContent = name;
+    mobileList.appendChild(m);
+  });
+
+  var sparks = document.getElementById("sparks");
+  for (var i = 0; i < 26; i++){
+    var b = document.createElement("b");
+    b.style.left = (8 + Math.random() * 84) + "%";
+    b.style.top = (10 + Math.random() * 80) + "%";
+    b.style.animationDelay = (Math.random() * 3.6).toFixed(2) + "s";
+    b.style.animationDuration = (2.8 + Math.random() * 2.4).toFixed(2) + "s";
+    sparks.appendChild(b);
+  }
+
+  function toast(text){
+    toastBox.textContent = text; toastBox.hidden = false;
+    setTimeout(function(){ toastBox.hidden = true; }, 2200);
+  }
+  function enter(){
+    if (!document.getElementById("workspace").hidden) return;
+    stage.hidden = true;
+    document.getElementById("workspace").hidden = false;
+    document.getElementById("ws-title").focus();
+    ShilieWallpaper.pause();
+    toast("已进入工作台");
+  }
+  function back(){
+    document.getElementById("workspace").hidden = true;
+    stage.hidden = false;
+    document.getElementById("enter").focus();
+    ShilieWallpaper.resume();
+    toast("已回到开始页");
+  }
+  document.addEventListener("click", function(e){
+    var el = e.target.closest("[data-enter]");
+    if (el){ e.preventDefault(); enter(); }
+  });
+  document.getElementById("enter").addEventListener("click", function(e){ e.preventDefault(); enter(); });
+  document.getElementById("back").addEventListener("click", back);
+  toggle.addEventListener("click", function(){
+    var paused = toggle.getAttribute("aria-pressed") !== "true";
+    toggle.setAttribute("aria-pressed", String(paused));
+    toggle.textContent = paused ? "开启动效" : "关闭动效";
+    document.documentElement.dataset.motion = paused ? "off" : "on";
+    window.dispatchEvent(new Event("shilie:motionchange"));
+    toast(paused ? "动效已关闭" : "动效已开启");
+  });
+
+  if (!reduce.matches){
+    stage.addEventListener("pointermove", function(e){
+      var r = stage.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width - 0.5;
+      var y = (e.clientY - r.top) / r.height - 0.5;
+      wallpaperEl.style.setProperty("--wx", (x * -18).toFixed(1) + "px");
+      wallpaperEl.style.setProperty("--wy", (y * -12).toFixed(1) + "px");
+      orbit.style.setProperty("--ox", (x * 24).toFixed(1) + "px");
+      orbit.style.setProperty("--oy", (y * 16).toFixed(1) + "px");
+    });
+    stage.addEventListener("pointerleave", function(){
+      wallpaperEl.style.setProperty("--wx", "0px"); wallpaperEl.style.setProperty("--wy", "0px");
+      orbit.style.setProperty("--ox", "0px"); orbit.style.setProperty("--oy", "0px");
+    });
+  }
+})();
+</script>
+</body>
+</html>
