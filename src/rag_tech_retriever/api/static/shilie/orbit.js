@@ -13,7 +13,7 @@
    优先级：reduced-motion > 用户暂停 > 入口获得键盘焦点 > 指针停在某个入口上 > 无交互。
    页面隐藏时停 rAF，恢复时从当前角度继续（不回位）。 */
 
-import { MOTION_CONFIG } from "./motion-config.js?v=120";
+import { MOTION_CONFIG } from "./motion-config.js?v=121";
 
 const NOMINAL_IN = 5; // 内环 °/s，顺时针
 const NOMINAL_OUT = -3.75; // 外环 °/s，逆时针

@@ -1,27 +1,27 @@
-import { bindCollaboration } from "./collaboration.js?v=120";
-import { watchDraft, markDraftClean, allowDraftClose, allowDraftNavigation, setDraftSaving } from "./draft-guard.js?v=120";
-import { bindAgentStudio } from "./agent-studio.js?v=120";
-import { bindBackup } from "./backup.js?v=120";
+import { bindCollaboration } from "./collaboration.js?v=121";
+import { watchDraft, markDraftClean, allowDraftClose, allowDraftNavigation, setDraftSaving } from "./draft-guard.js?v=121";
+import { bindAgentStudio } from "./agent-studio.js?v=121";
+import { bindBackup } from "./backup.js?v=121";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=120";
-import { bindModelConnection } from "./model-connection.js?v=120";
-import { bindTree } from "./tree-actions.js?v=120";
-import { bindAutomation } from "./automation-actions.js?v=120";
-import { bindLessons } from "./lessons.js?v=120";
-import { bindJobs } from "./jobs.js?v=120";
-import { bindCapabilities } from "./company-capabilities.js?v=120";
-import { bindLearning } from "./learning.js?v=120";
-import { bindJobInsights } from "./job-insights.js?v=120";
-import { bindServerStatus } from "./server-status.js?v=120";
-import { bindEvaluation } from "./evaluation.js?v=120";
-import { startTour } from "./tour.js?v=120";
-import { toggleDirector, directorActive } from "./director.js?v=120";
-import { initMotion } from "./motion.js?v=120";
-import { initOrbit } from "./orbit.js?v=120";
-import { refreshTemporalCanvas } from "./temporal-webgl.js?v=120";
+} from "./private-view.js?v=121";
+import { bindModelConnection } from "./model-connection.js?v=121";
+import { bindTree } from "./tree-actions.js?v=121";
+import { bindAutomation } from "./automation-actions.js?v=121";
+import { bindLessons } from "./lessons.js?v=121";
+import { bindJobs } from "./jobs.js?v=121";
+import { bindCapabilities } from "./company-capabilities.js?v=121";
+import { bindLearning } from "./learning.js?v=121";
+import { bindJobInsights } from "./job-insights.js?v=121";
+import { bindServerStatus } from "./server-status.js?v=121";
+import { bindEvaluation } from "./evaluation.js?v=121";
+import { startTour } from "./tour.js?v=121";
+import { toggleDirector, directorActive } from "./director.js?v=121";
+import { initMotion } from "./motion.js?v=121";
+import { initOrbit } from "./orbit.js?v=121";
+import { refreshTemporalCanvas } from "./temporal-webgl.js?v=121";
 import {
   api,
   state,
@@ -31,13 +31,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=120";
+} from "./data.js?v=121";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=120";
+} from "./views.js?v=121";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -129,11 +129,22 @@ function paintSidebar() {
     requestAnimationFrame(() => {
       const bar = $("#sidebar"),
         section = bar?.querySelector(".sidebar-trash");
-      if (bar && section)
+      if (bar && section?.getClientRects().length)
         bar.scrollTop +=
           section.getBoundingClientRect().top - bar.getBoundingClientRect().top;
     });
 }
+$("#sidebar").addEventListener("toggle", (event) => {
+  const group = event.target;
+  if (!(group instanceof HTMLDetailsElement) || !group.isConnected) return;
+  const id = group.dataset.sidebarGroup;
+  if (!groups.some((g) => g.id === id)) return;
+  const closed = state.closedSidebarGroups;
+  if (closed.has(id) === !group.open) return;
+  if (group.open) closed.delete(id);
+  else closed.add(id);
+  write("closed-sidebar-groups", [...closed]);
+}, true);
 function renderPage({ restore = false } = {}) {
   const route = location.hash || "#home";
   // The start and sign-in screens stand alone; all workbench routes share the sidebar.

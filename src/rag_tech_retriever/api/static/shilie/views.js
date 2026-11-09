@@ -1,35 +1,35 @@
-import { collaborationView } from "./collaboration.js?v=120";
-import { corpusSelect } from "./public-corpus.js?v=120";
-import { agentStudioView } from "./agent-studio.js?v=120";
-import { backupView } from "./backup.js?v=120";
-import { privateView } from "./private-view.js?v=120";
-import { modelConnectionView } from "./model-connection.js?v=120";
-import { treeView, treeDialog } from "./tree.js?v=120";
+import { collaborationView } from "./collaboration.js?v=121";
+import { corpusSelect } from "./public-corpus.js?v=121";
+import { agentStudioView } from "./agent-studio.js?v=121";
+import { backupView } from "./backup.js?v=121";
+import { privateView } from "./private-view.js?v=121";
+import { modelConnectionView } from "./model-connection.js?v=121";
+import { treeView, treeDialog } from "./tree.js?v=121";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=120";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=120";
-import { jobsView, jobsDialog } from "./jobs.js?v=120";
+} from "./automation-views.js?v=121";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=121";
+import { jobsView, jobsDialog } from "./jobs.js?v=121";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=120";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=120";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=120";
-import { serverStatusView } from "./server-status.js?v=120";
-import { evaluationView } from "./evaluation.js?v=120";
-import { directorActive } from "./director.js?v=120";
-import { icon, orbitIcon } from "./icons.js?v=120";
+} from "./company-capabilities.js?v=121";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=121";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=121";
+import { serverStatusView } from "./server-status.js?v=121";
+import { evaluationView } from "./evaluation.js?v=121";
+import { directorActive } from "./director.js?v=121";
+import { icon, orbitIcon } from "./icons.js?v=121";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=120";
+} from "./data.js?v=121";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -534,13 +534,13 @@ export function sidebar() {
   return `<a class="nav-link" href="#home/workspace">${icon("home")}工作台首页</a>${groups
     .map(
       (g) =>
-        `<section><h2>${g.title}</h2>${g.id === "workspace" ? trashSection() : ""}${modules
+        `<section><details class="sidebar-group" data-sidebar-group="${g.id}"${state.closedSidebarGroups.has(g.id) ? "" : " open"}><summary>${g.title}</summary>${g.id === "workspace" ? trashSection() : ""}${modules
           .filter((m) => m.group === g.id)
           .map(
             (m) =>
               `<a class="nav-link" href="#module/${m.id}" ${location.hash.includes(m.id) ? 'aria-current="page"' : ""}>${icon(m.icon)}${m.title}</a>`,
           )
-          .join("")}</section>`,
+          .join("")}</details></section>`,
     )
     .join("")}`;
 }

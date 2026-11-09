@@ -125,6 +125,10 @@ export const modules = [
   ["appearance", "界面偏好", "settings", "settings"],
   ["private", "私密管理", "private", "lock"],
 ].map(([id, title, group, icon]) => ({ id, title, group, icon }));
+function readClosedSidebarGroups() {
+  const closed = read("closed-sidebar-groups", []);
+  return new Set(Array.isArray(closed) ? groups.filter((g) => closed.includes(g.id)).map((g) => g.id) : []);
+}
 export const state = {
   knowledge: [],
   bookmarks: [],
@@ -142,6 +146,7 @@ export const state = {
   accountLogin: false,
   loginMode: "token",
   status: {},
+  closedSidebarGroups: readClosedSidebarGroups(),
   density: read("density", 1),
   compactHero: read("hero", false),
   selectedNote: read("note", ""),

@@ -1,7 +1,7 @@
 /* 检索质量评测：逐题跑评测集，看 top-k 召回率与重排前后名次变化。
    结果区内自行管理局部 DOM，不触发整页重绘——评测数据体积大，
    整页重建会丢掉滚动位置与展开状态。只读运行，不写业务数据。 */
-import { api, escapeHtml as escape } from "./data.js?v=120";
+import { api, escapeHtml as escape } from "./data.js?v=121";
 
 const cache = {
   questions: null,

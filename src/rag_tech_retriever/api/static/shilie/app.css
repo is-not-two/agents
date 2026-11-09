@@ -1862,6 +1862,31 @@ body[data-layout="sidebar"] .sidebar {
   color: #7b726a;
   padding: 0 12px;
 }
+.sidebar-group > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  color: #7b726a;
+  font-size: 12px;
+  font-weight: 700;
+  list-style: none;
+}
+.sidebar-group > summary::-webkit-details-marker {
+  display: none;
+}
+.sidebar-group > summary::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(-45deg);
+}
+.sidebar-group[open] > summary::after {
+  transform: rotate(45deg);
+}
 .nav-link {
   display: flex;
   align-items: center;

@@ -124,6 +124,48 @@ try {
     }
     await page.close();
   }
+
+  const page = await browser.newPage({viewport: {width: 1440, height: 960}});
+  page.on('pageerror', e => report.errors.push(e.stack || e.message));
+  page.on('request', r => { if (!r.url().startsWith(origin+'/')) report.external.push(r.url()); });
+  await page.goto(origin+'/#module/agents', {waitUntil: 'domcontentloaded'});
+  await page.locator('#navigation-strip [data-action="back"]').waitFor();
+  const sidebar = page.locator('#sidebar');
+  const group = sidebar.locator('details[data-sidebar-group="automation"]');
+  const workspace = sidebar.locator('details[data-sidebar-group="workspace"]');
+  const settings = sidebar.locator('details[data-sidebar-group="settings"]');
+  const branch = group.locator('a[href="#module/agents"]');
+  const button = group.locator('summary');
+  check('four categories expose disclosure controls', await sidebar.locator('details[data-sidebar-group] > summary').count() === 4);
+  if (await button.count()) {
+    const route = await page.evaluate(() => location.hash);
+    await page.evaluate(() => { window.sameContent = document.querySelector('#content').lastElementChild; });
+    const width = (await sidebar.boundingBox()).width;
+    check('automation starts expanded', await branch.isVisible());
+    await button.click();
+    check('automation branches hide on click', !await branch.isVisible());
+    check('other categories remain expanded', await workspace.locator('a[href="#module/knowledge"]').isVisible()
+      && await settings.locator('a[href="#module/appearance"]').isVisible());
+    check('collapse retains sidebar width, route and mounted content',
+      (await sidebar.boundingBox()).width === width && await page.evaluate(hash =>
+        location.hash === hash && window.sameContent === document.querySelector('#content').lastElementChild, route));
+    await button.click();
+    check('same header expands branches again', await branch.isVisible());
+    await button.focus();
+    await page.keyboard.press('Space');
+    check('keyboard toggles category', !await branch.isVisible());
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('shilie-closed-sidebar-groups') || '[]').includes('automation'));
+    await page.reload({waitUntil:'domcontentloaded'});
+    await button.waitFor();
+    check('closed category persists across reload', !await branch.isVisible());
+    check('other category remains open after reload', await workspace.locator('a[href="#module/knowledge"]').isVisible());
+    await button.press('Enter');
+    check('keyboard can reopen the category', await branch.isVisible());
+    await group.locator('a[href="#module/workflows"]').click();
+    await page.waitForFunction(() => location.hash === '#module/workflows');
+    check('reopened branch navigates normally', await group.locator('a[href="#module/workflows"]').isVisible());
+  }
+  await page.close();
 } catch (e) { report.errors.push(e.stack || String(e)); }
 finally {
   await browser.close();
