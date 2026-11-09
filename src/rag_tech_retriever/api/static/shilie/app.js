@@ -1,44 +1,43 @@
-import { bindCollaboration } from "./collaboration.js?v=119";
-import { watchDraft, markDraftClean, allowDraftClose, allowDraftNavigation, setDraftSaving } from "./draft-guard.js?v=119";
-import { bindAgentStudio } from "./agent-studio.js?v=119";
-import { bindBackup } from "./backup.js?v=119";
+import { bindCollaboration } from "./collaboration.js?v=120";
+import { watchDraft, markDraftClean, allowDraftClose, allowDraftNavigation, setDraftSaving } from "./draft-guard.js?v=120";
+import { bindAgentStudio } from "./agent-studio.js?v=120";
+import { bindBackup } from "./backup.js?v=120";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=119";
-import { bindModelConnection } from "./model-connection.js?v=119";
-import { bindTree } from "./tree-actions.js?v=119";
-import { bindAutomation } from "./automation-actions.js?v=119";
-import { bindLessons } from "./lessons.js?v=119";
-import { bindJobs } from "./jobs.js?v=119";
-import { bindCapabilities } from "./company-capabilities.js?v=119";
-import { bindLearning } from "./learning.js?v=119";
-import { bindJobInsights } from "./job-insights.js?v=119";
-import { bindServerStatus } from "./server-status.js?v=119";
-import { bindEvaluation } from "./evaluation.js?v=119";
-import { startTour } from "./tour.js?v=119";
-import { toggleDirector, directorActive } from "./director.js?v=119";
-import { initMotion } from "./motion.js?v=119";
-import { initOrbit } from "./orbit.js?v=119";
-import { refreshTemporalCanvas } from "./temporal-webgl.js?v=119";
+} from "./private-view.js?v=120";
+import { bindModelConnection } from "./model-connection.js?v=120";
+import { bindTree } from "./tree-actions.js?v=120";
+import { bindAutomation } from "./automation-actions.js?v=120";
+import { bindLessons } from "./lessons.js?v=120";
+import { bindJobs } from "./jobs.js?v=120";
+import { bindCapabilities } from "./company-capabilities.js?v=120";
+import { bindLearning } from "./learning.js?v=120";
+import { bindJobInsights } from "./job-insights.js?v=120";
+import { bindServerStatus } from "./server-status.js?v=120";
+import { bindEvaluation } from "./evaluation.js?v=120";
+import { startTour } from "./tour.js?v=120";
+import { toggleDirector, directorActive } from "./director.js?v=120";
+import { initMotion } from "./motion.js?v=120";
+import { initOrbit } from "./orbit.js?v=120";
+import { refreshTemporalCanvas } from "./temporal-webgl.js?v=120";
 import {
   api,
   state,
   load,
   write,
-  read,
   modules,
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=119";
+} from "./data.js?v=120";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=119";
+} from "./views.js?v=120";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -113,12 +112,12 @@ function updatePosition() {
     return;
   }
   if (module) {
-    link("工作区", "#home");
+    link("工作台", "#home/workspace");
     nav.append("›");
     link(group.title, "#category/" + group.id);
     nav.append("›", module.title);
   } else if (group) {
-    link("工作区", "#home");
+    link("工作台", "#home/workspace");
     nav.append("›", group.title);
   }
 }
@@ -136,18 +135,20 @@ function paintSidebar() {
     });
 }
 function renderPage({ restore = false } = {}) {
-  document.documentElement.dataset.layout = state.mode;
+  const route = location.hash || "#home";
+  // The start and sign-in screens stand alone; all workbench routes share the sidebar.
+  const layout = route === "#home" || state.authRequired ? "portal" : "sidebar";
+  document.documentElement.dataset.layout = layout;
   document.documentElement.dataset.density =
     ["compact", "standard", "comfortable"][state.density] || "standard";
   document.documentElement.dataset.hero = state.compactHero
     ? "compact"
     : "full";
-  document.body.dataset.layout = state.mode;
+  document.body.dataset.layout = layout;
   const moduleId = location.hash.split("/")[1];
   content.dataset.module = location.hash.startsWith("#module/") ? moduleId : "";
   /* 首页两层：`#home` 开始页（环轨）、`#home/workspace` 工作台。
      只有真正跨层跳转时才播放入场过渡；同层刷新/重绘不闪。 */
-  const route = location.hash || "#home";
   const homeLayer = route === "#home" || route === "#home/workspace";
   const enteringHomeLayer = route !== paintedRoute && homeLayer;
   const cameFromStart = paintedRoute === "#home" && route === "#home/workspace";
@@ -195,11 +196,6 @@ function renderPage({ restore = false } = {}) {
     a.setAttribute("aria-current", current ? "page" : "false");
   });
   paintSidebar();
-  document
-    .querySelectorAll("button[data-mode]")
-    .forEach((b) =>
-      b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode)),
-    );
   document.title =
     route === "#home/workspace"
       ? "工作台 · 时列"
@@ -253,7 +249,7 @@ function back() {
     go(m ? `#category/${m.group}` : "#home");
     return;
   }
-  go("#home");
+  go(kind === "category" ? "#home/workspace" : "#home");
 }
 function showDialog(kind, values = {}, id = "") {
   const d = document.querySelector(`.form-dialog[data-form="${kind}"]`);
@@ -831,15 +827,6 @@ function handleAction(button) {
 }
 document.addEventListener("click", (e) => {
   if (!(e.target instanceof Element)) return;
-  const mode = e.target.closest("button[data-mode]");
-  if (mode && ["portal", "sidebar"].includes(mode.dataset.mode)) {
-    state.mode = mode.dataset.mode;
-    write("mode", state.mode);
-    const menu = mode.closest("details");
-    if (menu) menu.open = false;
-    renderPage({ restore: true });
-    return;
-  }
   if (e.target.closest("#quick-results a")) $("#quick-dialog").close();
   /* 评测题目展开/收起：结果区自管局部 DOM，不走 renderPage */
   const evalToggle = e.target.closest("[data-eval-toggle]");
@@ -880,13 +867,6 @@ document.addEventListener("change", (e) => {
     if (e.target.name === "scope") state.scope = e.target.value;
     if (e.target.name === "namespace") state.namespace = e.target.value;
     if (e.target.name === "generate") state.generate = e.target.checked;
-  }
-  if (e.target.matches("[data-mode]") || e.target.id === "mode-select") {
-    const nextMode = e.target.dataset.mode || e.target.value;
-    if (!["portal", "sidebar"].includes(nextMode)) return;
-    state.mode = nextMode;
-    write("mode", state.mode);
-    renderPage({ restore: true });
   }
   if (e.target.id === "density-select") {
     state.density = Number(e.target.value);
@@ -980,12 +960,6 @@ document.addEventListener("submit", async (e) => {
 $("#detail-close").addEventListener("click", () => $("#detail-dialog").close());
 $("#detail-dialog").addEventListener("close", () => {
   if (detailTrigger?.isConnected) detailTrigger.focus({ preventScroll: true });
-});
-window.addEventListener("storage", (e) => {
-  if (e.key === "shilie-mode") {
-    state.mode = read("mode", "portal");
-    renderPage({ restore: true });
-  }
 });
 /* 会话过期（api() 收到 401）时回到登录面板；登录表单自身的 401 不触发（由表单内联报错）。 */
 document.addEventListener("shilie:unauthorized", () => {

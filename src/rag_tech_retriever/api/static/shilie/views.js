@@ -1,35 +1,35 @@
-import { collaborationView } from "./collaboration.js?v=119";
-import { corpusSelect } from "./public-corpus.js?v=119";
-import { agentStudioView } from "./agent-studio.js?v=119";
-import { backupView } from "./backup.js?v=119";
-import { privateView } from "./private-view.js?v=119";
-import { modelConnectionView } from "./model-connection.js?v=119";
-import { treeView, treeDialog } from "./tree.js?v=119";
+import { collaborationView } from "./collaboration.js?v=120";
+import { corpusSelect } from "./public-corpus.js?v=120";
+import { agentStudioView } from "./agent-studio.js?v=120";
+import { backupView } from "./backup.js?v=120";
+import { privateView } from "./private-view.js?v=120";
+import { modelConnectionView } from "./model-connection.js?v=120";
+import { treeView, treeDialog } from "./tree.js?v=120";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=119";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=119";
-import { jobsView, jobsDialog } from "./jobs.js?v=119";
+} from "./automation-views.js?v=120";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=120";
+import { jobsView, jobsDialog } from "./jobs.js?v=120";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=119";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=119";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=119";
-import { serverStatusView } from "./server-status.js?v=119";
-import { evaluationView } from "./evaluation.js?v=119";
-import { directorActive } from "./director.js?v=119";
-import { icon, orbitIcon } from "./icons.js?v=119";
+} from "./company-capabilities.js?v=120";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=120";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=120";
+import { serverStatusView } from "./server-status.js?v=120";
+import { evaluationView } from "./evaluation.js?v=120";
+import { directorActive } from "./director.js?v=120";
+import { icon, orbitIcon } from "./icons.js?v=120";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=119";
+} from "./data.js?v=120";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -443,7 +443,7 @@ function simple(id) {
 function appearance() {
   return frame(
     "界面偏好",
-    `<section class="module-surface settings-surface"><label class="settings-row">导航模式<select id="mode-select"><option value="portal" ${state.mode === "portal" ? "selected" : ""}>入口模式</option><option value="sidebar" ${state.mode === "sidebar" ? "selected" : ""}>侧栏模式</option></select></label><label class="settings-row"><span>页面密度</span><span class="density-control"><output id="density-output" for="density-range">${["紧凑", "标准", "宽松"][state.density]}</output><input id="density-range" class="density-slider" type="range" min="0" max="2" step="1" value="${state.density}" aria-label="页面密度"><span class="density-labels"><span>紧凑</span><span>标准</span><span>宽松</span></span></span></label><label class="settings-row"><span>首页插画尺寸</span><select id="hero-size"><option value="full" ${!state.compactHero ? "selected" : ""}>完整</option><option value="compact" ${state.compactHero ? "selected" : ""}>紧凑</option></select></label></section><section class="module-surface settings-surface"><h2>验收与观测</h2><div class="observability-actions"><button class="primary-button" data-action="run-tour">▶ 运行验收巡游</button><button class="small-button" data-action="toggle-director" aria-pressed="${directorActive()}">◉ ${directorActive() ? "关闭事件直播" : "开启事件直播"}</button></div><p class="settings-hint">巡游对页面做只读自检；事件直播把页面里的导航、点击与报错实时列在右侧面板。</p></section>${serverStatusView()}`,
+    `<section class="module-surface settings-surface"><label class="settings-row"><span>页面密度</span><span class="density-control"><output id="density-output" for="density-range">${["紧凑", "标准", "宽松"][state.density]}</output><input id="density-range" class="density-slider" type="range" min="0" max="2" step="1" value="${state.density}" aria-label="页面密度"><span class="density-labels"><span>紧凑</span><span>标准</span><span>宽松</span></span></span></label><label class="settings-row"><span>首页插画尺寸</span><select id="hero-size"><option value="full" ${!state.compactHero ? "selected" : ""}>完整</option><option value="compact" ${state.compactHero ? "selected" : ""}>紧凑</option></select></label></section><section class="module-surface settings-surface"><h2>验收与观测</h2><div class="observability-actions"><button class="primary-button" data-action="run-tour">▶ 运行验收巡游</button><button class="small-button" data-action="toggle-director" aria-pressed="${directorActive()}">◉ ${directorActive() ? "关闭事件直播" : "开启事件直播"}</button></div><p class="settings-hint">巡游对页面做只读自检；事件直播把页面里的导航、点击与报错实时列在右侧面板。</p></section>${serverStatusView()}`,
   );
 }
 export function render() {
@@ -531,7 +531,7 @@ function trashSection() {
   return `<section class="sidebar-trash"><button class="nav-link trash-toggle" type="button" data-action="trash-toggle" aria-expanded="${state.trashOpen}">${icon("trash")}回收站${total ? `<span class="trash-badge">${total}</span>` : ""}</button>${state.trashOpen ? trashPanel() : ""}</section>`;
 }
 export function sidebar() {
-  return `<a class="nav-link" href="#home">${icon("home")}工作区首页</a>${groups
+  return `<a class="nav-link" href="#home/workspace">${icon("home")}工作台首页</a>${groups
     .map(
       (g) =>
         `<section><h2>${g.title}</h2>${g.id === "workspace" ? trashSection() : ""}${modules

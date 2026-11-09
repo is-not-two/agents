@@ -142,7 +142,6 @@ export const state = {
   accountLogin: false,
   loginMode: "token",
   status: {},
-  mode: read("mode", "portal"),
   density: read("density", 1),
   compactHero: read("hero", false),
   selectedNote: read("note", ""),
@@ -179,7 +178,6 @@ export const state = {
   loading: true,
   error: "",
 };
-state.mode = ["portal", "sidebar"].includes(state.mode) ? state.mode : "portal";
 state.density = [0, 1, 2].includes(state.density) ? state.density : 1;
 state.taskStatus = ["all", "available", "locked", "done"].includes(
   state.taskStatus,

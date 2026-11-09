@@ -67,7 +67,11 @@ def main() -> int:
     print("=" * 56)
     print("CI 只读门禁（不依赖 PostgreSQL / Docker）")
     print("=" * 56)
-    checks = CHECKS + ([("桌面 Web 交互", ["node", "scripts/check_desktop_ux.mjs"])] if args.desktop_ui else [])
+    desktop_checks = [
+        ("桌面 Web 交互", ["node", "scripts/check_desktop_ux.mjs"]),
+        ("统一侧边栏导航", ["node", "scripts/check_sidebar_navigation.mjs"]),
+    ]
+    checks = CHECKS + (desktop_checks if args.desktop_ui else [])
     for name, command in checks:
         ok, message = run(name, command)
         print(message)

@@ -1,5 +1,5 @@
 /* 到期复习与通知：确认、评分、队列状态均以服务端返回为准。 */
-import { api, escapeHtml as esc } from "./data.js?v=119";
+import { api, escapeHtml as esc } from "./data.js?v=120";
 
 const cache = { cards: null, notifications: null, preview: null, error: "", noticeError: "", loading: false, noticeLoading: false, busy: false, trash: false, filter: "due", selected: "", revealed: new Set(), reviews: null, requests: new Map() };
 let paint = () => {};
