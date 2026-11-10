@@ -1,30 +1,30 @@
-import { collaborationView } from "./collaboration.js?v=129";
-import { corpusSelect } from "./public-corpus.js?v=129";
-import { agentStudioView } from "./agent-studio.js?v=129";
-import { backupView } from "./backup.js?v=129";
-import { privateView } from "./private-view.js?v=129";
-import { modelConnectionView } from "./model-connection.js?v=129";
-import { treeView, treeDialog } from "./tree.js?v=129";
+import { collaborationView } from "./collaboration.js?v=130";
+import { corpusSelect } from "./public-corpus.js?v=130";
+import { agentStudioView } from "./agent-studio.js?v=130";
+import { backupView } from "./backup.js?v=130";
+import { privateView } from "./private-view.js?v=130";
+import { modelConnectionView } from "./model-connection.js?v=130";
+import { treeView, treeDialog } from "./tree.js?v=130";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=129";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=129";
-import { selfTraitsView, selfTraitsDialog } from "./self-traits.js?v=129";
-import { jobFlowView } from "./job-flow.js?v=129";
-import { jobsView, jobsDialog } from "./jobs.js?v=129";
+} from "./automation-views.js?v=130";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=130";
+import { selfTraitsView, selfTraitsDialog } from "./self-traits.js?v=130";
+import { jobFlowView } from "./job-flow.js?v=130";
+import { jobsView, jobsDialog } from "./jobs.js?v=130";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=129";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=129";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=129";
-import { serverStatusView } from "./server-status.js?v=129";
-import { evaluationView } from "./evaluation.js?v=129";
-import { directorActive } from "./director.js?v=129";
-import { icon, orbitIcon } from "./icons.js?v=129";
+} from "./company-capabilities.js?v=130";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=130";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=130";
+import { serverStatusView } from "./server-status.js?v=130";
+import { evaluationView } from "./evaluation.js?v=130";
+import { directorActive } from "./director.js?v=130";
+import { icon, orbitIcon } from "./icons.js?v=130";
 import {
   escapeHtml as esc,
   groups,
@@ -32,7 +32,7 @@ import {
   navSections,
   state,
   currentNote,
-} from "./data.js?v=129";
+} from "./data.js?v=130";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();

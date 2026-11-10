@@ -1,6 +1,6 @@
 /* 人物：一张卡记一个可修订的自我观察。事实源在 PostgreSQL（kind=self_trait），
    修改轨迹由通用 /api/records/{id}/history 提供，前端不另存一份。 */
-import { api, read, write, escapeHtml as escape } from "./data.js?v=129";
+import { api, read, write, escapeHtml as escape } from "./data.js?v=130";
 
 const VALENCES = ["待改进", "中性", "优势"];
 const STATUSES = ["观察中", "已改善", "已归档"];

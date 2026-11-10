@@ -5,7 +5,7 @@
    关联：job_lead.company ↔ company_capability.company，
         application.lead_id → job_lead，interview_report.application_id → application，
         application.resume_version_id → resume_version。 */
-import { api, read, write, escapeHtml as escape } from "./data.js?v=129";
+import { api, read, write, escapeHtml as escape } from "./data.js?v=130";
 
 /* P1 页面：简历与 AI 优化不在流水线内部。 */
 const PAGES = [

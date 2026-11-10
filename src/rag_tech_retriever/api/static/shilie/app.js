@@ -1,29 +1,29 @@
-import { bindCollaboration } from "./collaboration.js?v=129";
-import { watchDraft, markDraftClean, allowDraftClose, allowDraftNavigation, setDraftSaving } from "./draft-guard.js?v=129";
-import { bindAgentStudio } from "./agent-studio.js?v=129";
-import { bindBackup } from "./backup.js?v=129";
+import { bindCollaboration } from "./collaboration.js?v=130";
+import { watchDraft, markDraftClean, allowDraftClose, allowDraftNavigation, setDraftSaving } from "./draft-guard.js?v=130";
+import { bindAgentStudio } from "./agent-studio.js?v=130";
+import { bindBackup } from "./backup.js?v=130";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=129";
-import { bindModelConnection } from "./model-connection.js?v=129";
-import { bindTree } from "./tree-actions.js?v=129";
-import { bindAutomation } from "./automation-actions.js?v=129";
-import { bindLessons } from "./lessons.js?v=129";
-import { bindSelfTraits } from "./self-traits.js?v=129";
-import { bindJobFlow } from "./job-flow.js?v=129";
-import { bindJobs } from "./jobs.js?v=129";
-import { bindCapabilities } from "./company-capabilities.js?v=129";
-import { bindLearning } from "./learning.js?v=129";
-import { bindJobInsights } from "./job-insights.js?v=129";
-import { bindServerStatus } from "./server-status.js?v=129";
-import { bindEvaluation } from "./evaluation.js?v=129";
-import { startTour } from "./tour.js?v=129";
-import { toggleDirector, directorActive } from "./director.js?v=129";
-import { initMotion } from "./motion.js?v=129";
-import { initOrbit } from "./orbit.js?v=129";
-import { refreshTemporalCanvas } from "./temporal-webgl.js?v=129";
+} from "./private-view.js?v=130";
+import { bindModelConnection } from "./model-connection.js?v=130";
+import { bindTree } from "./tree-actions.js?v=130";
+import { bindAutomation } from "./automation-actions.js?v=130";
+import { bindLessons } from "./lessons.js?v=130";
+import { bindSelfTraits } from "./self-traits.js?v=130";
+import { bindJobFlow } from "./job-flow.js?v=130";
+import { bindJobs } from "./jobs.js?v=130";
+import { bindCapabilities } from "./company-capabilities.js?v=130";
+import { bindLearning } from "./learning.js?v=130";
+import { bindJobInsights } from "./job-insights.js?v=130";
+import { bindServerStatus } from "./server-status.js?v=130";
+import { bindEvaluation } from "./evaluation.js?v=130";
+import { startTour } from "./tour.js?v=130";
+import { toggleDirector, directorActive } from "./director.js?v=130";
+import { initMotion } from "./motion.js?v=130";
+import { initOrbit } from "./orbit.js?v=130";
+import { refreshTemporalCanvas } from "./temporal-webgl.js?v=130";
 import {
   api,
   state,
@@ -34,13 +34,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=129";
+} from "./data.js?v=130";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=129";
+} from "./views.js?v=130";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
