@@ -336,6 +336,38 @@
         "title": "GapCardsInput",
         "type": "object"
       },
+      "GenerateInput": {
+        "properties": {
+          "lead_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Lead Id",
+            "type": "string"
+          },
+          "mode": {
+            "default": "practice",
+            "title": "Mode",
+            "type": "string"
+          },
+          "resume_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Resume Id",
+            "type": "string"
+          },
+          "use_model": {
+            "default": false,
+            "title": "Use Model",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "lead_id",
+          "resume_id"
+        ],
+        "title": "GenerateInput",
+        "type": "object"
+      },
       "GitHubImportInput": {
         "additionalProperties": false,
         "description": "Explicit selection of an immutable preview; no automatic script execution.",
@@ -2565,6 +2597,175 @@
           }
         },
         "summary": "Import Preview"
+      }
+    },
+    "/api/interview-prep": {
+      "get": {
+        "operationId": "listing_api_interview_prep_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "trash",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Trash",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RecordOut"
+                  },
+                  "title": "Response Listing Api Interview Prep Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listing"
+      },
+      "post": {
+        "operationId": "create_api_interview_prep_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create"
+      }
+    },
+    "/api/interview-prep/generate": {
+      "post": {
+        "operationId": "generate_api_interview_prep_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Generate Api Interview Prep Generate Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate"
+      }
+    },
+    "/api/interview-prep/{record_id}": {
+      "put": {
+        "operationId": "update_api_interview_prep__record_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update"
       }
     },
     "/api/jobs": {

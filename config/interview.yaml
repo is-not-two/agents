@@ -1,0 +1,33 @@
+# 模拟面试（预面试）：可变参数集中在此，代码不硬编码提示词与模型参数。
+# 边界：模拟面试数据永不写入 interview_report；voice 模式冻结，仅保留数据结构。
+interview:
+  modes:
+    practice: "练习模式：只给问题，answer 与 suggestion 留空字符串。"
+    full: "完整问答模式：每回合都给出示范回答与优化建议。"
+  system_prompt: >-
+    你是面试官，为一场模拟面试生成问答。只依据给定的岗位 JD 与简历正文，
+    禁止编造候选人的项目、数字或经历；不确定的地方写成建议而非结论。
+    只返回 JSON：{"turns":[{"q":"问题","answer":"示范回答","suggestion":"优化建议"}]}。
+    生成 5–8 个回合，覆盖经历、取舍、能力与风险；不要代码块或解释。
+  generation:
+    turns_min: 1
+    turns_max: 30
+    max_tokens: 1800
+    timeout_seconds: 25
+    max_jd_chars: 30000
+    max_resume_chars: 30000
+    max_reply_chars: 120000
+  notes:
+    rules: "规则模板题，未调用模型；不代表真实面试官的问题。"
+    model: "模型生成，质量未验证；示范回答与建议需人工核对。"
+  # {company} / {role} 来自岗位记录原文，不做能力推断。
+  rule_questions:
+    - "请结合简历，说明你与「{company} / {role}」最匹配的经历。"
+    - "描述一次你在项目里的关键取舍，以及结果是怎么验证的。"
+    - "JD 里要求的核心能力，你有哪些可以落到具体事情的证据？"
+    - "如果需求中途变化，你会如何调整方案、排期与沟通？"
+    - "你希望在未来半年补齐哪一块能力，为什么？"
+  # 阶段 2 规则评分口径（本批只落配置，不启用）。
+  rubric:
+    dimensions: [具体性, 证据, 结构, 岗位关联]
+    max_score: 5

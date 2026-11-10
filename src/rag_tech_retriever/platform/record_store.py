@@ -41,6 +41,8 @@ RECORD_KINDS = {
     # 因此不与普通内容混用同一字段语义。
     "wish",
     "diary",
+    # 模拟面试：面之前的练习与示范问答，与真实面试复盘 interview_report 分开。
+    "interview_prep",
 }
 # 外发意图不能进入公共恢复，否则恢复旧备份可能重发消息。
 WORKSPACE_KINDS = RECORD_KINDS - {"wish", "diary", "notification_outbox", "agent_memory", "agent_session"}

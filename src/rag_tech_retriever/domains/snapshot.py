@@ -5,6 +5,7 @@ import json
 
 from rag_tech_retriever.domains.automation import VALIDATORS
 from rag_tech_retriever.domains.bookmarks import validate_bookmark
+from rag_tech_retriever.domains.interview_prep import validate_interview_prep
 from rag_tech_retriever.domains.jobs import VALIDATORS as JOB_VALIDATORS
 from rag_tech_retriever.domains.jobs import validate_references
 from rag_tech_retriever.domains.knowledge import validate_knowledge
@@ -18,6 +19,7 @@ SNAPSHOT_VALIDATORS = {
     "bookmark": validate_bookmark,
     "lesson": validate_lesson,
     "plan": validate_plan,
+    "interview_prep": validate_interview_prep,
     **VALIDATORS,
     **JOB_VALIDATORS,
     **LEARNING_VALIDATORS,

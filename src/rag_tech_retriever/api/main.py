@@ -29,6 +29,7 @@ from rag_tech_retriever.api.routes import chat as chat_routes
 from rag_tech_retriever.api.routes import collaboration as collaboration_routes
 from rag_tech_retriever.api.routes import evaluation as evaluation_routes
 from rag_tech_retriever.api.routes import exports as export_routes
+from rag_tech_retriever.api.routes import interview_prep as interview_prep_routes
 from rag_tech_retriever.api.routes import job_insights as job_insight_routes
 from rag_tech_retriever.api.routes import jobs as job_routes
 from rag_tech_retriever.api.routes import learning as learning_routes
@@ -442,6 +443,7 @@ def create_app(
         admin_routes,
         lesson_routes,
         job_routes,
+        interview_prep_routes,
         job_insight_routes,
         learning_routes,
         notification_routes,
