@@ -206,12 +206,25 @@ class GraphWorkflowService:
         if kind == "merge":
             texts = []
             for source in self._predecessors(data, node["id"]):
-                value = data["node_outputs"].get(source, {})
-                for key in ("answer", "text"):
-                    if isinstance(value.get(key), str) and value[key].strip():
-                        texts.append(value[key].strip())
-            return {"answer": "\n\n".join(texts)}
+                texts.extend(self._content_of(data, source))
+            # 审批等无正文节点会被穿透，可能让同一条正文出现多次。
+            return {"answer": "\n\n".join(dict.fromkeys(texts))}
         raise DomainError("工作流节点类型不支持")
+
+    def _content_of(self, data: dict, node_id: str, seen: set[str] | None = None) -> list[str]:
+        """向上游收集正文；approval 这类只有状态没有正文的节点会被穿透。"""
+        seen = set() if seen is None else seen
+        if node_id in seen:
+            return []
+        seen.add(node_id)
+        value = data["node_outputs"].get(node_id, {})
+        for key in ("answer", "text"):
+            if isinstance(value.get(key), str) and value[key].strip():
+                return [value[key].strip()]
+        texts: list[str] = []
+        for source in self._predecessors(data, node_id):
+            texts.extend(self._content_of(data, source, seen))
+        return texts
 
     def _predecessors(self, data: dict, node_id: str) -> list[str]:
         return [source for source, target in data["workflow"]["data"]["edges"] if target == node_id]

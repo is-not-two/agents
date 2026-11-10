@@ -1,5 +1,5 @@
-# Experimental feature; creating/reviewing a manual plan never calls a model.
-# An administrator must opt in before any actual planner/worker model calls.
-enabled: false
+# 多 Agent 协作：Supervisor 提计划 → 人工确认 → 顺序派发 Worker。
+# 关闭时无法发起任何模型调用；开启后仍受计划确认与全链预算保护。
+enabled: true
 max_plan_steps: 6
 max_blackboard_chars: 32000

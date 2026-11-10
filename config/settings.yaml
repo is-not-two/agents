@@ -63,3 +63,5 @@ encryption:
     knowledge: [content]
     job_lead: [jd_text]
     resume_version: [file_name]
+    # 人物卡的特点名/场景/观察记录按 kind 加密；服务器上的独立配置副本需单独同步才会生效。
+    self_trait: [title, note, scene]

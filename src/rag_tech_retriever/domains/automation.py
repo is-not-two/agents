@@ -40,7 +40,7 @@ def validate_agent(payload: dict) -> dict:
     for name, allowed in {"model": {"alias", "temperature", "max_tokens"},
                           "budget": {"max_rounds", "max_tool_calls", "max_context_chars"},
                           "context": {"strategy", "max_messages", "keep_recent_users"}, "memory": {"scope"},
-                          "handoffs": {"allowed"}}.items():
+                          "handoffs": {"allowed"}, "workspace": {"root", "write", "shell"}}.items():
         value = payload.get(name, {})
         if not isinstance(value, dict) or set(value) - allowed:
             raise DomainError(f"Agent {name} 配置包含无效字段")
@@ -53,6 +53,16 @@ def validate_agent(payload: dict) -> dict:
         raise DomainError("交接白名单须为最多32个有效Agent标识")
     if not isinstance(scope, str) or scope not in {"none", "session", "persistent"}:
         raise DomainError("记忆范围只支持 none/session/persistent")
+    workspace_root = sections["workspace"].get("root", "")
+    if (not isinstance(workspace_root, str)
+            or (workspace_root and not re.fullmatch(r"[a-z][a-z0-9_-]{0,40}", workspace_root))):
+        raise DomainError("代码工作区标识只能引用管理员登记的根目录")
+    workspace_write = sections["workspace"].get("write", "each")
+    if not isinstance(workspace_write, str) or workspace_write not in {"each", "run"}:
+        raise DomainError("写入确认策略只支持 each/run")
+    workspace_shell = sections["workspace"].get("shell", False)
+    if not isinstance(workspace_shell, bool):
+        raise DomainError("命令执行开关必须为布尔值")
     alias = model.get("alias", "")
     if not isinstance(alias, str) or (alias and not re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", alias)):
         raise DomainError("模型别名必须为管理员登记的标识")
@@ -79,6 +89,7 @@ def validate_agent(payload: dict) -> dict:
         "generate": generate,
         "memory": {"scope": scope},
         "handoffs": {"allowed": list(dict.fromkeys(allowed))},
+        "workspace": {"root": workspace_root, "write": workspace_write, "shell": workspace_shell},
         "model": {"alias": alias, "temperature": temperature, "max_tokens": tokens},
         "budget": normalized_budget,
         "context": {"strategy": context.get("strategy", "window"), "max_messages": integer(

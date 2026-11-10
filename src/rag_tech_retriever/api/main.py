@@ -29,6 +29,7 @@ from rag_tech_retriever.api.routes import chat as chat_routes
 from rag_tech_retriever.api.routes import collaboration as collaboration_routes
 from rag_tech_retriever.api.routes import evaluation as evaluation_routes
 from rag_tech_retriever.api.routes import exports as export_routes
+from rag_tech_retriever.api.routes import interview_prep as interview_prep_routes
 from rag_tech_retriever.api.routes import job_insights as job_insight_routes
 from rag_tech_retriever.api.routes import jobs as job_routes
 from rag_tech_retriever.api.routes import learning as learning_routes
@@ -39,7 +40,9 @@ from rag_tech_retriever.api.routes import notifications as notification_routes
 from rag_tech_retriever.api.routes import operations as operations_routes
 from rag_tech_retriever.api.routes import private as private_routes
 from rag_tech_retriever.api.routes import prompts as prompt_routes
+from rag_tech_retriever.api.routes import resume_optimizer as resume_optimizer_routes
 from rag_tech_retriever.api.routes import search as search_routes
+from rag_tech_retriever.api.routes import self_traits as self_trait_routes
 from rag_tech_retriever.api.routes import stages as stage_routes
 from rag_tech_retriever.common.account_auth import is_configured, verify_login
 from rag_tech_retriever.common.config_loader import PROJECT_ROOT, ConfigLoader
@@ -454,6 +457,9 @@ def create_app(
         capability_routes,
         mcp_routes,
         evaluation_routes,
+        self_trait_routes,
+        resume_optimizer_routes,
+        interview_prep_routes,
     ):
         application.include_router(module.create_router(context))
 

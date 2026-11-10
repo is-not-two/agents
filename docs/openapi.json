@@ -58,6 +58,33 @@
         "title": "AnalyzeInput",
         "type": "object"
       },
+      "ApplyInput": {
+        "properties": {
+          "confirmation": {
+            "title": "Confirmation",
+            "type": "string"
+          },
+          "draft": {
+            "maxLength": 50000,
+            "minLength": 1,
+            "title": "Draft",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "draft",
+          "confirmation"
+        ],
+        "title": "ApplyInput",
+        "type": "object"
+      },
       "ApprovalInput": {
         "additionalProperties": false,
         "properties": {
@@ -187,6 +214,37 @@
         "title": "CloseInput",
         "type": "object"
       },
+      "ComposeInput": {
+        "description": "AI 自动编排：目标、模式与逐次确认（用户点击生成即确认）。",
+        "properties": {
+          "confirmation": {
+            "default": "",
+            "title": "Confirmation",
+            "type": "string"
+          },
+          "goal": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          },
+          "mode": {
+            "default": "rules",
+            "title": "Mode",
+            "type": "string"
+          },
+          "template": {
+            "default": "generic",
+            "title": "Template",
+            "type": "string"
+          }
+        },
+        "required": [
+          "goal"
+        ],
+        "title": "ComposeInput",
+        "type": "object"
+      },
       "ConfirmInput": {
         "description": "人工确认：入库选片段，或图工作流/Agent 子运行的批准。",
         "properties": {
@@ -282,6 +340,21 @@
         "title": "DecisionInput",
         "type": "object"
       },
+      "DraftPayload": {
+        "description": "客户端回传待保存的草稿；服务端一律重新校验。",
+        "properties": {
+          "draft": {
+            "additionalProperties": true,
+            "title": "Draft",
+            "type": "object"
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "title": "DraftPayload",
+        "type": "object"
+      },
       "ExecuteInput": {
         "additionalProperties": false,
         "properties": {
@@ -334,6 +407,38 @@
           "confirmation"
         ],
         "title": "GapCardsInput",
+        "type": "object"
+      },
+      "GenerateInput": {
+        "properties": {
+          "lead_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Lead Id",
+            "type": "string"
+          },
+          "mode": {
+            "default": "practice",
+            "title": "Mode",
+            "type": "string"
+          },
+          "resume_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Resume Id",
+            "type": "string"
+          },
+          "use_model": {
+            "default": false,
+            "title": "Use Model",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "lead_id",
+          "resume_id"
+        ],
+        "title": "GenerateInput",
         "type": "object"
       },
       "GitHubImportInput": {
@@ -451,6 +556,56 @@
           "counts"
         ],
         "title": "JobsOverviewOut",
+        "type": "object"
+      },
+      "LoopInput": {
+        "description": "一次自动编码：仓库根目录名、目标、门禁命令、执行器与预算档位。",
+        "properties": {
+          "engine": {
+            "default": "opencode",
+            "enum": [
+              "opencode",
+              "aider",
+              "model"
+            ],
+            "title": "Engine",
+            "type": "string"
+          },
+          "gate": {
+            "maxLength": 1000,
+            "minLength": 2,
+            "title": "Gate",
+            "type": "string"
+          },
+          "root": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Root",
+            "type": "string"
+          },
+          "task": {
+            "maxLength": 2000,
+            "minLength": 2,
+            "title": "Task",
+            "type": "string"
+          },
+          "tier": {
+            "default": "patch",
+            "enum": [
+              "patch",
+              "feature",
+              "epic"
+            ],
+            "title": "Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "root",
+          "task",
+          "gate"
+        ],
+        "title": "LoopInput",
         "type": "object"
       },
       "MemoryDecisionInput": {
@@ -849,6 +1004,28 @@
         "title": "ReviewInput",
         "type": "object"
       },
+      "ReviseInput": {
+        "description": "带意见修订草稿：服务端重新校验并给出结构差异。",
+        "properties": {
+          "draft": {
+            "additionalProperties": true,
+            "title": "Draft",
+            "type": "object"
+          },
+          "feedback": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Feedback",
+            "type": "string"
+          }
+        },
+        "required": [
+          "draft",
+          "feedback"
+        ],
+        "title": "ReviseInput",
+        "type": "object"
+      },
       "RunInput": {
         "description": "实际看到的流程版本和流程输入。",
         "properties": {
@@ -1006,6 +1183,49 @@
         "title": "StageInput",
         "type": "object"
       },
+      "TeamRunInput": {
+        "description": "团队协作运行：已有 Agent 名单 + 一句话目标。",
+        "properties": {
+          "agent_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Agent Ids",
+            "type": "array"
+          },
+          "approved": {
+            "default": false,
+            "title": "Approved",
+            "type": "boolean"
+          },
+          "max_rounds": {
+            "default": 6,
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Max Rounds",
+            "type": "integer"
+          },
+          "mode": {
+            "default": "group_chat",
+            "title": "Mode",
+            "type": "string"
+          },
+          "task": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Task",
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent_ids",
+          "task"
+        ],
+        "title": "TeamRunInput",
+        "type": "object"
+      },
       "ToolCallInput": {
         "additionalProperties": false,
         "properties": {
@@ -1112,6 +1332,61 @@
           "confirmation"
         ],
         "title": "WeeklyInput",
+        "type": "object"
+      },
+      "rag_tech_retriever__api__routes__automation__DraftInput": {
+        "description": "只生成草稿：不落库，便于先改后存。",
+        "properties": {
+          "goal": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          },
+          "mode": {
+            "default": "rules",
+            "title": "Mode",
+            "type": "string"
+          },
+          "template": {
+            "default": "generic",
+            "title": "Template",
+            "type": "string"
+          }
+        },
+        "required": [
+          "goal"
+        ],
+        "title": "DraftInput",
+        "type": "object"
+      },
+      "rag_tech_retriever__api__routes__resume_optimizer__DraftInput": {
+        "properties": {
+          "lead_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Lead Id",
+            "type": "string"
+          },
+          "resume_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Resume Id",
+            "type": "string"
+          },
+          "template_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Template Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "template_id",
+          "resume_id",
+          "lead_id"
+        ],
+        "title": "DraftInput",
         "type": "object"
       }
     }
@@ -1800,6 +2075,232 @@
         "summary": "Call"
       }
     },
+    "/api/automation/code-roots": {
+      "get": {
+        "description": "管理员登记过的代码工作区；只返回名称与写权限，不含绝对路径。",
+        "operationId": "code_roots_api_automation_code_roots_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {},
+                  "title": "Response Code Roots Api Automation Code Roots Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Code Roots"
+      }
+    },
+    "/api/automation/compose": {
+      "post": {
+        "description": "生成 Agent 与 DAG 并落库；执行仍复用既有 workflows/{id}/run 端点。",
+        "operationId": "compose_api_automation_compose_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComposeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Compose Api Automation Compose Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compose"
+      }
+    },
+    "/api/automation/compose/draft": {
+      "post": {
+        "description": "只生成草稿不落库：先改、再看差异、最后才保存。",
+        "operationId": "compose_draft_api_automation_compose_draft_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/rag_tech_retriever__api__routes__automation__DraftInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Compose Draft Api Automation Compose Draft Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compose Draft"
+      }
+    },
+    "/api/automation/compose/revise": {
+      "post": {
+        "description": "按意见重出草稿，返回新草稿与结构差异；不写库。",
+        "operationId": "compose_revise_api_automation_compose_revise_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviseInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Compose Revise Api Automation Compose Revise Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compose Revise"
+      }
+    },
+    "/api/automation/compose/save": {
+      "post": {
+        "description": "确认后的草稿才落库；草稿里的权限字段会重新校验，不信任前端。",
+        "operationId": "compose_save_api_automation_compose_save_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Compose Save Api Automation Compose Save Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compose Save"
+      }
+    },
+    "/api/automation/loop/run": {
+      "post": {
+        "description": "跑一次自动编码循环：外部只给目标与门禁，绿点与回退在服务层做。",
+        "operationId": "loop_run_api_automation_loop_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoopInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Loop Run Api Automation Loop Run Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Loop Run"
+      }
+    },
     "/api/automation/setup": {
       "post": {
         "operationId": "setup_api_automation_setup_post",
@@ -1818,6 +2319,47 @@
           }
         },
         "summary": "Setup"
+      }
+    },
+    "/api/automation/teams/run": {
+      "post": {
+        "description": "让已有 Agent 组成团队跑一轮：群聊轮流发言，或磁石模式自动规划。\n\n写操作不在本轮执行：未批准时把「需批准」如实回给模型，由用户带 approved 重跑。",
+        "operationId": "team_run_api_automation_teams_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamRunInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Team Run Api Automation Teams Run Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Team Run"
       }
     },
     "/api/bookmarks": {
@@ -2565,6 +3107,175 @@
           }
         },
         "summary": "Import Preview"
+      }
+    },
+    "/api/interview-prep": {
+      "get": {
+        "operationId": "listing_api_interview_prep_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "trash",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Trash",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RecordOut"
+                  },
+                  "title": "Response Listing Api Interview Prep Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listing"
+      },
+      "post": {
+        "operationId": "create_api_interview_prep_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create"
+      }
+    },
+    "/api/interview-prep/generate": {
+      "post": {
+        "operationId": "generate_api_interview_prep_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Generate Api Interview Prep Generate Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate"
+      }
+    },
+    "/api/interview-prep/{record_id}": {
+      "put": {
+        "operationId": "update_api_interview_prep__record_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update"
       }
     },
     "/api/jobs": {
@@ -6139,6 +6850,104 @@
         "summary": "Record Restore"
       }
     },
+    "/api/resume/apply": {
+      "post": {
+        "operationId": "apply_api_resume_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply"
+      }
+    },
+    "/api/resume/optimize": {
+      "post": {
+        "operationId": "optimize_api_resume_optimize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/rag_tech_retriever__api__routes__resume_optimizer__DraftInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Optimize Api Resume Optimize Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Optimize"
+      }
+    },
+    "/api/resume/templates": {
+      "get": {
+        "operationId": "templates_api_resume_templates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {},
+                  "title": "Response Templates Api Resume Templates Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Templates"
+      }
+    },
     "/api/session": {
       "delete": {
         "operationId": "logout_api_session_delete",
@@ -6678,6 +7487,135 @@
           }
         },
         "summary": "Status"
+      }
+    },
+    "/api/traits": {
+      "get": {
+        "operationId": "trait_list_api_traits_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "trash",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Trash",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RecordOut"
+                  },
+                  "title": "Response Trait List Api Traits Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trait List"
+      },
+      "post": {
+        "operationId": "trait_create_api_traits_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trait Create"
+      }
+    },
+    "/api/traits/{record_id}": {
+      "put": {
+        "operationId": "trait_update_api_traits__record_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trait Update"
       }
     },
     "/api/trash": {

@@ -50,6 +50,39 @@ web_search:
 #       required: [query]
 #       additionalProperties: false
 http_tools: {}
+# 代码工作区：根目录只能在这里登记，模型不能自选路径。
+# Agent 通过 workspace.root 引用这里的标识；写操作默认每次都要人工确认。
+# 所有写入先备份到 data/local/code-backups/ 再原子替换，并回传 diff。
+code:
+  enabled: true
+  roots:
+    shilie:
+      title: 知步主仓库
+      path: .
+      writable: true
+    # 只读示例：登记后可让 Agent 读相邻仓库，但不能改。
+    # labs:
+    #   title: 实验目录
+    #   path: ../labs
+    #   writable: false
+  max_read_bytes: 200000
+  max_write_bytes: 200000
+  max_entries: 2000
+  max_results: 200
+  max_output_chars: 12000
+  # 命令执行默认关闭；打开后只允许下列前缀，且不经 shell 解释。
+  shell:
+    enabled: false
+    timeout_seconds: 60
+    allow:
+      - python -m pytest
+      - python -m ruff
+      - ruff check
+      - git status
+      - git diff
+      - git log
+      - git show
+      - node --check
 github:
   timeout_seconds: 60
   max_bytes: 52428800

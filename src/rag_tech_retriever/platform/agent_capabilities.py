@@ -12,6 +12,8 @@ from jsonschema import Draft202012Validator, SchemaError, ValidationError
 
 from rag_tech_retriever.domains.knowledge import validate_knowledge
 from rag_tech_retriever.domains.life_planning import DomainError
+from rag_tech_retriever.platform.code_workspace import TOOL_NAMES as CODE_TOOLS
+from rag_tech_retriever.platform.code_workspace import CodeWorkspace
 from rag_tech_retriever.platform.github_skills import GitHubSkills
 from rag_tech_retriever.platform.http_tools import HttpToolError, HttpToolGateway
 from rag_tech_retriever.platform.mcp_client import MCPGateway, ToolError
@@ -102,13 +104,33 @@ class CapabilityService:
         self.mcp = MCPGateway(root, servers, self.limits, env)
         self.web = WebSearch(config.get("web_search"), env)
         self.http = HttpToolGateway(config.get("http_tools"), self.limits, env)
+        self.code = CodeWorkspace(root, config.get("code"))
         self.store, self.search = store, search
+
+    def code_roots(self) -> list[dict]:
+        """UI 只看到管理员登记过的根目录名称，看不到服务器绝对路径。"""
+        return self.code.roots()
 
     def validate_binding(self, profile: dict) -> dict:
         """Validate local references without contacting an external service on save."""
         alias = profile.get("model", {}).get("alias", "")
         if alias and alias not in self.model_aliases:
             raise DomainError("模型别名未在服务器登记")
+        workspace = profile.get("workspace") or {}
+        root_name = workspace.get("root", "")
+        if root_name:
+            if not self.code.enabled:
+                raise DomainError("代码工作区未启用，不能绑定")
+            item = next((row for row in self.code.roots() if row["name"] == root_name), None)
+            if item is None:
+                raise DomainError("代码工作区未登记")
+            if workspace.get("write") == "run" and not item["writable"]:
+                raise DomainError("只读工作区不能整轮免确认")
+            if workspace.get("shell") and not (item["writable"] and self.code.shell["enabled"]):
+                raise DomainError("该工作区未获准执行命令")
+            unknown = set(profile.get("tool_ids", [])) & CODE_TOOLS
+            if unknown:
+                raise DomainError("代码工具由工作区绑定自动授予，不要手工登记")
         for name in profile.get("skill_ids", []):
             self.skills.get(name)
         unknown = (set(profile.get("tool_ids", [])) - BUILTINS.keys()
@@ -127,6 +149,11 @@ class CapabilityService:
         specs = {name: {"name": name, **BUILTINS[name], "read_only": True}
                  for name in profile.get("tool_ids", []) if name in BUILTINS}
         specs.update(self.http.specs(profile.get("tool_ids", [])))
+        if (profile.get("workspace") or {}).get("root"):
+            for spec in self.code.specs(profile).values():
+                if spec["name"] in specs:
+                    raise ToolError("工具名称冲突")
+                specs[spec["name"]] = spec
         skills = [self.skills.get(name) for name in profile.get("skill_ids", [])]
         if skills:
             specs["activate_skill"] = {"name": "activate_skill", "description": "按需读取获准技能的操作说明，不执行脚本。",
@@ -158,6 +185,8 @@ class CapabilityService:
         if not spec["read_only"] and not approved:
             raise DomainError("该工具需要人工确认")
         name = spec["name"]
+        if name in CODE_TOOLS:
+            return await anyio.to_thread.run_sync(self.code.execute, name, arguments, profile)
         if "server_id" in spec:
             if (spec["server_id"] not in profile.get("mcp_server_ids", [])
                     or name not in profile.get("tool_ids", [])):

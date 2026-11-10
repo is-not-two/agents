@@ -5,6 +5,7 @@ import json
 
 from rag_tech_retriever.domains.automation import VALIDATORS
 from rag_tech_retriever.domains.bookmarks import validate_bookmark
+from rag_tech_retriever.domains.interview_prep import validate_interview_prep
 from rag_tech_retriever.domains.jobs import VALIDATORS as JOB_VALIDATORS
 from rag_tech_retriever.domains.jobs import validate_references
 from rag_tech_retriever.domains.knowledge import validate_knowledge
@@ -12,12 +13,15 @@ from rag_tech_retriever.domains.learning import VALIDATORS as LEARNING_VALIDATOR
 from rag_tech_retriever.domains.learning import validate_references as validate_learning_references
 from rag_tech_retriever.domains.lessons import validate_lesson
 from rag_tech_retriever.domains.life_planning import DomainError, validate_plan
+from rag_tech_retriever.domains.self_traits import validate_self_trait
 
 SNAPSHOT_VALIDATORS = {
     "knowledge": validate_knowledge,
     "bookmark": validate_bookmark,
     "lesson": validate_lesson,
     "plan": validate_plan,
+    "self_trait": validate_self_trait,
+    "interview_prep": validate_interview_prep,
     **VALIDATORS,
     **JOB_VALIDATORS,
     **LEARNING_VALIDATORS,
