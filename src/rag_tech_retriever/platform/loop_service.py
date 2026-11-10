@@ -13,13 +13,12 @@ from collections.abc import Callable
 from pathlib import Path
 
 from rag_tech_retriever.domains.life_planning import DomainError
+from rag_tech_retriever.domains.task_queue import LOOP_ENGINES as ENGINES
+from rag_tech_retriever.domains.task_queue import LOOP_TIERS as TIERS
 from rag_tech_retriever.platform.aider_attempt import AiderAttempt
 from rag_tech_retriever.platform.coding_loop import Budget, CodingLoop
 from rag_tech_retriever.platform.model_attempt import EditingModel
 from rag_tech_retriever.platform.opencode_attempt import OpenCodeAttempt
-
-ENGINES = ("opencode", "aider", "model")
-TIERS = ("patch", "feature", "epic")
 
 
 def application_root(exports: Path | None = None) -> Path:

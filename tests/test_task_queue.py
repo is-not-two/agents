@@ -27,8 +27,9 @@ NOW = datetime(2026, 11, 10, 9, 0, tzinfo=timezone.utc)
 
 
 def test_enqueue_accepts_known_kind():
-    result = validate_enqueue("loop", {"task": "修复空指针"}, max_attempts=2, priority=10)
-    assert result == {"kind": "loop", "payload": {"task": "修复空指针"},
+    payload = {"root": "demo", "task": "修复空指针", "gate": "pytest -q"}
+    result = validate_enqueue("loop", payload, max_attempts=2, priority=10)
+    assert result == {"kind": "loop", "payload": payload,
                       "max_attempts": 2, "priority": 10}
 
 
@@ -114,3 +115,59 @@ def test_describe_hides_payload_and_formats_time():
     assert view["next_run_at"] == NOW.isoformat()
     assert view["last_error"] == ""
     assert "payload" not in view
+
+
+# ---------- 入队载荷校验 ----------
+
+VALID_LOOP = {"root": "demo", "task": "修复求和", "gate": "pytest -q",
+               "engine": "opencode", "tier": "patch"}
+VALID_TEAM = {"task": "评估候选人", "agent_ids": ["a1"], "mode": "group_chat"}
+
+
+def test_valid_loop_payload_is_accepted():
+    spec = validate_enqueue("loop", dict(VALID_LOOP))
+    assert spec["kind"] == "loop"
+
+
+def test_valid_team_payload_is_accepted():
+    spec = validate_enqueue("team", dict(VALID_TEAM))
+    assert spec["kind"] == "team"
+
+
+@pytest.mark.parametrize("missing", ["root", "task", "gate"])
+def test_loop_payload_requires_core_fields(missing):
+    payload = dict(VALID_LOOP)
+    payload.pop(missing)
+    with pytest.raises(DomainError):
+        validate_enqueue("loop", payload)
+
+
+def test_loop_payload_rejects_unknown_engine_and_tier():
+    bad_engine = {**VALID_LOOP, "engine": "vim"}
+    with pytest.raises(DomainError):
+        validate_enqueue("loop", bad_engine)
+    bad_tier = {**VALID_LOOP, "tier": "huge"}
+    with pytest.raises(DomainError):
+        validate_enqueue("loop", bad_tier)
+
+
+def test_loop_payload_rejects_blank_text():
+    with pytest.raises(DomainError):
+        validate_enqueue("loop", {**VALID_LOOP, "gate": "   "})
+
+
+def test_team_payload_requires_members():
+    with pytest.raises(DomainError):
+        validate_enqueue("team", {"task": "评估候选人", "agent_ids": []})
+    with pytest.raises(DomainError):
+        validate_enqueue("team", {"task": "评估候选人"})
+
+
+def test_team_payload_rejects_too_many_members():
+    with pytest.raises(DomainError):
+        validate_enqueue("team", {**VALID_TEAM, "agent_ids": ["a", "b", "c", "d", "e"]})
+
+
+def test_team_payload_rejects_unknown_mode():
+    with pytest.raises(DomainError):
+        validate_enqueue("team", {**VALID_TEAM, "mode": "committee"})

@@ -284,7 +284,12 @@ export function bindAutomation({ renderPage, refresh, toast }) {
       payload.engine = String(data.get("engine") || "opencode");
       payload.tier = String(data.get("tier") || "patch");
     } else {
-      payload.agent_ids = state.agents.map((a) => a.id);
+      const members = data.getAll("queue_agent_ids");
+      if (!members.length) {
+        toast("团队任务至少选一个成员", true);
+        return;
+      }
+      payload.agent_ids = members;
       payload.mode = "group_chat";
       payload.max_rounds = 6;
       payload.approved = false;

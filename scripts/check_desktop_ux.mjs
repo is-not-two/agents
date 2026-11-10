@@ -315,6 +315,13 @@ try{
  await queue.locator('[name="kind"]').selectOption('team');
  await flowPage.waitForTimeout(120);
  check('queue-team-kind-hides-code-fields',await flowPage.locator('#queue-form [name="gate"]').count()===0&&await flowPage.locator('#queue-form [name="root"]').count()===0);
+ check('queue-team-kind-shows-member-picker',await flowPage.locator('#queue-form [name="queue_agent_ids"]').count()===1);
+ await flowPage.locator('#queue-form [name="task"]').fill('评估候选人的能力缺口');
+ await flowPage.locator('#queue-form [name="queue_agent_ids"]').first().check();
+ await flowPage.locator('#queue-form button[type="submit"]').click();
+ await flowPage.waitForTimeout(150);
+ const teamEnqueue=writes.filter(x=>x.path==='automation/queue'&&x.body.kind==='team');
+ check('queue-team-enqueue-sends-members',teamEnqueue.length===1&&Array.isArray(teamEnqueue[0].body.payload.agent_ids)&&teamEnqueue[0].body.payload.agent_ids.length===1);
  await flowPage.evaluate(()=>location.hash='#module/runs');
  await flowPage.waitForSelector('.run-list [data-action="auto-open-run"]');
  await flowPage.locator('[data-action="auto-open-run"][data-id="run-team"]').click();

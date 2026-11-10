@@ -24,6 +24,14 @@ CANCELLED = "cancelled"
 TERMINAL_STATUSES = frozenset({SUCCEEDED, DEAD, CANCELLED})
 KNOWN_KINDS = ("team", "loop")
 
+# 执行器与档位的合法取值。放在 domain 层是为了让入队校验有唯一事实源：
+# platform/loop_service.py 从这里导入，两边不会各写一份。
+LOOP_ENGINES = ("opencode", "aider", "model")
+LOOP_TIERS = ("patch", "feature", "epic")
+
+# 团队成员上限，与 platform/team_service.py 的 MAX_TEAM_SIZE 一致。
+MAX_TEAM_MEMBERS = 4
+
 MAX_ATTEMPTS_LIMIT = 10
 BASE_BACKOFF_SECONDS = 5
 MAX_BACKOFF_SECONDS = 300
@@ -46,7 +54,40 @@ def validate_enqueue(kind: str, payload: Any, *, max_attempts: int = 3,
         raise DomainError(f"最大尝试次数必须是 1–{MAX_ATTEMPTS_LIMIT} 的整数")
     if type(priority) is not int or not 0 <= priority <= 100:
         raise DomainError("优先级必须是 0–100 的整数")
+    _validate_payload(kind, payload)
     return {"kind": kind, "payload": payload, "max_attempts": max_attempts, "priority": priority}
+
+
+def _require_text(payload: dict, key: str, label: str) -> str:
+    value = payload.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise DomainError(f"{label}不能为空")
+    return value.strip()
+
+
+def _validate_payload(kind: str, payload: dict) -> None:
+    """按任务类型校验载荷字段；缺失或非法一律当场拒绝。"""
+    if kind == "loop":
+        _require_text(payload, "root", "代码仓库")
+        _require_text(payload, "task", "改动目标")
+        _require_text(payload, "gate", "门禁命令")
+        engine = payload.get("engine", "opencode")
+        if engine not in LOOP_ENGINES:
+            raise DomainError(f"不支持的执行器：{engine}")
+        tier = payload.get("tier", "patch")
+        if tier not in LOOP_TIERS:
+            raise DomainError(f"不支持的预算档位：{tier}")
+        return
+    if kind == "team":
+        _require_text(payload, "task", "团队目标")
+        members = payload.get("agent_ids")
+        if not isinstance(members, list) or not members:
+            raise DomainError("团队成员不能为空")
+        if len(members) > MAX_TEAM_MEMBERS:
+            raise DomainError(f"团队成员最多 {MAX_TEAM_MEMBERS} 个")
+        mode = payload.get("mode", "group_chat")
+        if mode not in ("group_chat", "magentic"):
+            raise DomainError(f"不支持的协作方式：{mode}")
 
 
 def backoff_seconds(attempts: int) -> int:
