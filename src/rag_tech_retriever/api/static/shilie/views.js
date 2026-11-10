@@ -1,35 +1,36 @@
-import { collaborationView } from "./collaboration.js?v=115";
-import { corpusSelect } from "./public-corpus.js?v=115";
-import { agentStudioView } from "./agent-studio.js?v=115";
-import { backupView } from "./backup.js?v=115";
-import { privateView } from "./private-view.js?v=115";
-import { modelConnectionView } from "./model-connection.js?v=115";
-import { treeView, treeDialog } from "./tree.js?v=115";
+import { collaborationView } from "./collaboration.js?v=116";
+import { corpusSelect } from "./public-corpus.js?v=116";
+import { agentStudioView } from "./agent-studio.js?v=116";
+import { backupView } from "./backup.js?v=116";
+import { privateView } from "./private-view.js?v=116";
+import { modelConnectionView } from "./model-connection.js?v=116";
+import { treeView, treeDialog } from "./tree.js?v=116";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=115";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=115";
-import { jobsView, jobsDialog } from "./jobs.js?v=115";
+} from "./automation-views.js?v=116";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=116";
+import { interviewPrepView } from "./interview-prep.js?v=116";
+import { jobsView, jobsDialog } from "./jobs.js?v=116";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=115";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=115";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=115";
-import { serverStatusView } from "./server-status.js?v=115";
-import { evaluationView } from "./evaluation.js?v=115";
-import { directorActive } from "./director.js?v=115";
-import { icon, orbitIcon } from "./icons.js?v=115";
+} from "./company-capabilities.js?v=116";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=116";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=116";
+import { serverStatusView } from "./server-status.js?v=116";
+import { evaluationView } from "./evaluation.js?v=116";
+import { directorActive } from "./director.js?v=116";
+import { icon, orbitIcon } from "./icons.js?v=116";
 import {
   escapeHtml as esc,
   groups,
   modules,
   state,
   currentNote,
-} from "./data.js?v=115";
+} from "./data.js?v=116";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -484,6 +485,7 @@ export function render() {
   if (id === "stages") return stagePage();
   if (id === "lessons") return lessonsView();
   if (id === "jobs") return jobsView();
+  if (id === "interview-prep") return frame("模拟面试", interviewPrepView());
   if (id === "company-capabilities") return capabilitiesView();
   if (id === "collaboration") return collaborationView();
   if (id === "agent-studio") return agentStudioView();

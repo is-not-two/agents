@@ -105,6 +105,7 @@ export const modules = [
   ["knowledge", "个人知识库", "workspace", "knowledge"],
   ["bookmarks", "网页收藏", "workspace", "link"],
   ["jobs", "求职记录", "workspace", "task"],
+  ["interview-prep", "模拟面试", "workspace", "task"],
   ["company-capabilities", "目标公司能力", "workspace", "task"],
   ["job-insights", "岗位证据对照", "workspace", "search"],
   ["job-weekly", "求职周报", "workspace", "stages"],

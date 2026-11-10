@@ -1,25 +1,26 @@
-import { bindCollaboration } from "./collaboration.js?v=115";
-import { bindAgentStudio } from "./agent-studio.js?v=115";
-import { bindBackup } from "./backup.js?v=115";
+import { bindCollaboration } from "./collaboration.js?v=116";
+import { bindAgentStudio } from "./agent-studio.js?v=116";
+import { bindBackup } from "./backup.js?v=116";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=115";
-import { bindModelConnection } from "./model-connection.js?v=115";
-import { bindTree } from "./tree-actions.js?v=115";
-import { bindAutomation } from "./automation-actions.js?v=115";
-import { bindLessons } from "./lessons.js?v=115";
-import { bindJobs } from "./jobs.js?v=115";
-import { bindCapabilities } from "./company-capabilities.js?v=115";
-import { bindLearning } from "./learning.js?v=115";
-import { bindJobInsights } from "./job-insights.js?v=115";
-import { bindServerStatus } from "./server-status.js?v=115";
-import { bindEvaluation } from "./evaluation.js?v=115";
-import { startTour } from "./tour.js?v=115";
-import { toggleDirector, directorActive } from "./director.js?v=115";
-import { initMotion } from "./motion.js?v=115";
-import { initOrbit } from "./orbit.js?v=115";
+} from "./private-view.js?v=116";
+import { bindModelConnection } from "./model-connection.js?v=116";
+import { bindTree } from "./tree-actions.js?v=116";
+import { bindAutomation } from "./automation-actions.js?v=116";
+import { bindLessons } from "./lessons.js?v=116";
+import { bindInterviewPrep } from "./interview-prep.js?v=116";
+import { bindJobs } from "./jobs.js?v=116";
+import { bindCapabilities } from "./company-capabilities.js?v=116";
+import { bindLearning } from "./learning.js?v=116";
+import { bindJobInsights } from "./job-insights.js?v=116";
+import { bindServerStatus } from "./server-status.js?v=116";
+import { bindEvaluation } from "./evaluation.js?v=116";
+import { startTour } from "./tour.js?v=116";
+import { toggleDirector, directorActive } from "./director.js?v=116";
+import { initMotion } from "./motion.js?v=116";
+import { initOrbit } from "./orbit.js?v=116";
 import {
   api,
   state,
@@ -30,13 +31,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=115";
+} from "./data.js?v=116";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=115";
+} from "./views.js?v=116";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -54,6 +55,7 @@ toastBox.setAttribute("role", "status");
 let modelConnectionController,
   backupController,
   lessonsController,
+  interviewPrepController,
   jobsController,
   capabilitiesController,
   learningController,
@@ -159,6 +161,7 @@ function renderPage({ restore = false } = {}) {
   modelConnectionController?.ensure();
   backupController?.ensure();
   lessonsController?.ensure();
+  interviewPrepController?.ensure();
   jobsController?.ensure();
   capabilitiesController?.ensure();
   learningController?.ensure();
@@ -1175,6 +1178,7 @@ backupController = bindBackup({ renderPage, refresh, toast });
 setPrivateRepaint(() => renderPage({ restore: true }));
 bindPrivate(toast);
 lessonsController = bindLessons({ renderPage, toast });
+interviewPrepController = bindInterviewPrep({ renderPage, toast });
 jobsController = bindJobs({ renderPage, toast });
 capabilitiesController = bindCapabilities({ renderPage, toast });
 learningController = bindLearning({ renderPage, toast });
