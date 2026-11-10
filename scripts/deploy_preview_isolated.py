@@ -7,8 +7,9 @@
 - 隔离 unit 的可写目录是稳定路径 `/var/lib/shilie-preview/app/data/local` 与
   `/var/lib/shilie-preview/app/output`，因此这里不切软链，而是整目录换位：
   旧 app 移到 `previous/`，新 app 从 `staging/` 原子改名到 `app`，失败即换回。
-- `.venv` 用硬链接克隆（同一文件系统），避免每次复制 1.7G；新包只替换
-  `site-packages/rag_tech_retriever`，venv 内其它依赖保持原位。
+- `.venv312`（Python 3.12）用硬链接克隆（同一文件系统），避免每次复制 1.7G；
+  该 venv 为 editable 安装，`.pth` 指向 `/var/lib/shilie-preview/app/src`，
+  整目录换位后即加载新代码，无需复制包到 site-packages。
 
 安全边界
 - 只操作 `/var/lib/shilie-preview`、`shilie-preview.service` 与隔离库；
@@ -43,7 +44,7 @@ PREVIEW_DB = "shilie_preview_20261104"
 PREVIEW_PG_SOCK = f"{PREVIEW_ROOT}/pgsock"
 PREVIEW_PG_PORT = 55433
 PROD_SERVICE = "shilie"
-SITE_PKG = "lib/python3.10/site-packages/rag_tech_retriever"
+PREVIEW_VENV = ".venv312"
 
 
 def isolated_runtime(user: str, exec_start: str) -> bool:
@@ -176,7 +177,7 @@ mkdir -p "$STAGE"
 tar -xzf {remote_pkg} -C "$STAGE"
 
 # venv 硬链接克隆：同文件系统，不复制 1.7G；新包只替换应用自身。
-cp -al "$APP/.venv" "$STAGE/.venv"
+cp -al "$APP/{PREVIEW_VENV}" "$STAGE/{PREVIEW_VENV}"
 
 # 用户数据与凭据只从隔离根继承，绝不读 /var/lib/shilie。
 rm -rf "$STAGE/data/local" "$STAGE/data/public" "$STAGE/credentials" "$STAGE/output"
@@ -186,17 +187,14 @@ cp -a "$APP/credentials" "$STAGE/credentials"
 cp -a "$APP/output" "$STAGE/output"
 
 # 共享配置优先、发布包补新键；共享独有文件也复制过来。
-PYTHONPATH="$STAGE/src" "$STAGE/.venv/bin/python" "$STAGE/scripts/merge_deploy_config.py" \
+PYTHONPATH="$STAGE/src" "$STAGE/{PREVIEW_VENV}/bin/python" "$STAGE/scripts/merge_deploy_config.py" \
   --package "$STAGE/config" --persistent "$APP/config" --dest "$STAGE/config"
 for f in "$APP/config"/*; do
   b=$(basename "$f")
   [ -e "$STAGE/config/$b" ] || cp -a "$f" "$STAGE/config/$b"
 done
 
-# 非 editable 安装：运行期导入 site-packages 里的副本。
-SITE="$STAGE/.venv/{SITE_PKG}"
-rm -rf "$SITE"
-cp -a "$STAGE/src/rag_tech_retriever" "$SITE"
+# editable 安装无需复制包：.pth 指向 app/src，换位后即为新代码。
 
 chown -R root:{PREVIEW_USER} "$STAGE"
 chmod 750 "$STAGE"
@@ -209,8 +207,9 @@ chmod 640 "$STAGE/credentials/server.key" 2>/dev/null || true
 
 # 构建期自检：以服务身份导入包，并核对静态版本号。
 runuser -u {PREVIEW_USER} -- env HOME="$STAGE" RAG_PROJECT_ROOT="$STAGE" PYTHONDONTWRITEBYTECODE=1 \
-  PATH="$STAGE/.venv/bin:/usr/bin:/bin" \
-  "$STAGE/.venv/bin/python" -c "import rag_tech_retriever; print('IMPORT_OK')"
+  PYTHONPATH="$STAGE/src" \
+  PATH="$STAGE/{PREVIEW_VENV}/bin:/usr/bin:/bin" \
+  "$STAGE/{PREVIEW_VENV}/bin/python" -c "import rag_tech_retriever; print('IMPORT_OK')"
 grep -q "?v={base.local_version()}" "$STAGE/src/rag_tech_retriever/api/static/shilie/index.html"
 
 echo "STAGE={stage}"
