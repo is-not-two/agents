@@ -18,6 +18,16 @@ class GenerateInput(BaseModel):
     use_model: bool = False
 
 
+class AnswerItem(BaseModel):
+    index: int = Field(ge=0)
+    answer: str = Field(default="", max_length=8000)
+
+
+class AnswersInput(BaseModel):
+    version: int = Field(ge=1)
+    answers: list[AnswerItem] = Field(min_length=1)
+
+
 def create_router(context: WorkspaceContext) -> APIRouter:
     router = APIRouter()
     store = context.store
@@ -43,5 +53,12 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     @router.put("/api/interview-prep/{record_id}", response_model=RecordOut)
     def update(record_id: str, payload: RecordInput) -> dict:
         return service.save(payload.data, record_id, payload.version)
+
+    @router.post("/api/interview-prep/{record_id}/answers", response_model=RecordOut)
+    def submit_answers(record_id: str, payload: AnswersInput) -> dict:
+        return service.submit_answers(
+            record_id, payload.version,
+            [item.model_dump() for item in payload.answers],
+        )
 
     return router

@@ -11,7 +11,11 @@ from pathlib import Path
 
 from rag_tech_retriever.common.config_loader import PROJECT_ROOT, load_yaml_mapping
 from rag_tech_retriever.common.provider import ProviderError, post_chat
-from rag_tech_retriever.domains.interview_prep import FROZEN_MODES, validate_interview_prep
+from rag_tech_retriever.domains.interview_prep import (
+    FROZEN_MODES,
+    validate_answers,
+    validate_interview_prep,
+)
 from rag_tech_retriever.domains.life_planning import DomainError, text
 from rag_tech_retriever.platform.record_store import RecordMissing
 
@@ -175,4 +179,17 @@ class InterviewPrepService:
     def save(self, draft: dict, record_id=None, version=None) -> dict:
         data = validate_interview_prep(draft)
         self._check_references(data)
+        return self.store.save("interview_prep", data, record_id, version)
+
+    def submit_answers(self, record_id, version, answers) -> dict:
+        """显式提交逐题作答；只改指定题号的 answer，其余字段原样保留。"""
+        try:
+            row = self.store.get(record_id)
+        except RecordMissing as exc:
+            raise DomainError("模拟面试会话不存在") from exc
+        if row.get("kind") != "interview_prep":
+            raise DomainError("记录不是模拟面试会话")
+        data = validate_interview_prep(row.get("data", {}))
+        for item in validate_answers(data["turns"], answers):
+            data["turns"][item["index"]]["answer"] = item["answer"]
         return self.store.save("interview_prep", data, record_id, version)

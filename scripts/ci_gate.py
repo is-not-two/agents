@@ -35,6 +35,7 @@ PURE_LOGIC_TESTS = [
     "tests/test_trash_overview.py",
     "tests/test_prompt_optimizer.py",
     "tests/test_interview_prep.py",
+    "tests/test_interview_prep_answers.py",
 ]
 
 

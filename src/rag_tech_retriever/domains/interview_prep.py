@@ -18,6 +18,31 @@ MODES = ("practice", "full", "voice")
 FROZEN_MODES = ("voice",)
 
 
+def validate_answers(turns: list[dict], answers: object) -> list[dict]:
+    """校验逐题作答：题号合法、不重复、答案长度受控，返回按题号排序的规范化列表。"""
+    if not isinstance(answers, list) or not answers:
+        raise DomainError("请提交至少一条作答")
+    if not isinstance(turns, list):
+        raise DomainError("会话回合格式错误")
+    normalized: list[dict] = []
+    seen: set[int] = set()
+    for item in answers:
+        if not isinstance(item, dict):
+            raise DomainError("作答格式错误")
+        index = item.get("index")
+        if (not isinstance(index, int) or isinstance(index, bool)
+                or not 0 <= index < len(turns)):
+            raise DomainError("作答题号超出会话范围")
+        if index in seen:
+            raise DomainError("同一题号重复提交")
+        seen.add(index)
+        normalized.append({
+            "index": index,
+            "answer": text(item.get("answer", ""), "回答", 8000),
+        })
+    return sorted(normalized, key=lambda row: row["index"])
+
+
 def validate_interview_prep(payload: dict) -> dict:
     """校验并规范化一次模拟面试会话；拒绝越界模式与超长回合。"""
     if not isinstance(payload, dict):
