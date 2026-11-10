@@ -119,7 +119,8 @@ class QueueService:
         try:
             result = executor(job, progress)
         except QueueCancelled:
-            self.queue.complete(job["id"], {"cancelled": True})
+            # 取消不是成功：状态必须落 cancelled，否则界面上会显示成「已完成」。
+            self.queue.mark_cancelled(job["id"], {"cancelled": True})
             return {"id": job["id"], "status": CANCELLED}
         except Exception as exc:  # noqa: BLE001 - 失败要落进队列，不能让 worker 崩掉
             message = f"{type(exc).__name__}: {exc}"

@@ -136,6 +136,19 @@ class TaskQueueStore:
                 {"id": job_id, "result": Json(result)},
             )
 
+    def mark_cancelled(self, job_id: str, result: dict) -> None:
+        """任务被中途取消：落 cancelled 状态。
+
+        不能复用 complete()——那会把状态写成 succeeded，
+        用户明明取消了，列表里却显示「已完成」。
+        """
+        with self.store.transaction() as cur:
+            cur.execute(
+                f"""UPDATE {self.table} SET status = '{CANCELLED}', result = %(result)s,
+                    lease_until = NULL, updated_at = NOW() WHERE id = %(id)s""",
+                {"id": job_id, "result": Json(result)},
+            )
+
     def fail(self, job_id: str, error: str, attempts: int, max_attempts: int) -> str:
         """任务失败：还能重试就回队列，否则进死信。返回落定的状态。"""
         status = failure_outcome(attempts, max_attempts)

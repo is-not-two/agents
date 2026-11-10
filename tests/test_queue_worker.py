@@ -21,6 +21,7 @@ class FakeQueue:
     def __init__(self, job=None) -> None:
         self.job = job
         self.completed = []
+        self.cancelled = []
         self.failed = []
         self.checkpoints = []
         self.renewed = []
@@ -37,6 +38,9 @@ class FakeQueue:
 
     def complete(self, job_id, result):
         self.completed.append((job_id, result))
+
+    def mark_cancelled(self, job_id, result):
+        self.cancelled.append((job_id, result))
 
     def fail(self, job_id, error, attempts, max_attempts):
         self.failed.append((job_id, error, attempts, max_attempts))
@@ -181,7 +185,9 @@ def test_cancelled_task_stops_execution():
     outcome = service.run_claimed(make_job(status=CANCELLED))
 
     assert outcome["status"] == CANCELLED
-    assert queue.completed == [("job-1", {"cancelled": True})]
+    # 取消的任务不能被当成成功落库：complete() 会把状态写成 succeeded。
+    assert queue.cancelled == [("job-1", {"cancelled": True})]
+    assert queue.completed == []
 
 
 def test_claim_statement_guards_concurrency():
