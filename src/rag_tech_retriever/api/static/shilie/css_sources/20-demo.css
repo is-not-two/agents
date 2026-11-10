@@ -146,16 +146,17 @@ body[data-layout="sidebar"] #content {
   bottom: 0;
   left: 0;
   width: 242px;
-  padding: 22px 14px;
+  padding: 22px 14px 40px;
   background: #f9faf5;
   border-right: 1px solid #e1e6e1;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 body[data-layout="sidebar"] .sidebar {
   display: block;
 }
 .sidebar section {
-  margin-top: 24px;
+  margin-top: 16px;
 }
 .sidebar h2 {
   font-size: 12px;
@@ -166,14 +167,20 @@ body[data-layout="sidebar"] .sidebar {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   font-size: 13px;
 }
-.nav-link[aria-current="page"],
+/* hover 与选中彻底分离：hover 只换底色、不碰字色；选中态额外加左侧色条，
+   弱底色在强光屏下也有确定落点，不会再出现"两个都像选中"。 */
 .nav-link:hover {
-  background: #efe8e1;
+  background: #f3ece5;
+}
+.nav-link[aria-current="page"] {
+  background: #efe2d2;
   color: #704417;
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 #b95b13;
 }
 /* 侧栏回收站：折叠入口 + 窄栏内的紧凑恢复列表。 */
 .sidebar-trash {
@@ -192,14 +199,16 @@ body[data-layout="sidebar"] .sidebar {
   background: #efe8e1;
   color: #704417;
 }
+/* 数字只做口径提示，不用高饱和实心圆抢当前页的注意力。 */
 .trash-badge {
   margin-left: auto;
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: #704417;
-  color: #fff;
+  background: transparent;
+  border: 1px solid #d8c9b8;
+  color: #8b7866;
   font-size: 11px;
   display: inline-flex;
   align-items: center;

@@ -71,3 +71,6 @@ output/web/*-before/
 
 # 2026-11-04 事故恢复工具与临时副本（一次性，不入库）
 output/v2/recovery-tools/
+
+# 2026-11-10 桌面浏览器断言产物（每次跑门禁重新生成）
+output/desktop-ux-check/

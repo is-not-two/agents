@@ -21,6 +21,20 @@ export function icon(name) {
     lock: '<rect x="4" y="9" width="12" height="9" rx="2"/><path d="M7 9V6a3 3 0 0 1 6 0v3"/>',
     /* 回收站：侧栏入口与各模块的「回收站」按钮共用。 */
     trash: '<path d="M3 6h14M7 6V4h6v2M5 6l1 11h8l1-11M8 9v5M12 9v5"/>',
+    /* 一模块一图标：替换过去 4 个 task / 3 个 search / 4 个 stages 的重复用法。 */
+    briefcase: '<rect x="2" y="6" width="16" height="11" rx="2"/><path d="M7 6V4h6v2M2 11h16"/>',
+    target: '<circle cx="10" cy="10" r="7"/><circle cx="10" cy="10" r="3"/><path d="M10 1v2M10 17v2M1 10h2M17 10h2"/>',
+    clipboard: '<rect x="4" y="3" width="12" height="15" rx="2"/><path d="M8 3V2h4v1M7 8h6M7 12h6M7 16h4"/>',
+    chart: '<path d="M3 17h14M5 14V9M9 14V5M13 14v-3M17 14V7"/>',
+    list: '<path d="M7 5h10M7 10h10M7 15h10"/><circle cx="3.5" cy="5" r="1"/><circle cx="3.5" cy="10" r="1"/><circle cx="3.5" cy="15" r="1"/>',
+    clock: '<circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/>',
+    bell: '<path d="M5 14h10l-1-3V8a4 4 0 0 0-8 0v3zM8 17h4"/>',
+    palette: '<circle cx="10" cy="10" r="7"/><circle cx="7" cy="8" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="14" cy="11" r="1"/><path d="M10 17a3 3 0 0 0 3-3"/>',
+    sparkle: '<path d="M10 2l1.6 4.4L16 8l-4.4 1.6L10 14l-1.6-4.4L4 8l4.4-1.6zM16 13l.8 2.2L19 16l-2.2.8L16 19l-.8-2.2L13 16l2.2-.8z"/>',
+    users: '<circle cx="7" cy="7" r="3"/><path d="M2 17v-1a5 5 0 0 1 10 0v1"/><circle cx="14" cy="8" r="2.5"/><path d="M13 13a4 4 0 0 1 5 4"/>',
+    history: '<path d="M2 10a8 8 0 1 0 3-6.2M2 3v4h4M10 6v4l3 2"/>',
+    gauge: '<path d="M3 15a7 7 0 1 1 14 0M10 15l4-5"/><circle cx="10" cy="15" r="1"/>',
+    user: '<circle cx="10" cy="7" r="3.5"/><path d="M3 18v-1a7 7 0 0 1 14 0v1"/>',
   };
   return `<svg class="icon" viewBox="0 0 20 20" aria-hidden="true">${paths[name] || paths.knowledge}</svg>`;
 }

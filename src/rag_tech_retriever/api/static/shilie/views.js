@@ -1,35 +1,38 @@
-import { collaborationView } from "./collaboration.js?v=119";
-import { corpusSelect } from "./public-corpus.js?v=119";
-import { agentStudioView } from "./agent-studio.js?v=119";
-import { backupView } from "./backup.js?v=119";
-import { privateView } from "./private-view.js?v=119";
-import { modelConnectionView } from "./model-connection.js?v=119";
-import { treeView, treeDialog } from "./tree.js?v=119";
+import { collaborationView } from "./collaboration.js?v=129";
+import { corpusSelect } from "./public-corpus.js?v=129";
+import { agentStudioView } from "./agent-studio.js?v=129";
+import { backupView } from "./backup.js?v=129";
+import { privateView } from "./private-view.js?v=129";
+import { modelConnectionView } from "./model-connection.js?v=129";
+import { treeView, treeDialog } from "./tree.js?v=129";
 import {
   agentsPage,
   workflowsPage,
   runsPage,
   automationDialogs,
-} from "./automation-views.js?v=119";
-import { lessonsView, lessonsDialog } from "./lessons.js?v=119";
-import { jobsView, jobsDialog } from "./jobs.js?v=119";
+} from "./automation-views.js?v=129";
+import { lessonsView, lessonsDialog } from "./lessons.js?v=129";
+import { selfTraitsView, selfTraitsDialog } from "./self-traits.js?v=129";
+import { jobFlowView } from "./job-flow.js?v=129";
+import { jobsView, jobsDialog } from "./jobs.js?v=129";
 import {
   capabilitiesView,
   capabilitiesDialog,
-} from "./company-capabilities.js?v=119";
-import { learningView, notificationsView, learningDialogs } from "./learning.js?v=119";
-import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=119";
-import { serverStatusView } from "./server-status.js?v=119";
-import { evaluationView } from "./evaluation.js?v=119";
-import { directorActive } from "./director.js?v=119";
-import { icon, orbitIcon } from "./icons.js?v=119";
+} from "./company-capabilities.js?v=129";
+import { learningView, notificationsView, learningDialogs } from "./learning.js?v=129";
+import { jobInsightsView, jobWeeklyView, jobProfileDialog } from "./job-insights.js?v=129";
+import { serverStatusView } from "./server-status.js?v=129";
+import { evaluationView } from "./evaluation.js?v=129";
+import { directorActive } from "./director.js?v=129";
+import { icon, orbitIcon } from "./icons.js?v=129";
 import {
   escapeHtml as esc,
   groups,
   modules,
+  navSections,
   state,
   currentNote,
-} from "./data.js?v=119";
+} from "./data.js?v=129";
 function highlight(value, query) {
   const text = String(value ?? ""),
     term = String(query || "").trim();
@@ -483,6 +486,8 @@ export function render() {
   }
   if (id === "stages") return stagePage();
   if (id === "lessons") return lessonsView();
+  if (id === "self-traits") return selfTraitsView();
+  if (id === "job-flow") return jobFlowView();
   if (id === "jobs") return jobsView();
   if (id === "company-capabilities") return capabilitiesView();
   if (id === "collaboration") return collaborationView();
@@ -528,27 +533,33 @@ function trashPanel() {
 }
 function trashSection() {
   const total = (state.trashData && state.trashData.total) || 0;
-  return `<section class="sidebar-trash"><button class="nav-link trash-toggle" type="button" data-action="trash-toggle" aria-expanded="${state.trashOpen}">${icon("trash")}回收站${total ? `<span class="trash-badge">${total}</span>` : ""}</button>${state.trashOpen ? trashPanel() : ""}</section>`;
+  return `<section class="sidebar-trash"><button class="nav-link trash-toggle" type="button" data-action="trash-toggle" aria-expanded="${state.trashOpen}" ${total ? `title="回收站中 ${total} 条可恢复记录"` : ""}>${icon("trash")}回收站${total ? `<span class="trash-badge" aria-label="回收站中 ${total} 条可恢复记录">${total}</span>` : ""}</button>${state.trashOpen ? trashPanel() : ""}</section>`;
 }
 export function sidebar() {
-  return `<a class="nav-link" href="#home">${icon("home")}工作区首页</a>${groups
-    .map(
-      (g) =>
-        `<section><h2>${g.title}</h2>${g.id === "workspace" ? trashSection() : ""}${modules
-          .filter((m) => m.group === g.id)
-          .map(
-            (m) =>
-              `<a class="nav-link" href="#module/${m.id}" ${location.hash.includes(m.id) ? 'aria-current="page"' : ""}>${icon(m.icon)}${m.title}</a>`,
-          )
-          .join("")}</section>`,
-    )
-    .join("")}`;
+  /* 选中态只认 #module/<id> 的第二段并严格相等：旧写法 includes(m.id)
+     会把 hash 里出现的其他模块名也算命中，且 hover 与选中同色时看起来像两个高亮。 */
+  const [, currentId] = location.hash.slice(1).split("/");
+  const onModule = location.hash.startsWith("#module/");
+  const link = (m) =>
+    `<a class="nav-link" href="#module/${m.id}" ${onModule && m.id === currentId ? 'aria-current="page"' : ""}>${icon(m.icon)}${m.title}</a>`;
+  const sections = navSections
+    .map((s) => {
+      const open = !state.navCollapsed[s.id];
+      const items = s.modules
+        .map((id) => modules.find((m) => m.id === id))
+        .filter(Boolean);
+      return `<section class="nav-section" data-section="${s.id}"><button class="nav-section__toggle" type="button" data-action="nav-section" data-section="${s.id}" aria-expanded="${open}">${icon(s.icon)}<span>${s.title}</span><span class="nav-section__chevron" aria-hidden="true">${open ? "−" : "›"}</span></button>${open ? `<div class="nav-section__items">${items.map(link).join("")}</div>` : ""}</section>`;
+    })
+    .join("");
+  /* 回收站放在所有分组之后：低频入口不再占首屏黄金位，但仍始终可见。 */
+  return `<a class="nav-link" href="#home">${icon("home")}工作区首页</a>${sections}${trashSection()}`;
 }
 export function dialogs() {
   return (
     treeDialog() +
     automationDialogs() +
     lessonsDialog() +
+    selfTraitsDialog() +
     jobsDialog() +
     capabilitiesDialog() +
     learningDialogs() +

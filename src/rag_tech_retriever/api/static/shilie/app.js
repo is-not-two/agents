@@ -1,27 +1,29 @@
-import { bindCollaboration } from "./collaboration.js?v=119";
-import { watchDraft, markDraftClean, allowDraftClose, allowDraftNavigation, setDraftSaving } from "./draft-guard.js?v=119";
-import { bindAgentStudio } from "./agent-studio.js?v=119";
-import { bindBackup } from "./backup.js?v=119";
+import { bindCollaboration } from "./collaboration.js?v=129";
+import { watchDraft, markDraftClean, allowDraftClose, allowDraftNavigation, setDraftSaving } from "./draft-guard.js?v=129";
+import { bindAgentStudio } from "./agent-studio.js?v=129";
+import { bindBackup } from "./backup.js?v=129";
 import {
   bindPrivate,
   setPrivateRepaint,
   bindSlide,
-} from "./private-view.js?v=119";
-import { bindModelConnection } from "./model-connection.js?v=119";
-import { bindTree } from "./tree-actions.js?v=119";
-import { bindAutomation } from "./automation-actions.js?v=119";
-import { bindLessons } from "./lessons.js?v=119";
-import { bindJobs } from "./jobs.js?v=119";
-import { bindCapabilities } from "./company-capabilities.js?v=119";
-import { bindLearning } from "./learning.js?v=119";
-import { bindJobInsights } from "./job-insights.js?v=119";
-import { bindServerStatus } from "./server-status.js?v=119";
-import { bindEvaluation } from "./evaluation.js?v=119";
-import { startTour } from "./tour.js?v=119";
-import { toggleDirector, directorActive } from "./director.js?v=119";
-import { initMotion } from "./motion.js?v=119";
-import { initOrbit } from "./orbit.js?v=119";
-import { refreshTemporalCanvas } from "./temporal-webgl.js?v=119";
+} from "./private-view.js?v=129";
+import { bindModelConnection } from "./model-connection.js?v=129";
+import { bindTree } from "./tree-actions.js?v=129";
+import { bindAutomation } from "./automation-actions.js?v=129";
+import { bindLessons } from "./lessons.js?v=129";
+import { bindSelfTraits } from "./self-traits.js?v=129";
+import { bindJobFlow } from "./job-flow.js?v=129";
+import { bindJobs } from "./jobs.js?v=129";
+import { bindCapabilities } from "./company-capabilities.js?v=129";
+import { bindLearning } from "./learning.js?v=129";
+import { bindJobInsights } from "./job-insights.js?v=129";
+import { bindServerStatus } from "./server-status.js?v=129";
+import { bindEvaluation } from "./evaluation.js?v=129";
+import { startTour } from "./tour.js?v=129";
+import { toggleDirector, directorActive } from "./director.js?v=129";
+import { initMotion } from "./motion.js?v=129";
+import { initOrbit } from "./orbit.js?v=129";
+import { refreshTemporalCanvas } from "./temporal-webgl.js?v=129";
 import {
   api,
   state,
@@ -32,13 +34,13 @@ import {
   groups,
   currentNote,
   escapeHtml,
-} from "./data.js?v=119";
+} from "./data.js?v=129";
 import {
   render,
   sidebar,
   dialogs,
   knowledgePanelHtml,
-} from "./views.js?v=119";
+} from "./views.js?v=129";
 const $ = (s) => document.querySelector(s),
   navigationStrip = $("#navigation-strip"),
   content = $("#content"),
@@ -964,7 +966,7 @@ document.addEventListener("submit", async (e) => {
   }
   if (e.target.matches(".edit-form") && e.target.closest("dialog[data-form]")) {
     const kind = e.target.closest("dialog[data-form]").dataset.form;
-    if (["lesson", "jobs", "learning", "job-profile"].includes(kind)) return;
+    if (["lesson", "jobs", "learning", "job-profile", "trait"].includes(kind)) return;
     /* 谨记表单由 lessons.js 自己接管（评审 F2：双重接管会抢先关弹窗吞校验错误） */ e.preventDefault();
     await saveForm(e.target);
   }
@@ -1212,6 +1214,8 @@ backupController = bindBackup({ renderPage, refresh, toast });
 setPrivateRepaint(() => renderPage({ restore: true }));
 bindPrivate(toast);
 lessonsController = bindLessons({ renderPage, toast });
+bindSelfTraits({ renderPage, toast });
+bindJobFlow({ renderPage, toast });
 jobsController = bindJobs({ renderPage, toast });
 capabilitiesController = bindCapabilities({ renderPage, toast });
 learningController = bindLearning({ renderPage, toast });
@@ -1221,3 +1225,18 @@ bindCollaboration({ renderPage, toast });
 serverStatusController = bindServerStatus({ renderPage });
 evaluationController = bindEvaluation({ renderPage });
 initMotion({ content, renderPage });
+/* 侧栏分组折叠：状态持久化，只重绘侧栏，不触碰主内容区与滚动位置。 */
+document.addEventListener("click", (event) => {
+  const button =
+    event.target instanceof Element
+      ? event.target.closest('[data-action="nav-section"]')
+      : null;
+  const id = button?.dataset.section;
+  if (!id) return;
+  state.navCollapsed = {
+    ...state.navCollapsed,
+    [id]: !state.navCollapsed[id],
+  };
+  write("nav-collapsed", state.navCollapsed);
+  paintSidebar();
+});

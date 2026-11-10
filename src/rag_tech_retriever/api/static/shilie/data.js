@@ -101,34 +101,77 @@ export const groups = [
   { id: "settings", title: "系统设置", caption: "连接、数据与界面" },
   { id: "private", title: "私密空间", caption: "愿望清单与私密日记" },
 ];
+/* 侧栏专用分组：只决定导航的显示顺序与折叠，不改变 groups 的业务归属。
+   面包屑、首页环轨与 #category/* 仍按 groups 解析，避免改侧栏牵动四处。
+   后续新增模块只需把 id 加到对应 section 的 modules 里。 */
+export const navSections = [
+  {
+    id: "library",
+    title: "知识与检索",
+    icon: "knowledge",
+    modules: ["knowledge", "bookmarks", "documents"],
+  },
+  {
+    id: "career",
+    title: "求职板块",
+    icon: "briefcase",
+    /* 侧栏只留一个 P0 入口；板块内 4 个并列 P1 页面，简历不随公司切换。 */
+    modules: ["job-flow"],
+  },
+  {
+    id: "review",
+    title: "学习与复盘",
+    icon: "clock",
+    modules: ["learning", "lessons"],
+  },
+  {
+    id: "self",
+    title: "自我与人生",
+    icon: "user",
+    modules: ["planning", "stages", "self-traits", "private"],
+  },
+  {
+    id: "system",
+    title: "系统",
+    icon: "settings",
+    modules: [
+      "notifications", "connections", "backup", "appearance", "workflows",
+      "agents", "agent-studio", "collaboration", "runs", "evaluation",
+    ],
+  },
+];
 export const modules = [
   ["knowledge", "个人知识库", "workspace", "knowledge"],
   ["bookmarks", "网页收藏", "workspace", "link"],
-  ["jobs", "求职记录", "workspace", "task"],
-  ["company-capabilities", "目标公司能力", "workspace", "task"],
-  ["job-insights", "岗位证据对照", "workspace", "search"],
-  ["job-weekly", "求职周报", "workspace", "stages"],
-  ["learning", "到期复习", "workspace", "task"],
-  ["notifications", "通知中心", "settings", "settings"],
-  ["lessons", "谨记名单", "workspace", "task"],
+  ["job-flow", "求职板块", "workspace", "briefcase"],
+  ["jobs", "求职记录", "workspace", "briefcase"],
+  ["company-capabilities", "目标公司能力", "workspace", "target"],
+  ["job-insights", "岗位证据对照", "workspace", "clipboard"],
+  ["job-weekly", "求职周报", "workspace", "chart"],
+  ["learning", "到期复习", "workspace", "clock"],
+  ["notifications", "通知中心", "settings", "bell"],
+  ["lessons", "谨记名单", "workspace", "list"],
   ["documents", "技术文档检索", "workspace", "search"],
-  ["evaluation", "检索质量评测", "automation", "stages"],
+  ["evaluation", "检索质量评测", "automation", "gauge"],
   ["planning", "人生规划", "workspace", "planning"],
   ["stages", "阶段记录", "workspace", "stages"],
+  ["self-traits", "人物", "workspace", "user"],
   ["workflows", "工作流", "automation", "workflow"],
   ["agents", "Agent 设置", "automation", "agent"],
-  ["agent-studio", "Agent 工作室", "automation", "agent"],
-  ["collaboration", "实验协作", "automation", "workflow"],
-  ["runs", "运行记录", "automation", "stages"],
+  ["agent-studio", "Agent 工作室", "automation", "sparkle"],
+  ["collaboration", "实验协作", "automation", "users"],
+  ["runs", "运行记录", "automation", "history"],
   ["connections", "模型连接", "settings", "connection"],
   ["backup", "数据与备份", "settings", "backup"],
-  ["appearance", "界面偏好", "settings", "settings"],
+  ["appearance", "界面偏好", "settings", "palette"],
   ["private", "私密管理", "private", "lock"],
 ].map(([id, title, group, icon]) => ({ id, title, group, icon }));
 export const state = {
   knowledge: [],
   bookmarks: [],
   bookmarkFilter: read("bookmarkFilter", "全部"),
+  /* 侧栏分组折叠状态：默认只收起系统组，避免长列表把常用入口挤出首屏。 */
+  navCollapsed: { system: true, ...(read("nav-collapsed", {}) || {}) },
   /* 侧栏回收站：展开状态只存在内存，数据由 /api/trash 一次汇总。 */
   trashOpen: false,
   trashLoading: false,
@@ -162,9 +205,18 @@ export const state = {
   selectedFlow: read("flow", ""),
   autoBusy: false,
   autoError: "",
+  teamBusy: false,
+  teamResult: null,
+  /* 自动编码：输入与结果只留内存，刷新即重置，不写 localStorage。 */
+  loopBusy: false,
+  loopResult: null,
+  loopInput: { root: "", task: "", gate: "", engine: "opencode", tier: "patch" },
   automationInput: { query: "", title: "", source: "", content: "" },
   currentRun: null,
   runDetail: null,
+  codeRoots: [],
+  composeDraft: null,
+  composeChanges: null,
   pendingTaskId: "",
   searchBusy: false,
   searchError: "",
@@ -250,11 +302,13 @@ export async function load() {
     api("agents"),
     api("workflows"),
     api("workflow-runs"),
+    api("automation/code-roots").catch(() => []),
   ])
-    .then(([agents, workflows, workflowRuns]) => ({
+    .then(([agents, workflows, workflowRuns, codeRoots]) => ({
       agents,
       workflows,
       workflowRuns,
+      codeRoots,
       automationError: "",
     }))
     .catch((e) => ({ automationError: e.message }));

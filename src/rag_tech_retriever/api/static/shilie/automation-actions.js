@@ -1,6 +1,6 @@
 /* 配置与执行控制器；请求锁、输入草稿和运行状态独立于视图。 */
-import { api, state, write } from "./data.js?v=119";
-import { flow } from "./automation-views.js?v=119";
+import { api, state, write, escapeHtml as esc } from "./data.js?v=129";
+import { flow, LOOP_TIMEOUT_MS } from "./automation-views.js?v=129";
 export function bindAutomation({ renderPage, refresh, toast }) {
   const dialog = (kind) => document.querySelector(`[data-auto-form="${kind}"]`);
   function openEditor(kind, row = null) {
@@ -37,6 +37,7 @@ export function bindAutomation({ renderPage, refresh, toast }) {
             mode: "text",
             result_limit: 5,
             generate: false,
+            workspace: { root: "", write: "each", shell: false },
           }
         : {
             title: "新的检索流程",
@@ -57,6 +58,13 @@ export function bindAutomation({ renderPage, refresh, toast }) {
       else input.value = value;
     }
     if (kind === "workflow") toggleKind(f);
+    if (kind === "agent") {
+      const ws = values.workspace || { root: "", write: "each", shell: false };
+      /* 工作区是嵌套对象，不能走上面的平铺赋值。 */
+      if (f.elements.workspace_root) f.elements.workspace_root.value = ws.root || "";
+      if (f.elements.workspace_write) f.elements.workspace_write.value = ws.write || "each";
+      if (f.elements.workspace_shell) f.elements.workspace_shell.checked = Boolean(ws.shell);
+    }
     if (kind === "workflow" && values.kind === "graph") {
       f.elements.graph_json.value = JSON.stringify({
         agent_id: values.agent_id || "", nodes: values.nodes || [], edges: values.edges || [],
@@ -64,8 +72,227 @@ export function bindAutomation({ renderPage, refresh, toast }) {
         node_timeout_seconds: values.node_timeout_seconds || 60,
       }, null, 2);
     }
+    if (kind === "workflow" && values.kind === "graph") renderGraphRows(f);
     d.showModal();
     f.elements.title.focus();
+  }
+  const NODE_TYPES = ["input", "retrieve", "tool", "agent", "approval", "merge"];
+  const graphRows = (form) => [...form.querySelectorAll("[data-graph-row]")];
+  /* 一个节点可以有多个上游（并行汇合）；每行渲染 n 个上游选择器。 */
+  const upstreamSelect = (ids, selected) =>
+    `<select aria-label="上游节点" data-graph-upstream><option value="">无（起点）</option>${ids
+      .map((id) => `<option value="${esc(id)}" ${id === selected ? "selected" : ""}>${esc(id)}</option>`)
+      .join("")}</select>`;
+  function renderGraphRows(form) {
+    const holder = form.querySelector("[data-graph-rows]");
+    if (!holder) return;
+    let parsed = {};
+    try { parsed = JSON.parse(form.elements.graph_json.value || "{}"); } catch { parsed = {}; }
+    const nodes = Array.isArray(parsed.nodes) ? parsed.nodes : [
+      { id: "input", type: "input" }, { id: "merge", type: "merge" },
+    ];
+    const edges = Array.isArray(parsed.edges) ? parsed.edges : [["input", "merge"]];
+    const upstreams = new Map();
+    for (const [from, to] of edges) {
+      if (!upstreams.has(to)) upstreams.set(to, []);
+      upstreams.get(to).push(from);
+    }
+    const ids = nodes.map((n) => n.id);
+    holder.innerHTML = nodes.map((node) => {
+      const chosen = upstreams.get(node.id) || [];
+      // 没有上游时留一个空选择器作为起点，其余按实际边数展开。
+      const slots = chosen.length ? chosen : [""];
+      return `<div class="graph-editor__row" data-graph-row><input aria-label="节点 ID" data-graph-id value="${esc(node.id || "")}" maxlength="41"><select aria-label="节点类型" data-graph-type>${NODE_TYPES.map((t) => `<option value="${t}" ${t === node.type ? "selected" : ""}>${t}</option>`).join("")}</select><input aria-label="指令或查询" data-graph-query value="${esc(node.query || "")}" maxlength="1000" placeholder="query">${slots.map((from) => upstreamSelect(ids, from)).join("")}<button type="button" class="small-button" data-action="auto-graph-add-upstream" title="增加一个上游节点，用于并行汇合">+ 上游</button><button type="button" class="small-button" data-action="auto-graph-remove">删除</button></div>`;
+    }).join("");
+  }
+  function syncGraphToJson(form) {
+    const nodes = graphRows(form).map((row) => {
+      const type = row.querySelector("[data-graph-type]").value;
+      const query = row.querySelector("[data-graph-query]").value.trim();
+      const node = { id: row.querySelector("[data-graph-id]").value.trim(), type };
+      if (query && ["agent", "retrieve"].includes(type)) node.query = query;
+      if (type === "merge") node.strategy = "concat";
+      if (type === "approval") node.message = "请确认继续执行";
+      if (type === "tool") node.tool_id = query;
+      return node;
+    });
+    const seen = new Set();
+    const edges = [];
+    for (const row of graphRows(form)) {
+      const to = row.querySelector("[data-graph-id]").value.trim();
+      if (!to) continue;
+      for (const select of row.querySelectorAll("[data-graph-upstream]")) {
+        const from = select.value;
+        if (!from || from === to) continue;
+        const key = `${from}->${to}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        edges.push([from, to]);
+      }
+    }
+    form.elements.graph_json.value = JSON.stringify({
+      agent_id: "", nodes, edges, max_parallel: 1, max_retries: 1, node_timeout_seconds: 60,
+    }, null, 2);
+  }
+  async function composeWorkflow(form) {
+    if (state.autoBusy) return;
+    const fd = new FormData(form);
+    state.autoBusy = true;
+    state.autoError = "";
+    renderPage({ restore: true });
+    try {
+      const composed = await api("automation/compose", {
+        goal: fd.get("goal"), mode: fd.get("mode"), template: fd.get("template"),
+        confirmation: "生成工作流并直接运行",
+      });
+      await refresh();
+      state.selectedFlow = composed.workflow_id;
+      write("flow", composed.workflow_id);
+      state.currentRun = await api(`workflows/${composed.workflow_id}/run`, {
+        version: composed.version, input: { query: fd.get("goal") },
+      });
+      await refresh();
+      toast(composed.mode === "model" ? "模型已生成并启动工作流" : "规则模式已生成并启动工作流");
+    } catch (e) {
+      state.autoError = e.message;
+      toast(e.message, true);
+    } finally {
+      state.autoBusy = false;
+      renderPage({ restore: true });
+    }
+  }
+  async function draftWorkflow(form) {
+    if (state.autoBusy) return;
+    const fd = new FormData(form);
+    state.autoBusy = true;
+    state.autoError = "";
+    renderPage({ restore: true });
+    try {
+      state.composeDraft = await api("automation/compose/draft", {
+        goal: fd.get("goal"), mode: fd.get("mode"), template: fd.get("template"),
+      });
+      state.composeChanges = null;
+      state.composeFeedback = "";
+      toast("草稿已生成，先看结构再决定保存");
+    } catch (e) {
+      state.autoError = e.message;
+      toast(e.message, true);
+    } finally {
+      state.autoBusy = false;
+      renderPage({ restore: true });
+    }
+  }
+  async function runTeam(form) {
+    if (state.teamBusy) return;
+    const data = new FormData(form);
+    const agentIds = data.getAll("agent_ids");
+    if (!agentIds.length) {
+      toast("至少选一个成员", true);
+      return;
+    }
+    state.teamBusy = true;
+    renderPage({ restore: true });
+    try {
+      const result = await api("automation/teams/run", {
+        agent_ids: agentIds,
+        task: data.get("task"),
+        mode: data.get("mode"),
+        max_rounds: Number(data.get("max_rounds")),
+        approved: data.has("approved"),
+      });
+      state.teamResult = result;
+      toast(`团队完成：${result.turns.length} 段发言，${result.model_calls} 次模型调用`);
+      await refresh();
+    } catch (e) {
+      toast(e.message, true);
+    } finally {
+      state.teamBusy = false;
+      renderPage({ restore: true });
+    }
+  }
+  async function runLoop(form) {
+    if (state.loopBusy) return;
+    const data = new FormData(form);
+    const root = String(data.get("root") || "").trim();
+    const task = String(data.get("task") || "").trim();
+    const gate = String(data.get("gate") || "").trim();
+    const engine = String(data.get("engine") || "opencode");
+    const tier = String(data.get("tier") || "patch");
+    /* 重绘会重建表单，输入留在 state 里回填。 */
+    state.loopInput = { root, task, gate, engine, tier };
+    if (!root || !task || !gate) {
+      toast("代码仓库、改动目标和门禁命令都要填", true);
+      return;
+    }
+    state.loopBusy = true;
+    renderPage({ restore: true });
+    try {
+      /* 默认是 30 秒，loop 是同步长任务，必须按档位放宽。 */
+      const result = await api(
+        "automation/loop/run",
+        { root, task, gate, engine, tier },
+        "POST",
+        LOOP_TIMEOUT_MS[tier] || LOOP_TIMEOUT_MS.patch,
+      );
+      state.loopResult = result;
+      toast(result.status === "success"
+        ? `自动编码通过：${result.rounds} 轮，${result.duration_ms} ms`
+        : `自动编码结束（${result.status}）：${result.reason || "未通过门禁"}`);
+      await refresh();
+    } catch (e) {
+      /* 页面停止等待不代表服务端失败，运行记录里仍会有结果。 */
+      toast(e.code === "TIMEOUT"
+        ? "页面已停止等待；服务端可能仍在运行，请到「运行记录」查看结果"
+        : e.message, true);
+    } finally {
+      state.loopBusy = false;
+      renderPage({ restore: true });
+    }
+  }
+  async function reviseDraft() {
+    if (state.autoBusy || !state.composeDraft) return;
+    const field = document.getElementById("compose-feedback");
+    const feedback = (field?.value || state.composeFeedback || "").trim();
+    if (!feedback) {
+      toast("先写清要改什么", true);
+      return;
+    }
+    state.composeFeedback = feedback;
+    state.autoBusy = true;
+    renderPage({ restore: true });
+    try {
+      const result = await api("automation/compose/revise", {
+        draft: state.composeDraft, feedback,
+      });
+      state.composeDraft = result.draft;
+      state.composeChanges = result.changes;
+      toast("已按意见修订，下方是结构差异");
+    } catch (e) {
+      toast(e.message, true);
+    } finally {
+      state.autoBusy = false;
+      renderPage({ restore: true });
+    }
+  }
+  async function saveDraft() {
+    if (state.autoBusy || !state.composeDraft) return;
+    state.autoBusy = true;
+    renderPage({ restore: true });
+    try {
+      const saved = await api("automation/compose/save", { draft: state.composeDraft });
+      state.composeDraft = null;
+      state.composeChanges = null;
+      state.composeFeedback = "";
+      await refresh();
+      state.selectedFlow = saved.workflow_id;
+      write("flow", saved.workflow_id);
+      toast(`已保存 ${saved.agents.length} 个 Agent 与流程`);
+    } catch (e) {
+      toast(e.message, true);
+    } finally {
+      state.autoBusy = false;
+      renderPage({ restore: true });
+    }
   }
   function toggleKind(form) {
     const kind = form.elements.kind.value, answer = kind === "answer", graph = kind === "graph";
@@ -75,6 +302,7 @@ export function bindAutomation({ renderPage, refresh, toast }) {
     form.elements.agent_id.required = answer;
     form.elements.chunk_size.required = !answer && !graph;
     form.elements.graph_json.required = graph;
+    if (graph && !graphRows(form).length) renderGraphRows(form);
   }
   async function execute(form) {
     if (state.autoBusy) return;
@@ -154,6 +382,11 @@ export function bindAutomation({ renderPage, refresh, toast }) {
         mode: fd.get("mode"),
         result_limit: Number(fd.get("result_limit")),
         generate: fd.has("generate"),
+        workspace: {
+          root: fd.get("workspace_root") || "",
+          write: fd.get("workspace_write") || "each",
+          shell: fd.has("workspace_shell"),
+        },
       };
     else if (fd.get("kind") === "graph") {
       try {
@@ -202,8 +435,59 @@ export function bindAutomation({ renderPage, refresh, toast }) {
     if (!b) return;
     const action = b.dataset.action.slice(5),
       id = b.dataset.id;
-    if (action === "new-agent") openEditor("agent");
-    if (action === "edit-agent")
+    if (action === "graph-add") {
+      const form = b.closest("form");
+      if (!form) return;
+      const holder = form.querySelector("[data-graph-rows]");
+      const ids = graphRows(form).map((r) => r.querySelector("[data-graph-id]").value);
+      const row = document.createElement("div");
+      row.className = "graph-editor__row";
+      row.setAttribute("data-graph-row", "");
+      row.innerHTML = `<input aria-label="节点 ID" data-graph-id value="step${ids.length}" maxlength="41"><select aria-label="节点类型" data-graph-type>${NODE_TYPES.map((t) => `<option value="${t}">${t}</option>`).join("")}</select><input aria-label="指令或查询" data-graph-query maxlength="1000" placeholder="query">${upstreamSelect(ids, "")}<button type="button" class="small-button" data-action="auto-graph-add-upstream" title="增加一个上游节点，用于并行汇合">+ 上游</button><button type="button" class="small-button" data-action="auto-graph-remove">删除</button>`;
+      holder.append(row);
+      return;
+    }
+    if (action === "graph-add-upstream") {
+      const row = b.closest("[data-graph-row]");
+      const form = row?.closest("form");
+      if (!row || !form) return;
+      const ids = graphRows(form).map((r) => r.querySelector("[data-graph-id]").value);
+      b.insertAdjacentHTML("beforebegin", upstreamSelect(ids, ""));
+      return;
+    }
+    if (action === "graph-remove") {
+      b.closest("[data-graph-row]")?.remove();
+      return;
+    }
+    if (action === "graph-sync") {
+      const form = b.closest("form");
+      if (form) {
+        syncGraphToJson(form);
+        toast("已同步到 DAG JSON");
+      }
+      return;
+    }
+    if (action === "draft") {
+      const form = b.closest("form") || document.getElementById("compose-form");
+      if (form) await draftWorkflow(form);
+      return;
+    }
+    if (action === "revise-draft") {
+      await reviseDraft();
+      return;
+    }
+    if (action === "save-draft") {
+      await saveDraft();
+      return;
+    }
+    if (action === "drop-draft") {
+      state.composeDraft = null;
+      state.composeChanges = null;
+      state.composeFeedback = "";
+      renderPage({ restore: true });
+      return;
+    }
+    if (action === "new-agent") openEditor("agent");    if (action === "edit-agent")
       openEditor(
         "agent",
         state.agents.find((a) => a.id === id),
@@ -263,6 +547,21 @@ export function bindAutomation({ renderPage, refresh, toast }) {
     }
   });
   document.addEventListener("submit", (event) => {
+    if (event.target.id === "compose-form") {
+      event.preventDefault();
+      composeWorkflow(event.target);
+      return;
+    }
+    if (event.target.id === "team-form") {
+      event.preventDefault();
+      runTeam(event.target);
+      return;
+    }
+    if (event.target.id === "loop-form") {
+      event.preventDefault();
+      runLoop(event.target);
+      return;
+    }
     if (event.target.matches(".automation-edit-form")) {
       event.preventDefault();
       saveEditor(event.target);
@@ -277,10 +576,17 @@ export function bindAutomation({ renderPage, refresh, toast }) {
     }
   });
   document.addEventListener("input", (event) => {
+    if (event.target.id === "compose-feedback")
+      state.composeFeedback = event.target.value;
     if (event.target.closest("#workflow-execute-form") && event.target.name)
       state.automationInput[event.target.name] = event.target.value;
+    if (event.target.closest("#loop-form") && event.target.name)
+      state.loopInput[event.target.name] = event.target.value;
   });
   document.addEventListener("change", async (event) => {
+    /* select 在部分浏览器只派发 change，这里补一次输入回填。 */
+    if (event.target.closest("#loop-form") && event.target.name)
+      state.loopInput[event.target.name] = event.target.value;
     if (
       event.target.name === "kind" &&
       event.target.closest(".automation-edit-form")

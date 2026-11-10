@@ -246,7 +246,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   margin: 2px 0;
   font-size: 13px;
@@ -256,13 +256,10 @@ kbd {
   font-size: 11px;
   color: #8b7866;
 }
+/* hover 只换极浅底色、不改字色；选中态统一由 [aria-current="page"] 表达。
+   删除 .active 那套并行状态：渲染层从来不写这个类名，留着只会误导。 */
 .nav-link:hover {
-  background: #f5efe9;
-}
-.nav-link.active {
-  background: #eee5dc;
-  color: #4a3f34;
-  font-weight: 600;
+  background: #f3ece5;
 }
 [data-layout="sidebar"] .sidebar {
   display: block;

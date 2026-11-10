@@ -302,7 +302,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   margin: 2px 0;
   font-size: 13px;
@@ -312,13 +312,10 @@ kbd {
   font-size: 11px;
   color: #8b7866;
 }
+/* hover 只换极浅底色、不改字色；选中态统一由 [aria-current="page"] 表达。
+   删除 .active 那套并行状态：渲染层从来不写这个类名，留着只会误导。 */
 .nav-link:hover {
-  background: #f5efe9;
-}
-.nav-link.active {
-  background: #eee5dc;
-  color: #4a3f34;
-  font-weight: 600;
+  background: #f3ece5;
 }
 [data-layout="sidebar"] .sidebar {
   display: block;
@@ -1846,16 +1843,17 @@ body[data-layout="sidebar"] #content {
   bottom: 0;
   left: 0;
   width: 242px;
-  padding: 22px 14px;
+  padding: 22px 14px 40px;
   background: #f9faf5;
   border-right: 1px solid #e1e6e1;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 body[data-layout="sidebar"] .sidebar {
   display: block;
 }
 .sidebar section {
-  margin-top: 24px;
+  margin-top: 16px;
 }
 .sidebar h2 {
   font-size: 12px;
@@ -1866,14 +1864,20 @@ body[data-layout="sidebar"] .sidebar {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 12px;
+  padding: 8px 12px;
   border-radius: 8px;
   font-size: 13px;
 }
-.nav-link[aria-current="page"],
+/* hover 与选中彻底分离：hover 只换底色、不碰字色；选中态额外加左侧色条，
+   弱底色在强光屏下也有确定落点，不会再出现"两个都像选中"。 */
 .nav-link:hover {
-  background: #efe8e1;
+  background: #f3ece5;
+}
+.nav-link[aria-current="page"] {
+  background: #efe2d2;
   color: #704417;
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 #b95b13;
 }
 /* 侧栏回收站：折叠入口 + 窄栏内的紧凑恢复列表。 */
 .sidebar-trash {
@@ -1892,14 +1896,16 @@ body[data-layout="sidebar"] .sidebar {
   background: #efe8e1;
   color: #704417;
 }
+/* 数字只做口径提示，不用高饱和实心圆抢当前页的注意力。 */
 .trash-badge {
   margin-left: auto;
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: #704417;
-  color: #fff;
+  background: transparent;
+  border: 1px solid #d8c9b8;
+  color: #8b7866;
   font-size: 11px;
   display: inline-flex;
   align-items: center;
@@ -8023,3 +8029,197 @@ body.wallpaper-active .sea-breeze { display: none; }
   .jobs-statistics > summary { cursor: pointer; padding-block: 0.65rem; font-weight: 600; }
   .jobs-statistics .jobs-funnel { margin-block: 0.5rem; }
 }
+
+/* 侧栏分组（navSections）：标题是可操作的按钮，展开/收起由 chevron 表达，
+   子项统一缩进与层级线，解决"标题 + 平铺 12 项"分不清层级的问题。
+   放在最后一个 CSS 分片，确保是最终生效的一套。 */
+.sidebar .nav-section { margin-top: 14px; }
+.nav-section__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: #7b726a;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.nav-section__toggle:hover { color: #704417; }
+.nav-section__toggle .icon { width: 15px; height: 15px; flex: none; }
+.nav-section__chevron { margin-left: auto; font-size: 14px; line-height: 1; }
+.nav-section__items {
+  margin-left: 18px;
+  padding-left: 10px;
+  border-left: 1px solid #e6ded4;
+}
+.nav-section__items .nav-link { margin: 1px 0; }
+.sidebar .sidebar-trash {
+  border-top: 1px solid #e6ded4;
+  padding-top: 10px;
+  margin-top: 18px;
+}
+
+/* 人物：一张卡记一个可修订的观察，不把特点写死成标签。 */
+.trait-list {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.trait-card {
+  border: 1px solid var(--line, #e4dcd0);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: #fffdfa;
+}
+.trait-card[data-valence="优势"] { border-inline-start: 3px solid #4f7a52; }
+.trait-card[data-valence="待改进"] { border-inline-start: 3px solid #b95b13; }
+.trait-card.is-archived { opacity: 0.66; }
+.trait-card h3 { margin: 0 0 6px; font-size: 15px; }
+.trait-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: #8b7866; }
+.trait-note { margin: 10px 0; font-size: 13px; line-height: 1.65; white-space: pre-wrap; }
+.trait-ops { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* 求职板块：公司流水线 4 阶段；个人简历、AI 优化、单表管理为并列 P1 页面。 */
+.job-flow__companies { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; align-items: center; }
+.job-flow__company {
+  border: 1px solid var(--line, #e4dcd0);
+  background: #fffdfa;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.job-flow__company[aria-pressed="true"] {
+  background: #efe2d2;
+  border-color: #b95b13;
+  color: #704417;
+  font-weight: 600;
+}
+.job-flow__stages { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 12px; }
+.job-flow__stage-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line, #e4dcd0);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.job-flow__stage-tab span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f0ebe5;
+  font-size: 11px;
+}
+.job-flow__stage-tab[aria-pressed="true"] { background: #f3ece5; color: #704417; border-color: #d8c9b8; }
+.job-flow__stage-tab[aria-pressed="true"] span { background: #b95b13; color: #fff; }
+.job-flow__stage { min-height: 180px; }
+.job-flow__heading { font-size: 14px; margin: 16px 0 8px; }
+.job-flow__grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.job-flow__card { border: 1px solid var(--line, #e4dcd0); border-radius: 12px; padding: 12px 14px; background: #fffdfa; }
+.job-flow__card h3 { margin: 0 0 6px; font-size: 14px; }
+.job-flow__meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: #8b7866; line-height: 1.6; }
+.job-flow__controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 12px; }
+.job-flow__analysis { margin-top: 20px; border-top: 1px solid var(--line, #e4dcd0); padding-top: 12px; }
+.job-flow__placeholder { margin-top: 20px; padding: 14px 16px; border: 1px dashed #d8c9b8; border-radius: 12px; background: #faf6f0; }
+.job-flow__placeholder h3 { margin: 0 0 6px; font-size: 14px; }
+.job-flow__placeholder p { margin: 0; font-size: 13px; line-height: 1.65; }
+.job-flow__manage { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 18px; font-size: 12px; color: #8b7866; }
+
+/* P0 求职板块的 P1 页签：比阶段标签更显著；简历页不显示公司栏。 */
+.job-flow__pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 12px;
+  border-bottom: 1px solid var(--line, #e4dcd0);
+  padding-bottom: 10px;
+}
+.job-flow__page-tab {
+  border: 1px solid var(--line, #e4dcd0);
+  background: #fffdfa;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.job-flow__page-tab[aria-pressed="true"] {
+  background: #704417;
+  border-color: #704417;
+  color: #fff;
+}
+.job-flow__page { min-height: 200px; }
+.job-flow__card p.settings-hint { margin: 6px 0 10px; }
+
+/* AI 生成入口、可视化 DAG 编排与简历优化草稿。 */
+.compose-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line, #e4dcd0);
+  border-radius: 12px;
+  background: #fffdfa;
+}
+.compose-form .form-field { flex: 1 1 260px; margin: 0; }
+.compose-form small { flex-basis: 100%; color: #8b7866; font-size: 12px; line-height: 1.6; }
+.graph-editor { margin-bottom: 12px; padding: 10px; border: 1px dashed #d8c9b8; border-radius: 10px; background: #faf6f0; }
+.graph-editor__head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.graph-editor__row { display: grid; grid-template-columns: 1fr 1fr 1.6fr 1fr auto; gap: 6px; margin-bottom: 6px; }
+.graph-editor__row input,
+.graph-editor__row select {
+  min-width: 0;
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 6px;
+  border: 1px solid var(--line, #e4dcd0);
+  border-radius: 6px;
+  background: #fff;
+}
+.graph-editor small { display: block; margin-top: 6px; font-size: 12px; color: #8b7866; }
+.resume-optimizer { margin-top: 14px; }
+.resume-optimizer__draft { margin-top: 16px; }
+.resume-optimizer__draft pre { max-height: 360px; overflow: auto; padding: 12px; border: 1px solid var(--line, #e4dcd0); border-radius: 10px; background: #fffdfa; font-size: 12px; }
+.prep-turn { border: 1px solid var(--line, #e4dcd0); border-radius: 12px; padding: 12px 14px; background: #fffdfa; }
+.prep-turn h3 { margin: 0 0 8px; font-size: 14px; }
+.prep-turn .form-field { margin: 0; }
+.draft-panel { margin: 16px 0; padding: 14px 16px; border: 1px solid var(--line, #e4dcd0); border-radius: 12px; background: #fffdfa; }
+.draft-panel h3 { margin: 0 0 6px; font-size: 13px; }
+.draft-panel ul,
+.draft-panel ol { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.7; }
+.draft-panel li small { display: block; color: #8b7866; font-size: 11px; }
+.draft-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 10px 0; }
+.draft-diff { margin: 8px 0 12px; padding: 10px 12px; border-radius: 10px; background: #faf6f0; font-size: 12px; line-height: 1.7; }
+.team-members { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+.team-member { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.team-member small { color: #8b7866; font-size: 11px; }
+.team-turns { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.7; }
+.team-turns li { margin-bottom: 8px; }
+.team-turns p { margin: 2px 0 0; white-space: pre-wrap; }
+
+/* 自动编码：同步长任务表单、每轮留痕与改动摘要。 */
+.loop-form .loop-wide { flex-basis: 100%; }
+.loop-metrics { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 8px 0 12px; font-size: 12px; color: #6b5c4d; }
+.loop-attempts { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.7; }
+.loop-attempts li { margin-bottom: 6px; }
+.loop-attempts small { display: block; color: #8b7866; white-space: pre-wrap; }
+.loop-diff { max-height: 260px; overflow: auto; margin: 8px 0; padding: 10px 12px; border-radius: 10px; background: #faf6f0; font-size: 12px; white-space: pre-wrap; }
