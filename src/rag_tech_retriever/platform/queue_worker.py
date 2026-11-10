@@ -116,8 +116,12 @@ class QueueWorker:
             except ValueError:
                 pass  # 非主线程装不了信号处理器
 
-    def run(self, max_tasks: int | None = None) -> int:
-        """持续领取并执行任务；返回处理过的任务数。"""
+    def run(self, max_tasks: int | None = None, *, stop_when_idle: bool = False) -> int:
+        """持续领取并执行任务；返回处理过的任务数。
+
+        stop_when_idle：队列空了就退出。--once 验证模式要用它，
+        否则队列空时 processed 永远是 0，循环条件恒真，会一直空转。
+        """
         LOGGER.info("队列 worker 启动：%s（轮询 %.1fs）", self.worker_id, self.poll_seconds)
         while not self._stop and (max_tasks is None or self.processed < max_tasks):
             try:
@@ -127,6 +131,9 @@ class QueueWorker:
                 time.sleep(self.poll_seconds)
                 continue
             if result is None:
+                if stop_when_idle:
+                    LOGGER.info("队列为空，worker 退出")
+                    break
                 time.sleep(self.poll_seconds)
                 continue
             self.processed += 1

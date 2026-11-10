@@ -83,6 +83,21 @@ def test_worker_returns_zero_when_queue_empty():
     assert worker.run(max_tasks=2) == 0
 
 
+def test_once_mode_exits_when_queue_is_empty():
+    """--once 的用途是「取一条就退出」，队列空时必须退出，不能空转。"""
+    class Service:
+        def __init__(self):
+            self.calls = 0
+
+        def run_once(self, worker_id, lease_seconds=900):
+            self.calls += 1
+
+    service = Service()
+    worker = QueueWorker(service, poll_seconds=0.2)
+    assert worker.run(max_tasks=1, stop_when_idle=True) == 0
+    assert service.calls == 1
+
+
 def test_worker_survives_task_exception():
     class Service:
         def __init__(self):

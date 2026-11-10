@@ -74,7 +74,9 @@ def main() -> int:
     worker = QueueWorker(service, worker_id=args.worker_id or None,
                          poll_seconds=args.poll, lease_seconds=args.lease)
     worker.install_signal_handlers()
-    worker.run(max_tasks=1 if args.once else (args.max_tasks or None))
+    # --once 要的是「取一条就退出」；队列空时也退出，不能一直空转。
+    worker.run(max_tasks=1 if args.once else (args.max_tasks or None),
+               stop_when_idle=args.once)
     store.close()
     return 0
 
