@@ -139,6 +139,18 @@ async page=>{
   await d.getByRole('button',{name:'保存',exact:true}).click();await d.waitFor({state:'detached'});
   await page.getByTitle('删除',{exact:true}).click();await page.locator('.diary-card').waitFor({state:'detached'});
   await page.getByRole('button',{name:'锁定',exact:true}).click();
+  // A failed first status probe must offer a bounded, explicit recovery path.
+  const privateStatusPattern='**/api/private/status';let statusFailures=0;
+  await page.route(privateStatusPattern,route=>{statusFailures++;return route.fulfill({
+   status:503,contentType:'application/json',body:JSON.stringify({detail:'隔离状态服务暂不可用',code:'STORAGE_UNAVAILABLE'})});});
+  await page.reload();await page.getByRole('alert').filter({hasText:'隔离状态服务暂不可用'}).waitFor();
+  check(await page.locator('#private-gate-form').count()===0,'Unknown private status opened setup');
+  await page.getByRole('button',{name:'重试',exact:true}).click();
+  await page.getByRole('alert').filter({hasText:'隔离状态服务暂不可用'}).waitFor();
+  check(statusFailures===2,'Private status retry loop or duplicate request');
+  await page.unroute(privateStatusPattern);
+  await page.getByRole('button',{name:'重试',exact:true}).click();await page.locator('.slide-thumb').waitFor();
+  check(await page.getByRole('alert').count()===0,'Recovered private status retained stale error');
   // Resize an already-bound slider; a fresh mobile page would miss stale travel geometry.
   await page.setViewportSize({width:390,height:844});
   const thumb=await page.locator('.slide-thumb').boundingBox(),track=await page.locator('.slide-track').boundingBox();

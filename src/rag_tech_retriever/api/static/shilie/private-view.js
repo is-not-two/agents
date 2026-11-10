@@ -379,11 +379,20 @@ function diaryViewInner() {
    再由 ensurePrivate() 拉数据后重绘。 */
 export function privateView() {
   if (v.configured === null) {
+    // 状态失败不等于尚未设置口令；保留错误，等待用户明确重试。
+    if (v.error) {
+      return shell(
+        '<div class="empty-panel"><h2>暂时无法检查私密状态</h2><p>服务恢复后可重试，不会更改私密设置。</p><button class="primary-button" data-private="retry-status">重试</button></div>',
+      );
+    }
     // 首次渲染时配置未知，异步取回后再重绘
     if (!v.probing) {
       v.probing = true;
       status()
-        .then(() => repaint())
+        .then(() => {
+          v.probing = false;
+          return repaint();
+        })
         .catch(() => {});
     }
     return shell(
@@ -583,6 +592,11 @@ export function bindPrivate(notify) {
     e.stopPropagation();
     const act = b.dataset.private,
       id = b.dataset.id;
+    if (act === "retry-status") {
+      if (v.probing) return;
+      v.error = "";
+      return refreshPrivate();
+    }
     if (act === "lock") return (lock(), refreshPrivate());
     if (act === "tab") {
       v.tab = b.dataset.tab;

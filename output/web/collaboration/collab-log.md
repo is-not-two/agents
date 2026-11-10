@@ -180,3 +180,83 @@
 - **测试环境部署**：`native-20261103-150405-2e625e6`（v105）已上线 8771，健康检查通过，数据 55 条记录 / 494 向量未变；venv 安装 OCR 依赖，实测 `OCR_AVAILABLE=True` 且识别出 `RESUME 2026 PYTHON`；字段加密实测落库为 `enc:v1:`、读取为明文，临时验收记录已清理；密钥指纹在两次部署间一致（继承成功）。清理 v103 之前 10 个 release，磁盘从 3.0G 恢复到 16.9G。正式 8770 仍为 v103，未推送。
 - **CI/CD**：新增 `.github/workflows/deploy-preview.yml`（workflow_dispatch，`confirm` 必须为 HEAD，需 secrets `SHILIE_SSH_KEY` / `SHILIE_KNOWN_HOSTS`）；正式环境保持人工确认。
 - **边界**：加密暂无密钥轮换与离线恢复演练；OCR 未做版面还原/表格结构化；未部署生产。
+
+
+## Round 14（2026-11-04）：自主维护 · 工作流策略非法类型崩溃（Codex，已收笔）
+
+- 开工：检查适用 AGENTS、DESIGN、本日志与 slow.on（不存在）；git 起始无差异，存在其他 Codex 进程但无未结束阶段，选独立后端领域校验范围，未覆盖已有改动。额度预检由父运行器负责，未启动 runner/app-server、未自行读取额度。
+- 先验收现有链路：`python -m pytest tests/test_graph_parallel.py tests/test_workflow_graph.py -q`：25 passed。继而用隔离内存存储和真实 automation 路由验证合法创建→执行→暂停审批→确认完成→重复确认 409（无真实数据库/模型/外部调用）。
+- 可复现缺陷：`on_error=[]`、`retry_on=[{}]`、`join_policy={}` 导致 set 成员判断抛 TypeError，POST 创建和 PUT 更新返回 500。方案比较：全局吞 TypeError 会隐藏程序错误，前端限制可被绕过；采用领域层字符串类型守卫，保留合法配置/默认值/错误文案，非法 JSON 返回 DomainError/400，不是新功能。
+- 实际修改：`src/rag_tech_retriever/domains/workflow_graph.py` 三处守卫；新增 `tests/test_workflow_graph_policy_validation.py`（非法 JSON 类型/未知字符串、合法策略/默认值、真实路由创建/更新无写入、审批链与陈旧确认）；`DESIGN.md` 追加决策。未改 UI、主题、规划结构、知识标签规范化或运行器；AI 维护不代表用户独立掌握。
+- 验证：新回归在原代码先 1 failed（TypeError）；修复后 `python -m pytest tests/test_workflow_graph_policy_validation.py tests/test_graph_parallel.py tests/test_workflow_graph.py -q`：54 passed；两文件 Ruff `All checks passed!`。错误类型矩阵包括 list/dict/null/bool/number/空串/未知串，拒绝时不修改输入。API 非法创建零记录，非法更新版本/数据不变。
+- 事务证据：相同 `probe.py FILE` 输入，BASELINE 三字段均 500、MODIFIED 均 400、独立副本实际运行 ROLLBACK.sh 后均 500，三个阶段均 exit 0、非法写入数均 0，合法审批链均完成且重放 409；恢复 SHA256 与原始文件完全相等，补丁可重建修复文件，工作区保留修复态。
+- 回滚编号：`20261104-160722-3f84d8ac`；修改前已保存 338 文件阶段源码快照。四角色在该阶段 `artifacts/MODIFIED_FILE.py`、`DIFF_FILE.patch`、`VERIFICATION.txt`、可执行 `ROLLBACK.sh`，另有原始文件和必要探针；不是新增交接文档。
+- 如实记录验证工具问题：初次隔离测试应用少注册 VersionConflict→409 处理器，审批重放断言失败；补齐与主应用一致的映射后重验通过，未误改产品。初始 PowerShell 编码/截断、rg 不在 PATH 与两条探索路径错误均已改用 UTF-8/原生定向发现/实际路径，原错误保留在 VERIFICATION.txt。
+- 局限：仅本机隔离路由与纯逻辑验收；未跑全量 pytest、真实 PostgreSQL事务、完整主应用鉴权限流或真实浏览器；其余私密滑块、规划交互、模型连接、知识录入未在本轮宣称通过。未部署、未接触真实个人数据/密钥/口令/账户/额度配置。
+- 下一项建议：另轮用隔离数据和真实浏览器回归人生规划「分叉→折叠展开→双击编辑→删除撤销→缩放自动居中」，只修复可复现问题；LEARN-001 继续留给用户，不提供答案。
+
+## Round 15（2026-11-05）：自主维护 · 人生规划隔离回归（Codex，无源码修改）
+
+- 开工核对：读取适用 AGENTS、DESIGN 与本日志；slow.on 不存在。存在其他 Codex 进程；起始已有 workflow_graph.py、策略测试、orbit-webgl.html 与 output 产物等未提交内容，全部保留。本轮承接上一轮建议，仅验收人生规划现有链路；不启动 runner/app-server、不自行读取额度，额度由父运行器负责。
+- 实测命令：`python output/playwright/maintenance-planning-20261105/probe.py`，exit 0，最终 **24 项断言通过**。真实 Edge 156.0.4314.58 使用独立浏览器上下文、随机回环端口与 run_id 身份核验；挂载当前工作区前端，调用现有 planning/history 路由和领域校验，底层为合成内存记录及历史替身，未实例化真实 RecordStore 或加载项目 .env。外部请求一律拦截，实际外部请求数 0。
+- 已验链路：新建主线→六次新增形成七卡分叉→主线向右/支线向下→双击不折叠且编辑保存成功→单击收起/展开→完成进度 1/7（14%）→删除分支→撤销恢复→140% 缩放后选中节点居中误差小于 2px→刷新保留折叠偏好。390px 无文档横向溢出；页面运行异常 0。截图已打开核对，橙白主题与金色主线连接保持。
+- 对抗验证：陈旧版本更新 409、未明确 cascade 的子树删除 400、支线下新增主线 400、外部前置依赖阻断删除预检和删除 400、陈旧撤销 409；逐次比较内存记录和版本历史，拒绝请求均无变化。HTTP 记录实际包含上述 400/409，不将它们误报成运行崩溃。
+- 定向单测：`.venv/Scripts/python.exe -m pytest tests/test_story_branches.py tests/test_workspace.py::test_derived_unlocking_and_done_status_are_not_persisted tests/test_workspace.py::test_invalid_dependency_rules_are_rejected -q`，**12 passed in 0.11s**，exit 0；未运行涉及真实数据库的 fixture。
+- 结果与局限：本链路未复现需自动修复的崩溃、数据错误或不可用功能，不修改 src/tests/config/DESIGN。390px 截图可见固定顶栏遮住规划标题上缘，作为普通体验建议供用户选择，不自动改布局。未验证真实 PostgreSQL 的事务/重启持久化、完整主应用鉴权限流、线上服务；本轮未覆盖私密滑块、模型连接、知识录入及工作流。未部署、未读写真实个人数据、私密口令、密钥、账户或模型设置；不把 AI 验收描述为用户已独立掌握。
+- 证据：`output/playwright/maintenance-planning-20261105/` 下的 `probe.py`、`results.json`、`browser-command.json`、`browser.stdout.txt`、`browser.stderr.txt`、`pytest-command.json`、`pytest.stdout.txt`、`pytest.stderr.txt`、`http.jsonl`、桌面/手机截图及合成状态。工具纠偏：初读编码与截断后改 UTF-8 定向读取；Node Playwright 查找失败（exit 1）且用户缓存读取被拒（exit 1），改用本机已安装的 Python Playwright，未安装依赖或绕过权限；错误 routes/plans.py 路径改为实际 planning.py；Git 的 NUL 排除文件失败（exit 1），改为本轮 output 内空文件后 status 成功（exit 0）。
+- 回滚编号：**无**（未修改产品源码，无需创建修复阶段或执行源码回滚）；既有 `20261104-160722-3f84d8ac` 阶段及其四角色原样保留，未重做上一轮修复。检查前后规划相关文件、DESIGN 及既有未提交源码共 11 个文件 SHA256 一致；仅向本日志追加本节并保存隔离验收证据。
+- 下一项小练习（供用户亲手完成，未代写）：给 `derive_plan` 的进度口径补参数化边界测试，覆盖空规划、三节点一项完成、全部完成；验收为 0%/33%/100%，并确认原输入不被添加派生字段。只补测试、不改业务规则；LEARN-001 标签中文分隔符规范化仍保留，不提供实现答案。
+
+## Round 16（2026-11-05）：自主维护 · 私密状态失败后的重试恢复（Codex）
+
+- 开工：读取适用 AGENTS、DESIGN 与本日志，slow.on 不存在。发现其他 Codex 进程；保留既有 workflow_graph.py、策略测试、orbit-webgl.html 及 output 未提交内容。只触碰无已有差异的私密前端与既有回归脚本，写入前逐文件核对阶段 SHA256，收尾再核对阶段仅三处源码/设计变动。额度由父运行器负责，未调用 runner/app-server，也未自行读取额度。
+- 先验收正常链路：真实 Edge 156.0.4314.58，独立上下文和随机回环端口（run_id 核验），挂载当前前端、合成状态/会话接口和空愿望/日记列表。部分拖动复位、桌面绑定后缩到 390px、87% 不解锁/90% 吸附解锁、纵向位移不离轨、pointercancel 不解锁、Home/End/ArrowRight、锁定及离开重进、会话 503 后重试、缺少口令时本地拦截和聚焦均通过。没有输入任何真实或合成口令，没有加载项目 .env、真实 RecordStore、vault、模型或个人数据。
+- 可复现缺陷：首次 `/api/private/status` 503 后 `configured=null`、`probing=true`，界面永久显示“正在检查私密状态”；服务恢复、离开重进也不再检查（状态请求计数 3→3），原版浏览器断言 exit 1。比较每次渲染/定时自动重试与显式重试，选显式重试以免后台循环；这是故障恢复，不扩展新模块。
+- 实际变动：`src/rag_tech_retriever/api/static/shilie/private-view.js` 在 `privateView` 未知状态分支显示错误与重试，请求结束释放 `v.probing`，`bindPrivate` 的 `retry-status` 清错后重新检查；`scripts/web_regression.js` 补失败→再次失败→服务恢复后重试的回归；`DESIGN.md` 追加依据。未改变口令/票据/88% 吸附、橙白主题、金色主线或规划结构，未实现 LEARN-001，也不将 AI 工程维护算作用户独立掌握。
+- 实际验证：`D:/Miniconda3/python.exe -X utf8 output/playwright/maintenance-private-20261105/probe.py` 工作区 **26 项断言通过，exit 0**；修改副本亦同。包括状态仍失败时只发一次请求、无自动重试循环、未知状态不误开口令设置、恢复后清错并出现滑块、状态重试不解锁也不读取列表。页面异常 0，外部请求 0，390px 无文档横向溢出；已打开失败/恢复截图核对，不借机修改既有视觉。
+- 针对性后端兼容验证：`.venv/Scripts/python.exe -m pytest tests/test_private_session.py::test_password_required_after_restart -q --basetemp <本轮 output 内唯一目录>`，**1 passed in 4.14s，exit 0**（用例自有临时 vault/合成口令，不是用户口令）。`node --check` 两个 JS 文件均 exit 0；`scripts/check_static_version.py` 实测 65 处均 v115，exit 0；完整 Docker/PG 回归脚本未运行，不宣称全量通过。
+- 回滚编号：`20261105-152902-5ea48a4c`，修改前保留 344 文件阶段源码快照。相同 `node status_probe.cjs FILE` 输入：BASELINE 持续加载、无重试/不恢复；MODIFIED 提供重试并恢复；独立修改副本实际执行 `ROLLBACK.sh` 后再次持续加载/不恢复，三探针均 exit 0，恢复 SHA256 与原始相同。DIFF_FILE 可重建修改副本，工作区已应用验证过的修改态；非本轮已有改动保持原样。
+- 四角色已逐一重开：`output/stages/20261105-152902-5ea48a4c/artifacts/MODIFIED_FILE.js`、`DIFF_FILE.patch`、`VERIFICATION.txt`、可执行 `ROLLBACK.sh`；绝对路径/哈希/字节数与字面 stdout/stderr/退出码见工具记录及 VERIFICATION。浏览器输入、结果、HTTP 状态与截图在现有 `output/playwright/maintenance-private-20261105/`，未创建交接文档。
+- 工具纠偏与局限：初读 PowerShell 编码/输出截断改 UTF-8 定向读取；首次快照 hash 键用了 POSIX 格式而记录为 Windows 格式，修正后才建立快照/写入。修改副本首跑选到无 Playwright 的 venv（exit 1），改为已安装的系统 Python；默认 pytest 临时目录权限拒绝（exit 1），改工作区唯一 basetemp 后通过。一次批量捕获在单测输出阶段未留下有效结果，未算完成，已显式重跑。均未安装依赖、绕过权限或修改产品来适配工具。
+- 边界：私密 UI 使用合成协议接口，不是实际后端加密认证/真实 PostgreSQL/重启持久化验收；单独后端测试仅覆盖已有临时会话用例。未部署、未访问线上服务、未改账户/额度/全局模型、未读取或修改用户私密口令与密钥、未向外部发送消息。未复验人生规划、模型连接、知识录入和工作流，不重复声明旧结果。
+- 下一项建议：另轮验收模型连接“加载→未配置提示→临时网络失败→重试保留未保存输入”，使用合成配置与本地协议替身，不修改全局模型、不做付费调用。LEARN-001 标签中文分隔符规范化继续留给用户亲手完成，不提供答案。
+
+
+## Round 17（2026-11-06）：自主维护 · 模型连接隔离回归（Codex，无源码修改）
+
+- 开工核对：读取适用 AGENTS、DESIGN 和本日志，slow.on 不存在；有其他 Codex/Node 进程，保留既有 DESIGN、web_regression.js、private-view.js、workflow_graph.py、策略测试、orbit-webgl.html 与 output 未提交内容。本轮承接 Round 16 建议，仅验收模型连接，不重做规划/私密修复。额度由父运行器检查，未启动 runner/app-server 或自行读取额度。
+- 实测命令：`python -X utf8 output/playwright/maintenance-model-20261106/probe.py`，exit 0，真实 Edge 156.0.4314.58 **27 项断言通过**。采用当前前端、实际 model_connection 路由和 ModelConnection 校验/测试/原子保存逻辑；连接文件仅在本轮 output 的唯一 fixture 目录。未保存时以空配置替身代替环境读取，并把 ConfigLoader.load_default 设为失败哨兵，避免加载项目 .env。模拟供应商只监听同一随机回环端口，使用固定无效合成凭据，run_id 核验实例身份；未实例化真实 RecordStore 或连接数据库。
+- 已验链路：未配置提示→空密钥本地拦截→显示/隐藏→双击测试仅一次请求→测试成功不保存→重新加载 503 保留未保存的三个输入→恢复后测试成功→供应商 401/畸形响应给安全错误→保存 503 保留输入→恢复后保存成功、完整端点规范化、密码框清空→空密钥更新保留旧值→测试已保存连接→刷新仅恢复公开元数据。初次读取 503 可手动重载恢复，无自动请求循环；陈旧保存/测试返回 409，配置不变且陈旧测试不访问供应商。
+- 对抗与目检：HTTP 实录为 14×200、1×401、2×409、3×503；供应商故意回显合成凭据时前端反馈不回显它。localStorage/sessionStorage 不含合成密钥、未捕获页面异常 0、外部浏览器请求 0；后端供应商地址由测试输入限定到本机回环。390px 无文档横向溢出；已打开手机表单和桌面读取失败截图核对，橙白主题保持。退出后 Get-Process 确认无 Python 测试服务残留。
+- 结果：未复现值得自动修复的崩溃、数据错误或不可用功能；**没有修改 src/tests/config/scripts/README/DESIGN**，仅新增 output 隔离证据并追加本节。回归及收尾核对的 **39 个文件**（前端 JS/CSS/index、模型路由/服务、既有未提交源码/设计）SHA256 一致。无新设计决策，无需改 DESIGN。
+- 证据：`output/playwright/maintenance-model-20261106/` 下 probe.py、results.json、browser-command.json、字面 browser.stdout.txt/browser.stderr.txt、server.stdout.txt/server.stderr.txt、http.jsonl、前后 SHA256、model-390.png、read-failure.png。均已重开核对。初始大段读取截断后改定向 UTF-8；错误 api.js 路径改实际 data.js。第一次追加日志因 PowerShell→Python 管道默认编码导致本轮中文变问号，重开立即发现，已仅替换本轮追加段，改用 .NET 原生 UTF-8 写入，原日志前 47564 字节校验不变；不把乱码记为交付完成。
+- 局限：未运行依赖真实 PostgreSQL 的 test_model_connection.py 或全量 pytest，未验完整主应用鉴权/限流、真实服务商连通性/计费、检索/Agent 消费新连接及服务重启持久化；刷新通过不等于重启通过。不宣称其他重点链路已验收。未部署、未触碰真实个人数据/私密口令/密钥/账户/额度/全局模型，未向外部发消息。
+- 回滚编号：**无**（产品源码未变，不创建虚假修复阶段）；已有 20261105-152902-5ea48a4c 和 20261104-160722-3f84d8ac 阶段保持不变，不重复宣称执行了旧回滚。
+- 下一项小练习（由用户亲手完成，未代写）：为 normalize_base 补纯函数参数化边界测试，覆盖完整聊天端点、末尾斜线、非法协议、地址携带账号或查询参数；验收为有效地址规范化且二次处理不变、非法地址抛 DomainError，全程不发 HTTP/不读 .env，只补测试不改规则。LEARN-001 中文标签分隔符练习继续保留，不提供实现答案；AI 验收不等于用户独立掌握。下一轮维护可另验知识录入失败重试和版本冲突，仍避开标签规范化。
+
+
+## Round 18（2026-11-09）：自主维护 · 知识保存错误提示崩溃（Codex）
+
+- 开工核对：读取适用 AGENTS、DESIGN 和本日志，slow.on 不存在；存在其他 Codex/Node 进程，保留全部既有未提交源码与设计。承接 Round 17 建议，仅验收知识录入、失败重试和版本冲突；未启动 runner/app-server，额度交父运行器检查。目标 app.js 原无差异，写入前核对 SHA256；阶段前后源码差异严格为下述三处，其他既有改动不覆盖。
+- 先验正常链路：新建 v1 → 编辑 v2 → 刷新读回 → 历史两版，七项断言通过。随后隔离存储返回 503，真实 Edge 157.0.4341.42 复现 `showFormError` 的 `insertBefore` 抛 NotFoundError，原错误无法显示；不是后端保存成功或验收通过。原因是 `.form-actions` 嵌套在 `.drawer-content` 中，不是 form 的直接子节点；409 冲突同样会被此异常中断。
+- 方案与实际改动：比较全局吞异常、移动全部表单结构、修正局部插入位置，选第三案。`src/rag_tech_retriever/api/static/shilie/app.js` 的 `showFormError` 改为 `actions.before(node)`，缺少操作区则 `form.append(node)`；新增 `tests/test_form_error_rendering.py` 覆盖嵌套/直接/缺少操作区三种结构及提示/复用/清错；`DESIGN.md` 仅追加依据。没有改后端保存协议、LEARN-001、主题或规划结构，也不将 AI 维护描述为用户已独立掌握。
+- 真实浏览器命令：`python -X utf8 output/playwright/maintenance-knowledge-20261109/probe.py`，最终 exit 0，**31 项断言通过**。当前前端 + 实际 knowledge/history 路由和领域校验，存储为带版本检查的合成内存替身；随机回环端口、run_id 校验、独立 Edge 上下文、外部请求阻断；ConfigLoader.load_default/真实 RecordStore 构造设失败哨兵，未加载项目 .env 或连接数据库。
+- 实际验证：503 后全部草稿保留、记录/历史不变、提交按钮释放且无自动请求循环；手动重试双击只写一次；另一客户端写新版后 409 保留草稿和服务端状态，“保留当前输入”回到编辑表单，“加载最新版本”后可重新编辑；空白/超长标题与非文本正文 400、非法版本 422，均无记录或历史变化；HTML-like 正文以文本呈现、搜索可用。390px 实际点击保存经历 503 → 草稿保留 → 手动重试成功（v4），错误/按钮可见且无文档横向溢出。页面未捕获异常 0、外部请求 0；已打开桌面和手机错误/冲突/编辑截图目检，橙白方向保持。
+- 定向检查：`.venv/Scripts/python.exe -X utf8 -m pytest tests/test_form_error_rendering.py tests/test_frontend_contract.py -q --basetemp output/playwright/maintenance-knowledge-20261109/pytest-final-tmp`，**6 passed in 0.13s，exit 0**；Ruff 新测试、`node --check .../app.js`、`scripts/check_static_version.py` 均 exit 0，65 处引用仍为 v115。未跑全量 pytest/完整 web_regression，也未验其他四条重点链路。
+- 回滚编号：`20261109-092903-9477df19`，修改前 344 文件源码快照保留。相同 `node form_error_probe.cjs FILE`：BASELINE 嵌套结构 NotFoundError/无提示 → MODIFIED 正常提示、更新、清错 → 独立修改副本实际执行 ROLLBACK.sh 后再现 NotFoundError，三次探针 exit 0，回滚 SHA256 与原始相同。DIFF_FILE 用 git apply 在独立目录重建候选且字节一致；工作区仍为修改态。完整阶段三文件回滚预检 can_apply=true，仅预检未应用；ROLLBACK.sh 只恢复指定 app.js 副本，不声称它恢复数据库或全部源码。
+- 四角色已逐一重开：`E:\project\agents\rag-tech-doc-retriever\output\stages\20261109-092903-9477df19\artifacts\MODIFIED_FILE.js`、同目录 `DIFF_FILE.patch`、`VERIFICATION.txt`、可执行 `ROLLBACK.sh`。精确绝对路径、哈希、字节数、命令、字面 stdout/stderr/退出码见 VERIFICATION 与 `output/playwright/maintenance-knowledge-20261109/role-manifest.json`；浏览器结果、HTTP、截图与前后 42 文件哈希均在该既有 output 体系内，未创建逐轮交接文档。
+- 工具纠偏与边界：初读编码/截断改定向 UTF-8；进程 CIM 被拒后仅看 Get-Process，未擅自终止其他进程；过宽 output 指令发现触及受限历史 tmp 后改精确祖先路径。首个浏览器探针因重复按钮定位与退出清理报错（exit 1），改精确按钮名与保护清理；最终 fixture 已 terminate/wait。Ruff 首次 I001 已修；静态检查捕获曾误把 GBK 按 UTF-8 解码，显式 UTF-8 重跑；系统 Python 无项目包的检查已改用 venv。各失败未冒充通过，原证据及纠偏保留在台账。
+- 局限与下一项：未验证真实 PostgreSQL 的版本并发/事务/重启持久化、完整主应用鉴权限流、线上服务，也不复述旧轮私密/规划/模型/工作流结果。未部署、未清库、未读写个人数据/私密口令/真实密钥/账号/额度/全局模型，未对外发消息。建议下轮用隔离数据和真实浏览器验收工作流“执行→人工确认→完成/重复确认拒绝”，只修可复现缺陷；LEARN-001 继续留给用户，不提供实现答案。
+
+## Round 19（2026-11-09）：自主维护 · 工作流审批隔离回归（Codex，无源码修改）
+
+- 开工核对：读取根及祖先适用 AGENTS、DESIGN 和本日志，承接 Round 18 建议，只验收工作流执行与人工确认。不重复修复既有策略类型边界、私密状态重试和知识错误提示。根目录及可访问协作范围未发现 slow.on；扩展扫描遇到 36 个历史 output 临时目录权限拒绝，未绕过权限，不宣称这些目录已检查。存在其他 Codex/Node/Python 进程，原有未提交文件全部保留；本轮证据使用独立 output/playwright/maintenance-workflow-20261109。额度由父运行器负责，未启动 runner/app-server、未自行读取额度。
+- 实测命令：`python -X utf8 output/playwright/maintenance-workflow-20261109/probe.py`，exit 0，真实 Edge 157.0.4341.42 **23 项断言通过**。当前工作区前端 + 实际 automation 路由、GraphWorkflowService 及领域校验；存储为带版本检查的合成内存替身，随机回环端口和 run_id 核验、独立浏览器上下文、拦截外部请求。ConfigLoader.load_default、真实 RecordStore 构造、psycopg2.connect 与供应商入口设失败哨兵，没有加载项目 .env、数据库、个人资料或模型连接。
+- 已验链路：真实点击创建审批 DAG → 执行 → 审批前暂停且下游未执行 → 批准后 merge 完成 → 重复确认 409 且记录/历史不变；刷新读回配置；确认接口注入 503 后记录与历史不变、按钮恢复、无请求循环，手动双击重试只发一次确认并完成原运行；拒绝后下游不执行，再次批准 409。工作流配置版本冻结、陈旧执行版本 409 不创建运行；approve 字符串/数组及 selected 布尔值均 422 且不修改数据。
+- 浏览器与对抗证据：工作流 HTTP 实录 **31×200、1×201、3×409、3×422、1×503**，未把预期拒绝当成崩溃；未捕获页面异常 0、外部浏览器请求 0。390px 真实点击运行列表打开详情，无文档横向溢出；已打开桌面失败提示和手机详情截图目检，未改橙白主题或规划结构。测试服务 terminate/wait 后仅剩开工前两个 Python 进程。
+- 定向单测：`.venv/Scripts/python.exe -X utf8 -m pytest tests/test_workflow_graph.py tests/test_workflow_graph_policy_validation.py tests/test_graph_parallel.py -q --basetemp output/playwright/maintenance-workflow-20261109/pytest-tmp`，**54 passed in 4.16s，exit 0**，stderr 空。未运行依赖真实 PostgreSQL 的 API 集成测试或全量 pytest，不宣称数据库事务/真实并发/重启持久化、完整主应用鉴权限流、线上服务及其他重点链路已验收。
+- 结果：未复现需自动修复的崩溃、数据错误或不可用功能，**没有修改 src/tests/scripts/config/README/DESIGN**。检查前后 **351 个源码/配置/文档文件 SHA256 一致**，既有未提交改动保持不变；没有新设计决策。仅保存隔离验收证据并追加本节。回滚编号：**无**（无产品修改，不创建虚假修复阶段）；已有阶段与四角色不改动、不重复宣称执行旧回滚。
+- 证据均已重开：上述 output 目录的 probe.py、results.json、browser/pytest-command.json、对应字面 stdout/stderr、http.jsonl、source-before/after.json、closeout.json、approval-failure.png、runs-390.png。初读大输出截断后改定向 UTF-8；探索时猜错 workflows.js/workflow-view.js/test_graph_reliability.py 路径，改用磁盘实际 automation-actions.js/automation-views.js/test_graph_parallel.py，未据此改产品。npx 可用、未找到全局 playwright-cli，沿用既有 Python Playwright 驱动真实 Edge，未安装依赖。
+- 仅列体验建议，不自动修改：DAG 审批复用了“待确认入库”标记，拒绝后的 toast 仍写“工作流已继续”；手机固定顶栏遮挡标题上缘，与既有规划检查相似。功能状态及下游阻断已实测，文案/布局调整留用户选择。
+- 下一项小练习（用户亲手完成，未代写）：给现有 ConfirmInput 补纯校验参数化测试，覆盖 approve 的布尔值与字符串/数字/数组、selected 中的布尔值；验收为仅接受约定类型、错误输入得到校验异常，全程不读配置、不连接数据库或发 HTTP，只补测试不改协议。LEARN-001 中文标签分隔符规范化继续保留，不提供答案，也不将 AI 工程验收算作用户独立掌握。后续维护可另验审批弹窗“取消”及陈旧待确认版本，不扩展新模块。
+- 边界：未部署发布、未清空数据库、未读写真实私密口令或密钥、未改账户/额度/全局模型，未对外发消息。

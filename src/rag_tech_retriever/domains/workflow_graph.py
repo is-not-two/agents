@@ -33,7 +33,8 @@ def _retry(raw: object, node_id: str) -> dict | None:
     if not isinstance(raw, dict) or set(raw) - {"max_attempts", "backoff_ms", "retry_on"}:
         raise DomainError(f"节点 {node_id} 重试配置包含无效字段")
     retry_on = raw.get("retry_on", ["timeout", "tool_error"])
-    if not isinstance(retry_on, list) or not retry_on or any(item not in RETRY_ON for item in retry_on):
+    if (not isinstance(retry_on, list) or not retry_on
+            or any(not isinstance(item, str) or item not in RETRY_ON for item in retry_on)):
         raise DomainError(f"节点 {node_id} 重试类型只支持 timeout/tool_error")
     return {
         "max_attempts": _integer(raw.get("max_attempts", 1), f"节点 {node_id} 最大尝试次数", 1, 4),
@@ -95,7 +96,7 @@ def _node(raw: object) -> dict:
         if raw.get("timeout_s") is not None:
             node["timeout_s"] = _integer(raw.get("timeout_s"), f"节点 {node_id} 超时", 5, 300)
         on_error = raw.get("on_error", "fail")
-        if on_error not in ON_ERROR:
+        if not isinstance(on_error, str) or on_error not in ON_ERROR:
             raise DomainError(f"节点 {node_id} 失败策略只支持 fail/continue/fallback")
         node["on_error"] = on_error
         fallback = raw.get("fallback")
@@ -211,7 +212,7 @@ def validate_graph_workflow(payload: dict) -> dict:
         # It is a fallback, not a reference requirement; the service resolves it.
         pass
     join_policy = payload.get("join_policy", "all_success")
-    if join_policy not in JOIN_POLICY:
+    if not isinstance(join_policy, str) or join_policy not in JOIN_POLICY:
         raise DomainError("汇合策略只支持 all_success/any_success")
     return {
         "title": text(payload.get("title", ""), "流程名称", 160, True),

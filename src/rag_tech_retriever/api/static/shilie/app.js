@@ -366,7 +366,8 @@ function showFormError(form, message = "") {
     node.className = "form-error error-text";
     node.setAttribute("role", "alert");
     const actions = form.querySelector(".form-actions");
-    form.insertBefore(node, actions || null);
+    if (actions) actions.before(node);
+    else form.append(node);
   }
   node.textContent = message;
 }
