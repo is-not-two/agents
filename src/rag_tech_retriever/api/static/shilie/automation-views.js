@@ -1,5 +1,5 @@
 /* 自动化纯视图：配置、实际运行与人工确认各自呈现。 */
-import { state } from "./data.js?v=129";
+import { state } from "./data.js?v=130";
 export const esc = (x) =>
   String(x ?? "").replace(
     /[&<>"']/g,
@@ -122,7 +122,76 @@ function loopPanel() {
     .join("");
   return `<form id="loop-form" class="compose-form loop-form"><h2 class="loop-wide">自动编码</h2><label class="form-field">代码仓库<select name="root" required ${disabled ? "disabled" : ""}>${options}</select></label><label class="form-field">执行器<select name="engine" ${disabled ? "disabled" : ""}>${engines}</select></label><label class="form-field">预算档位<select name="tier" ${disabled ? "disabled" : ""}>${tiers}</select></label><label class="form-field loop-wide">改动目标<textarea name="task" rows="2" required maxlength="2000" placeholder="例如：修复空列表时的除零错误">${esc(input.task || "")}</textarea></label><label class="form-field loop-wide">门禁命令（退出码决定是否通过）<input name="gate" required maxlength="1000" value="${esc(input.gate || "")}" placeholder="例如：python -m pytest tests/test_x.py -q"></label><div class="form-actions loop-wide"><button class="primary-button" type="submit" ${disabled ? "disabled" : ""}>${state.loopBusy ? "编码中…" : "开始自动编码"}</button></div><small class="loop-wide">模型只负责改代码，通过与否由门禁退出码决定；改动只发生在隔离副本，主仓库不受影响。接口同步执行，页面最多等待约 ${Math.round((LOOP_TIMEOUT_MS[input.tier] || LOOP_TIMEOUT_MS.patch) / 60000)} 分钟；若页面先停止等待，服务端仍可能继续，结果以「运行记录」为准。展示的是改动摘要，不是完整补丁。</small></form>`;
 }
+/* ---------- 任务队列 ---------- */
 const button = (label, action, cls = "small-button", attrs = "") =>  `<button class="${cls}" data-action="auto-${action}" ${attrs}>${label}</button>`;
+const queueStates = {
+  queued: "排队中",
+  running: "执行中",
+  succeeded: "已完成",
+  dead: "死信",
+  cancelled: "已取消",
+};
+const queueKinds = { loop: "自动编码", team: "多 Agent 团队" };
+function queueStat(label, value) {
+  return `<span><strong>${esc(value ?? 0)}</strong>${esc(label)}</span>`;
+}
+function queueSummary() {
+  const s = state.queueStats || {};
+  return `<div class="queue-stats">${queueStat("排队", s.queued)}${queueStat("执行中", s.running)}${queueStat("完成", s.succeeded)}${queueStat("死信", s.dead)}${queueStat("取消", s.cancelled)}</div>`;
+}
+function queueCheckpoint(job) {
+  const cp = job?.checkpoint;
+  if (!cp || !Object.keys(cp).length)
+    return '<p class="result-notice">还没有检查点：任务尚未开始，或执行器还没写回中间态。</p>';
+  return `<details class="run-context" open><summary>检查点</summary><pre class="preserve-lines">${esc(JSON.stringify(cp, null, 2))}</pre></details>`;
+}
+function queueRow(job) {
+  const active = job.status === "queued" || job.status === "running";
+  const error = job.last_error
+    ? `<p class="error-text">${esc(job.last_error)}</p>`
+    : "";
+  return `<article class="queue-job" data-queue-job="${esc(job.id)}"><header><span class="run-badge ${esc(job.status)}">${esc(queueStates[job.status] || job.status)}</span><strong>${esc(queueKinds[job.kind] || job.kind)}</strong><small>${esc(job.id.slice(0, 8))} · 尝试 ${esc(job.attempts)}/${esc(job.max_attempts)} · 优先级 ${esc(job.priority)}</small></header>${error}<div class="form-actions">${button("查看详情", "queue-detail", "small-button", `data-id="${esc(job.id)}"`)}${active ? button("取消", "queue-cancel", "small-button", `data-id="${esc(job.id)}"`) : ""}${job.status === "dead" ? button("重新入队", "queue-replay", "small-button", `data-id="${esc(job.id)}"`) : ""}</div></article>`;
+}
+function queueDetailPanel() {
+  const job = state.queueDetail;
+  if (!job) return "";
+  return `<section class="draft-panel queue-detail"><header class="workflow-heading"><h2>队列任务详情</h2><small>${esc(job.id.slice(0, 8))} · ${esc(queueKinds[job.kind] || job.kind)} · ${esc(queueStates[job.status] || job.status)}</small></header>${queueCheckpoint(job)}${job.payload ? `<details class="run-context"><summary>任务载荷</summary><pre class="preserve-lines">${esc(JSON.stringify(job.payload, null, 2))}</pre></details>` : ""}${job.result ? `<details class="run-context" open><summary>执行结果</summary><pre class="preserve-lines">${esc(JSON.stringify(job.result, null, 2))}</pre></details>` : ""}${job.last_error ? `<p class="error-text">${esc(job.last_error)}</p>` : ""}</section>`;
+}
+function queuePanel() {
+  const input = state.queueInput || {};
+  const roots = (state.codeRoots || []).filter((root) => root.writable);
+  const rootOptions = roots.length
+    ? roots
+        .map(
+          (root) =>
+            `<option value="${esc(root.name)}" ${root.name === input.root ? "selected" : ""}>${esc(root.title)}</option>`,
+        )
+        .join("")
+    : '<option value="">没有可写的代码仓库</option>';
+  const isLoop = input.kind !== "team";
+  const filters = [
+    ["", "全部"],
+    ["queued", "排队中"],
+    ["running", "执行中"],
+    ["succeeded", "已完成"],
+    ["dead", "死信"],
+    ["cancelled", "已取消"],
+  ]
+    .map(
+      ([value, label]) =>
+        `<option value="${value}" ${(state.queueFilter || "") === value ? "selected" : ""}>${label}</option>`,
+    )
+    .join("");
+  const jobs = state.queueJobs || [];
+  const list = jobs.length
+    ? `<div class="queue-list">${jobs.map(queueRow).join("")}</div>`
+    : '<p class="result-notice">队列里还没有任务。</p>';
+  const error = state.queueError
+    ? `<p class="error-text" role="alert">任务队列暂不可用：${esc(state.queueError)}</p>`
+    : "";
+  return `<form id="queue-form" class="compose-form queue-form"><h2 class="loop-wide">任务队列</h2>${error}${queueSummary()}<label class="form-field">任务类型<select name="kind" ${state.queueBusy ? "disabled" : ""}><option value="loop" ${isLoop ? "selected" : ""}>自动编码</option><option value="team" ${!isLoop ? "selected" : ""}>多 Agent 团队</option></select></label>${isLoop ? `<label class="form-field">代码仓库<select name="root" ${roots.length ? "" : "disabled"}>${rootOptions}</select></label><label class="form-field">执行器<select name="engine"><option value="opencode" ${input.engine === "opencode" ? "selected" : ""}>opencode（独立服务，多文件强）</option><option value="aider" ${input.engine === "aider" ? "selected" : ""}>aider（Python 包，单轮较慢）</option><option value="model" ${input.engine === "model" ? "selected" : ""}>模型直写整文件（无外部依赖）</option></select></label><label class="form-field">预算档位<select name="tier"><option value="patch" ${input.tier === "patch" ? "selected" : ""}>patch：6 轮 / 3 文件 / 80 行 / 10 分钟</option><option value="feature" ${input.tier === "feature" ? "selected" : ""}>feature：20 轮 / 10 文件 / 600 行 / 40 分钟</option><option value="epic" ${input.tier === "epic" ? "selected" : ""}>epic：60 轮 / 30 文件 / 3000 行 / 180 分钟</option></select></label>` : ""}<label class="form-field ${isLoop ? "loop-wide" : ""}">任务目标<textarea name="task" rows="2" required maxlength="2000" placeholder="${isLoop ? "例如：修复空列表时的除零错误" : "例如：评估候选人的能力缺口"}">${esc(input.task || "")}</textarea></label>${isLoop ? `<label class="form-field loop-wide">门禁命令（退出码决定是否通过）<input name="gate" maxlength="1000" value="${esc(input.gate || "")}" placeholder="例如：python -m pytest tests/test_x.py -q"></label>` : ""}<label class="form-field">最多尝试次数<input name="max_attempts" type="number" min="1" max="10" value="${esc(input.max_attempts || 3)}"></label><div class="form-actions loop-wide"><button class="primary-button" type="submit" ${state.queueBusy ? "disabled" : ""}>${state.queueBusy ? "入队中…" : "加入队列"}</button></div><small class="loop-wide">排队执行由后台 worker 领取，断开页面不影响任务；失败会按指数退避重试，超过上限进入死信，可重新入队。</small></form><section class="queue-panel"><header class="workflow-heading"><h2>队列任务</h2><label class="form-field queue-filter">状态<select data-queue-filter>${filters}</select></label></header>${list}</section>${queueDetailPanel()}`;
+}
+
 function unavailable() {
   return state.automationError
     ? `<p class="error-text" role="alert">${esc(state.automationError)}</p>${button("重新加载", "reload")}`
@@ -171,7 +240,7 @@ function result(row, confirmation = false) {
 export function workflowsPage() {
   const w = flow();
   const input = state.automationInput;
-  return `${unavailable()}<div class="module-toolbar"><p>选择流程，输入内容并执行。</p>${button("新建流程", "new-workflow", "primary-button")}</div><form id="compose-form" class="compose-form"><label class="form-field">一句话目标<input name="goal" required maxlength="1000" placeholder="例如：把这份 JD 拆成能力清单并给出学习计划"></label><label class="form-field">生成方式<select name="mode"><option value="rules">规则模式（本地可验证，不调用模型）</option><option value="model">模型模式（需服务器配置模型连接）</option></select></label><label class="form-field">任务类型<select name="template"><option value="generic">通用任务（规划 → 产出）</option><option value="code">代码改动（规划 → 实现 → 审查）</option></select></label><div class="form-actions"><button class="small-button" type="button" data-action="auto-draft" ${state.autoBusy ? "disabled" : ""}>先出草稿审一遍</button><button class="primary-button" type="submit" ${state.autoBusy ? "disabled" : ""}>AI 生成并运行</button></div><small>「先出草稿」不写库：可以先提意见让它改，看到结构差异后再保存。直接生成会立刻建 Agent 与流程并运行，写库节点仍需人工批准。</small></form>${draftPanel()}${teamPanel()}${loopPanel()}${loopResultPanel()}${w ? `<div class="automation-layout"><nav class="workflow-list" aria-label="已保存流程">${state.workflows.map((r) => `<button data-action="auto-select-flow" data-id="${r.id}" aria-pressed="${r.id === w.id}" ${state.autoBusy ? "disabled" : ""}><small>${r.data.kind === "answer" ? "检索与回答" : r.data.kind === "graph" ? "通用 DAG" : "知识处理"}</small><strong>${esc(r.data.title)}</strong><span>v${r.version}</span></button>`).join("")}</nav><section class="workflow-workspace"><header class="workflow-heading"><h2>${esc(w.data.title)}</h2>${button("编辑流程", "edit-workflow", "small-button", `data-id="${w.id}"`)}</header><ol class="pipeline-rail">${(w.data.kind === "graph" ? w.data.nodes.map((node) => node.id) : w.data.kind === "answer" ? ["接收问题", "检索依据", "可选 AI 回答"] : ["接收资料", "标题与字数切片", "人工确认入库"]).map((s, i) => `<li><span>0${i + 1}</span>${s}</li>`).join("")}</ol><form id="workflow-execute-form" data-workflow-id="${w.id}" aria-busy="${state.autoBusy}">${w.data.kind === "answer" || w.data.kind === "graph" ? `<p class="workflow-agent">${w.data.kind === "graph" ? "通用 DAG 流程，按节点顺序协调工具与 Agent" : "使用 " + esc(state.agents.find((a) => a.id === w.data.agent_id)?.data.title || "Agent 已不可用，请重新选择")}</p><label class="form-field">问题<input name="query" required maxlength="1000" value="${esc(input.query)}" placeholder="想从知识库或 Agent 中查找什么？"></label>` : `<div class="ingest-input-head"><label class="form-field">资料名称<input name="title" required maxlength="160" value="${esc(input.title)}"></label><label class="file-import small-button">读取 Markdown / TXT<input id="workflow-file" type="file" accept=".md,.txt,text/plain,text/markdown"></label></div><label class="form-field">来源（可选）<input name="source" maxlength="1000" value="${esc(input.source)}"></label><label class="form-field">资料正文<textarea name="content" rows="8" required maxlength="100000" placeholder="粘贴资料，或从本机读取文件">${esc(input.content)}</textarea></label><small>按标题和 ${w.data.chunk_size} 字切片，下一步由你确认。</small>`}<div class="form-actions"><button type="submit" class="primary-button" ${state.autoBusy ? "disabled" : ""}>${state.autoBusy ? "执行中…" : w.data.kind === "answer" ? "执行检索流程" : w.data.kind === "graph" ? "运行 DAG" : "解析并预览"}</button></div>${state.autoError ? `<p class="error-text" role="alert">${esc(state.autoError)}</p>` : ""}</form>${state.currentRun?.data.workflow_id === w.id ? result(state.currentRun, true) : ""}</section></div>` : empty()}`;
+  return `${unavailable()}<div class="module-toolbar"><p>选择流程，输入内容并执行。</p>${button("新建流程", "new-workflow", "primary-button")}</div><form id="compose-form" class="compose-form"><label class="form-field">一句话目标<input name="goal" required maxlength="1000" placeholder="例如：把这份 JD 拆成能力清单并给出学习计划"></label><label class="form-field">生成方式<select name="mode"><option value="rules">规则模式（本地可验证，不调用模型）</option><option value="model">模型模式（需服务器配置模型连接）</option></select></label><label class="form-field">任务类型<select name="template"><option value="generic">通用任务（规划 → 产出）</option><option value="code">代码改动（规划 → 实现 → 审查）</option></select></label><div class="form-actions"><button class="small-button" type="button" data-action="auto-draft" ${state.autoBusy ? "disabled" : ""}>先出草稿审一遍</button><button class="primary-button" type="submit" ${state.autoBusy ? "disabled" : ""}>AI 生成并运行</button></div><small>「先出草稿」不写库：可以先提意见让它改，看到结构差异后再保存。直接生成会立刻建 Agent 与流程并运行，写库节点仍需人工批准。</small></form>${draftPanel()}${teamPanel()}${loopPanel()}${loopResultPanel()}${queuePanel()}${w ? `<div class="automation-layout"><nav class="workflow-list" aria-label="已保存流程">${state.workflows.map((r) => `<button data-action="auto-select-flow" data-id="${r.id}" aria-pressed="${r.id === w.id}" ${state.autoBusy ? "disabled" : ""}><small>${r.data.kind === "answer" ? "检索与回答" : r.data.kind === "graph" ? "通用 DAG" : "知识处理"}</small><strong>${esc(r.data.title)}</strong><span>v${r.version}</span></button>`).join("")}</nav><section class="workflow-workspace"><header class="workflow-heading"><h2>${esc(w.data.title)}</h2>${button("编辑流程", "edit-workflow", "small-button", `data-id="${w.id}"`)}</header><ol class="pipeline-rail">${(w.data.kind === "graph" ? w.data.nodes.map((node) => node.id) : w.data.kind === "answer" ? ["接收问题", "检索依据", "可选 AI 回答"] : ["接收资料", "标题与字数切片", "人工确认入库"]).map((s, i) => `<li><span>0${i + 1}</span>${s}</li>`).join("")}</ol><form id="workflow-execute-form" data-workflow-id="${w.id}" aria-busy="${state.autoBusy}">${w.data.kind === "answer" || w.data.kind === "graph" ? `<p class="workflow-agent">${w.data.kind === "graph" ? "通用 DAG 流程，按节点顺序协调工具与 Agent" : "使用 " + esc(state.agents.find((a) => a.id === w.data.agent_id)?.data.title || "Agent 已不可用，请重新选择")}</p><label class="form-field">问题<input name="query" required maxlength="1000" value="${esc(input.query)}" placeholder="想从知识库或 Agent 中查找什么？"></label>` : `<div class="ingest-input-head"><label class="form-field">资料名称<input name="title" required maxlength="160" value="${esc(input.title)}"></label><label class="file-import small-button">读取 Markdown / TXT<input id="workflow-file" type="file" accept=".md,.txt,text/plain,text/markdown"></label></div><label class="form-field">来源（可选）<input name="source" maxlength="1000" value="${esc(input.source)}"></label><label class="form-field">资料正文<textarea name="content" rows="8" required maxlength="100000" placeholder="粘贴资料，或从本机读取文件">${esc(input.content)}</textarea></label><small>按标题和 ${w.data.chunk_size} 字切片，下一步由你确认。</small>`}<div class="form-actions"><button type="submit" class="primary-button" ${state.autoBusy ? "disabled" : ""}>${state.autoBusy ? "执行中…" : w.data.kind === "answer" ? "执行检索流程" : w.data.kind === "graph" ? "运行 DAG" : "解析并预览"}</button></div>${state.autoError ? `<p class="error-text" role="alert">${esc(state.autoError)}</p>` : ""}</form>${state.currentRun?.data.workflow_id === w.id ? result(state.currentRun, true) : ""}</section></div>` : empty()}`;
 }
 export function runsPage() {
   return `${unavailable()}<div class="module-toolbar"><p>保存最近执行的输入、配置版本、步骤和结果。列表显示最近 100 次。</p>${button("刷新记录", "reload")}</div>${state.workflowRuns.length ? `<div class="run-list">${state.workflowRuns.map((r) => `<button data-action="auto-open-run" data-id="${r.id}"><span class="run-badge ${r.data.status}">${labels[r.data.status]}</span><span><strong>${esc(r.data.title)}</strong><small>${new Date(r.data.started_at).toLocaleString()}</small></span><span>查看 →</span></button>`).join("")}</div>` : '<section class="empty-panel"><h2>还没有执行记录</h2><a href="#module/workflows" class="primary-button">执行第一条流程</a></section>'}${state.runDetail ? result(state.runDetail) : ""}`;

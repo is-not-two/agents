@@ -28,6 +28,10 @@ const loopSummary={status:'success',rounds:2,reason:'',green_points:1,engine:'op
  attempts:[{round:1,files:1,lines:2,passed:false,why:'FAILED tests/check.py::test_sum'},{round:2,files:2,lines:6,passed:true,why:'2 passed in 0.12s'}],
  diff:' mathx.py | 2 +-\n report.py | 4 +++-\n 2 files changed, 5 insertions(+), 1 deletion(-)'};
 const loopRow={id:'run-loop',kind:'workflow_run',version:1,data:{kind:'loop',status:'completed',title:'自动编码：修复求和',started_at:'2026-11-10T03:00:00Z',input:{task:'修复求和',gate:'pytest -q'},summary:loopSummary}};
+const queueJobs=[
+ {id:'job-queued-0001',kind:'loop',status:'queued',priority:50,attempts:0,max_attempts:3,next_run_at:'2026-11-10T04:00:00Z',last_error:'',created_at:'2026-11-10T03:50:00Z',updated_at:'2026-11-10T03:50:00Z'},
+ {id:'job-dead-0000002',kind:'loop',status:'dead',priority:50,attempts:3,max_attempts:3,next_run_at:'2026-11-10T04:10:00Z',last_error:'RuntimeError: gate exited 1',created_at:'2026-11-10T03:00:00Z',updated_at:'2026-11-10T03:40:00Z'}];
+const queueStats={queued:1,running:0,succeeded:2,dead:1,cancelled:0};
 const report={checks:[],errors:[],external:[]};
 const send=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json'});res.end(JSON.stringify(value));};
 const server=http.createServer(async(req,res)=>{
@@ -61,6 +65,16 @@ const server=http.createServer(async(req,res)=>{
   if(n==='workflow-runs')return send(res,200,[{id:'run-team',kind:'workflow_run',version:1,data:{kind:'team',status:'completed',title:'团队：评估候选人',started_at:'2026-11-10T02:30:00Z',mode:'group_chat',model_calls:3,approved:false,agents:[{id:'ux-agent',title:'Synthetic agent',tools:[]}],input:{task:'评估候选人'}}},loopRow]);
   if(n==='workflow-runs/run-loop')return send(res,200,loopRow);
   if(n==='automation/loop/run')return send(res,201,{id:'run-loop',version:1,task:body.task,gate:body.gate,...loopSummary});
+  if(n==='automation/queue/stats')return send(res,200,queueStats);
+  if(n==='automation/queue'&&req.method==='POST')return send(res,201,{id:'job-new-00000003',kind:body.kind,status:'queued',priority:body.priority,attempts:0,max_attempts:body.max_attempts,next_run_at:'2026-11-10T04:20:00Z',last_error:'',created_at:'2026-11-10T04:00:00Z',updated_at:'2026-11-10T04:00:00Z'});
+  if(n==='automation/queue'&&req.method==='GET'){
+   const status=u.searchParams.get('status');
+   return send(res,200,status?queueJobs.filter(j=>j.status===status):queueJobs);
+  }
+  if(n==='automation/queue/job-queued-0001')return send(res,200,{...queueJobs[0],payload:{root:'demo',task:'修复求和',gate:'pytest -q'},checkpoint:{kind:'loop',round:1,files:1,lines:4},result:null});
+  if(n==='automation/queue/job-dead-0000002')return send(res,200,{...queueJobs[1],payload:{root:'demo',task:'失败的改动'},checkpoint:{kind:'loop',round:2,files:0,lines:0},result:null});
+  if(n.endsWith('/cancel'))return send(res,200,{id:'job-queued-0001',kind:'loop',status:'cancelled',priority:50,attempts:0,max_attempts:3,next_run_at:'',last_error:'',created_at:'2026-11-10T03:50:00Z',updated_at:'2026-11-10T04:05:00Z'});
+  if(n.endsWith('/replay'))return send(res,200,{id:'job-dead-0000002',kind:'loop',status:'queued',priority:50,attempts:0,max_attempts:3,next_run_at:'2026-11-10T04:20:00Z',last_error:'',created_at:'2026-11-10T03:00:00Z',updated_at:'2026-11-10T04:10:00Z'});
   if(n==='workflow-runs/run-team')return send(res,200,{id:'run-team',kind:'workflow_run',version:1,data:{kind:'team',status:'completed',title:'团队：评估候选人',started_at:'2026-11-10T02:30:00Z',mode:'group_chat',model_calls:3,approved:false,agents:[{id:'ux-agent',title:'Synthetic agent',tools:[]}],input:{task:'评估候选人'},turns:[{author:'Synthetic agent',text:'缺口：缺少实验经验。'}],result:{answer:'终稿：缺口两项。'}}});
   if(n==='model-connection')return send(res,200,{configured:true,has_api_key:true});
   if(n==='capabilities')return send(res,200,{builtin_tools:[],http_tools:[],web_search:{enabled:false}});
@@ -272,6 +286,35 @@ try{
  check('loop-result-shows-rounds-and-diff',loopText.includes('第 2 轮')&&loopText.includes('git diff --stat')&&loopText.includes('50600'));
  const loopCalls=writes.filter(x=>x.path==='automation/loop/run');
  check('loop-run-sends-contract',loopCalls.length===1&&loopCalls[0].body.root==='demo'&&loopCalls[0].body.engine==='aider'&&loopCalls[0].body.tier==='feature'&&loopCalls[0].body.gate.includes('pytest'));
+ const queue=flowPage.locator('#queue-form');
+ check('queue-form-fields',await queue.locator('[name="kind"] option').count()===2&&await queue.locator('[name="root"] option').count()>=1&&await queue.locator('[name="task"]').count()===1&&await queue.locator('[name="gate"]').count()===1&&await queue.locator('[name="max_attempts"]').count()===1);
+ check('queue-stats-render',(await flowPage.locator('.queue-stats').innerText()).includes('死信'));
+ check('queue-list-renders-status-and-error',(await flowPage.locator('.queue-list').innerText()).includes('排队中')&&(await flowPage.locator('.queue-list').innerText()).includes('gate exited 1'));
+ await queue.locator('[name="root"]').selectOption('demo');
+ await queue.locator('[name="task"]').fill('把求和函数补上边界检查');
+ await queue.locator('[name="gate"]').fill('python -m pytest tests/check.py -q');
+ await queue.locator('[name="max_attempts"]').fill('2');
+ await queue.locator('button[type="submit"]').click();
+ await flowPage.waitForTimeout(150);
+ const queueCalls=writes.filter(x=>x.path==='automation/queue');
+ check('queue-enqueue-sends-contract',queueCalls.length===1&&queueCalls[0].body.kind==='loop'&&queueCalls[0].body.max_attempts===2&&queueCalls[0].body.payload.root==='demo'&&queueCalls[0].body.payload.gate.includes('pytest')&&queueCalls[0].body.payload.task.includes('边界检查'));
+ await flowPage.locator('[data-action="auto-queue-detail"][data-id="job-queued-0001"]').click();
+ await flowPage.waitForSelector('.queue-detail');
+ const queueDetailText=await flowPage.locator('.queue-detail').innerText();
+ check('queue-detail-shows-checkpoint',queueDetailText.includes('检查点')&&queueDetailText.includes('队列任务详情'));
+ check('queue-detail-shows-payload',(await flowPage.locator('.queue-detail').textContent()).includes('修复求和'));
+ await flowPage.locator('[data-action="auto-queue-cancel"][data-id="job-queued-0001"]').click();
+ await flowPage.waitForTimeout(150);
+ check('queue-cancel-calls-endpoint',writes.some(x=>x.path==='automation/queue/job-queued-0001/cancel'));
+ await flowPage.locator('[data-action="auto-queue-replay"][data-id="job-dead-0000002"]').click();
+ await flowPage.waitForTimeout(150);
+ check('queue-replay-calls-endpoint',writes.some(x=>x.path==='automation/queue/job-dead-0000002/replay'));
+ await flowPage.locator('[data-queue-filter]').selectOption('dead');
+ await flowPage.waitForTimeout(150);
+ check('queue-filter-narrows-list',(await flowPage.locator('.queue-job').count())===1&&(await flowPage.locator('.queue-list').innerText()).includes('gate exited 1'));
+ await queue.locator('[name="kind"]').selectOption('team');
+ await flowPage.waitForTimeout(120);
+ check('queue-team-kind-hides-code-fields',await flowPage.locator('#queue-form [name="gate"]').count()===0&&await flowPage.locator('#queue-form [name="root"]').count()===0);
  await flowPage.evaluate(()=>location.hash='#module/runs');
  await flowPage.waitForSelector('.run-list [data-action="auto-open-run"]');
  await flowPage.locator('[data-action="auto-open-run"][data-id="run-team"]').click();

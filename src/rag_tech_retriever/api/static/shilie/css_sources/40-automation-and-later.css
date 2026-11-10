@@ -4003,3 +4003,16 @@ body.wallpaper-active .sea-breeze { display: none; }
 .loop-attempts li { margin-bottom: 6px; }
 .loop-attempts small { display: block; color: #8b7866; white-space: pre-wrap; }
 .loop-diff { max-height: 260px; overflow: auto; margin: 8px 0; padding: 10px 12px; border-radius: 10px; background: #faf6f0; font-size: 12px; white-space: pre-wrap; }
+
+/* 任务队列：入队表单、状态计数、任务卡片与检查点。 */
+.queue-form .loop-wide { flex-basis: 100%; }
+.queue-stats { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 8px 0 12px; font-size: 12px; color: #6b5c4d; }
+.queue-stats strong { margin-right: 4px; color: #3f3529; font-size: 15px; }
+.queue-panel { margin-top: 16px; }
+.queue-filter { max-width: 160px; }
+.queue-list { display: grid; gap: 10px; margin-top: 10px; }
+.queue-job { padding: 12px 14px; border: 1px solid #e8ded0; border-radius: 12px; background: #fffdf9; }
+.queue-job header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.queue-job header small { color: #8b7866; }
+.queue-job .error-text { margin: 8px 0 0; }
+.queue-detail pre { max-height: 260px; overflow: auto; margin: 8px 0; padding: 10px 12px; border-radius: 10px; background: #faf6f0; font-size: 12px; white-space: pre-wrap; }

@@ -211,6 +211,14 @@ export const state = {
   loopBusy: false,
   loopResult: null,
   loopInput: { root: "", task: "", gate: "", engine: "opencode", tier: "patch" },
+  /* 任务队列：异步执行的入口。队列是服务端状态，页面只做展示与操作。 */
+  queueJobs: [],
+  queueStats: {},
+  queueDetail: null,
+  queueBusy: false,
+  queueError: "",
+  queueFilter: "",
+  queueInput: { kind: "loop", root: "", task: "", gate: "", engine: "opencode", tier: "patch", max_attempts: 3 },
   automationInput: { query: "", title: "", source: "", content: "" },
   currentRun: null,
   runDetail: null,
@@ -312,7 +320,15 @@ export async function load() {
       automationError: "",
     }))
     .catch((e) => ({ automationError: e.message }));
-  Object.assign(state, automation, {
+  /* 队列是可选能力：队列表尚未初始化时不让整个工作台报错，只提示不可用。 */
+  const queue = await Promise.all([
+    api("automation/queue?limit=30").catch((e) => ({ __error: e.message })),
+    api("automation/queue/stats").catch((e) => ({ __error: e.message })),
+  ]).then(([jobs, stats]) => {
+    if (jobs?.__error) return { queueJobs: [], queueStats: {}, queueError: jobs.__error };
+    return { queueJobs: jobs || [], queueStats: stats || {}, queueError: "" };
+  });
+  Object.assign(state, automation, queue, {
     knowledge,
     bookmarks,
     plans,

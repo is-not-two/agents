@@ -1,6 +1,6 @@
 /* 配置与执行控制器；请求锁、输入草稿和运行状态独立于视图。 */
-import { api, state, write, escapeHtml as esc } from "./data.js?v=129";
-import { flow, LOOP_TIMEOUT_MS } from "./automation-views.js?v=129";
+import { api, state, write, escapeHtml as esc } from "./data.js?v=130";
+import { flow, LOOP_TIMEOUT_MS } from "./automation-views.js?v=130";
 export function bindAutomation({ renderPage, refresh, toast }) {
   const dialog = (kind) => document.querySelector(`[data-auto-form="${kind}"]`);
   function openEditor(kind, row = null) {
@@ -247,6 +247,83 @@ export function bindAutomation({ renderPage, refresh, toast }) {
     } finally {
       state.loopBusy = false;
       renderPage({ restore: true });
+    }
+  }
+  /* ---------- 任务队列 ---------- */
+  async function loadQueueJobs(status) {
+    const query = status ? `?status=${encodeURIComponent(status)}&limit=30` : "?limit=30";
+    const [jobs, stats] = await Promise.all([
+      api("automation/queue" + query),
+      api("automation/queue/stats").catch(() => ({})),
+    ]);
+    state.queueJobs = jobs || [];
+    state.queueStats = stats || {};
+    state.queueError = "";
+  }
+  async function enqueueJob(form) {
+    if (state.queueBusy) return;
+    const data = new FormData(form);
+    const kind = String(data.get("kind") || "loop");
+    const task = String(data.get("task") || "").trim();
+    const maxAttempts = Number(data.get("max_attempts") || 3);
+    if (!task) {
+      toast("任务目标要填", true);
+      return;
+    }
+    /* 载荷字段与服务端 queue_worker 的执行器约定一致，不要各写一套。 */
+    const payload = { task };
+    if (kind === "loop") {
+      const root = String(data.get("root") || "").trim();
+      const gate = String(data.get("gate") || "").trim();
+      if (!root || !gate) {
+        toast("代码仓库与门禁命令都要填", true);
+        return;
+      }
+      payload.root = root;
+      payload.gate = gate;
+      payload.engine = String(data.get("engine") || "opencode");
+      payload.tier = String(data.get("tier") || "patch");
+    } else {
+      payload.agent_ids = state.agents.map((a) => a.id);
+      payload.mode = "group_chat";
+      payload.max_rounds = 6;
+      payload.approved = false;
+    }
+    state.queueInput = { ...state.queueInput, kind, task, max_attempts: maxAttempts };
+    state.queueBusy = true;
+    renderPage({ restore: true });
+    try {
+      const job = await api("automation/queue", {
+        kind,
+        payload,
+        max_attempts: maxAttempts,
+        priority: 50,
+      });
+      toast(`已入队：${job.id.slice(0, 8)}`);
+      await loadQueueJobs(state.queueFilter);
+    } catch (e) {
+      toast(e.message, true);
+    } finally {
+      state.queueBusy = false;
+      renderPage({ restore: true });
+    }
+  }
+  async function queueAction(action, id) {
+    if (!id) return;
+    try {
+      if (action === "queue-detail") {
+        state.queueDetail = await api("automation/queue/" + id);
+      } else if (action === "queue-cancel") {
+        await api("automation/queue/" + id + "/cancel", {});
+        toast("已取消");
+      } else if (action === "queue-replay") {
+        await api("automation/queue/" + id + "/replay", {});
+        toast("已重新入队");
+      }
+      await loadQueueJobs(state.queueFilter);
+      renderPage({ restore: true });
+    } catch (e) {
+      toast(e.message, true);
     }
   }
   async function reviseDraft() {
@@ -544,6 +621,11 @@ export function bindAutomation({ renderPage, refresh, toast }) {
       } finally {
         b.disabled = false;
       }
+      return;
+    }
+    if (action.startsWith("queue-")) {
+      await queueAction(action, id);
+      return;
     }
   });
   document.addEventListener("submit", (event) => {
@@ -560,6 +642,11 @@ export function bindAutomation({ renderPage, refresh, toast }) {
     if (event.target.id === "loop-form") {
       event.preventDefault();
       runLoop(event.target);
+      return;
+    }
+    if (event.target.id === "queue-form") {
+      event.preventDefault();
+      enqueueJob(event.target);
       return;
     }
     if (event.target.matches(".automation-edit-form")) {
@@ -582,11 +669,30 @@ export function bindAutomation({ renderPage, refresh, toast }) {
       state.automationInput[event.target.name] = event.target.value;
     if (event.target.closest("#loop-form") && event.target.name)
       state.loopInput[event.target.name] = event.target.value;
+    if (event.target.closest("#queue-form") && event.target.name)
+      state.queueInput[event.target.name] = event.target.value;
   });
   document.addEventListener("change", async (event) => {
     /* select 在部分浏览器只派发 change，这里补一次输入回填。 */
     if (event.target.closest("#loop-form") && event.target.name)
       state.loopInput[event.target.name] = event.target.value;
+    if (event.target.closest("#queue-form") && event.target.name)
+      state.queueInput[event.target.name] = event.target.value;
+    /* 切换任务类型会改变表单结构（团队不需要仓库与门禁），要重绘。 */
+    if (event.target.closest("#queue-form") && event.target.name === "kind") {
+      renderPage({ restore: true });
+      return;
+    }
+    if (event.target.matches("[data-queue-filter]")) {
+      state.queueFilter = event.target.value;
+      try {
+        await loadQueueJobs(state.queueFilter);
+      } catch (e) {
+        toast(e.message, true);
+      }
+      renderPage({ restore: true });
+      return;
+    }
     if (
       event.target.name === "kind" &&
       event.target.closest(".automation-edit-form")
