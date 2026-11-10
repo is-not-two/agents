@@ -19,7 +19,7 @@ from rag_tech_retriever.common.config_loader import ConfigLoader
 from rag_tech_retriever.platform.agent_capabilities import CapabilityService
 from rag_tech_retriever.platform.model_connection import ModelConnection
 from rag_tech_retriever.platform.queue_service import QueueService
-from rag_tech_retriever.platform.queue_worker import QueueWorker, build_executors
+from rag_tech_retriever.platform.queue_worker import QueueWorker, build_executors, load_env_file
 from rag_tech_retriever.platform.record_store import RecordStore
 from rag_tech_retriever.platform.search_service import SearchService
 from rag_tech_retriever.platform.task_queue_store import TaskQueueStore
@@ -33,7 +33,12 @@ def main() -> int:
     parser.add_argument("--max-tasks", type=int, default=0, help="最多处理多少个任务，0 表示不限")
     parser.add_argument("--once", action="store_true", help="只处理一条任务就退出")
     parser.add_argument("--worker-id", default="", help="worker 标识，默认用进程号")
+    parser.add_argument("--env-file", default="", help="环境文件路径，用于读取数据库连接等变量")
     args = parser.parse_args()
+
+    if args.env_file:
+        loaded = load_env_file(Path(args.env_file).expanduser())
+        print(f"已从环境文件读取 {loaded} 个变量：{args.env_file}")
 
     root = Path(args.root).expanduser().resolve() if args.root else Path(__file__).resolve().parents[1]
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")

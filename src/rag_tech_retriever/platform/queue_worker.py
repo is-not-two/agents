@@ -22,6 +22,27 @@ from rag_tech_retriever.platform.team_service import TeamService
 LOGGER = logging.getLogger("shilie.queue")
 
 
+def load_env_file(path: Path) -> int:
+    """把 KEY=VALUE 环境文件读进 os.environ；已存在的变量不覆盖。
+
+    worker 常常在命令行或 systemd 之外启动，拿不到服务进程里的数据库连接参数；
+    让它显式读同一个环境文件，比把连接串写进命令行安全。
+    """
+    if not path.is_file():
+        return 0
+    loaded = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if key and key not in os.environ:
+            os.environ[key] = value.strip().strip('"').strip("'")
+            loaded += 1
+    return loaded
+
+
 def build_executors(*, store: Any, capabilities: Any, connection: Any,
                     base: Path) -> dict[str, Callable]:
     """构造任务执行器：团队编排与自动编码循环。
