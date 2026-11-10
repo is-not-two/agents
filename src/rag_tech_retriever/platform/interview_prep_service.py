@@ -11,6 +11,7 @@ from pathlib import Path
 
 from rag_tech_retriever.common.config_loader import PROJECT_ROOT, load_yaml_mapping
 from rag_tech_retriever.common.provider import ProviderError, post_chat
+from rag_tech_retriever.domains.interview_evaluation import score_answers
 from rag_tech_retriever.domains.interview_prep import (
     FROZEN_MODES,
     validate_answers,
@@ -192,4 +193,28 @@ class InterviewPrepService:
         data = validate_interview_prep(row.get("data", {}))
         for item in validate_answers(data["turns"], answers):
             data["turns"][item["index"]]["answer"] = item["answer"]
+        return self.store.save("interview_prep", data, record_id, version)
+
+    def evaluate(self, record_id, version, source="rules") -> dict:
+        """确定性规则评分；模型评分未启用时明确拒绝，不伪造 AI 结论。"""
+        if source != "rules":
+            raise DomainError("模型评分尚未启用，本批只提供确定性规则评分")
+        try:
+            row = self.store.get(record_id)
+        except RecordMissing as exc:
+            raise DomainError("模拟面试会话不存在") from exc
+        if row.get("kind") != "interview_prep":
+            raise DomainError("记录不是模拟面试会话")
+        data = validate_interview_prep(row.get("data", {}))
+        if not any(turn["answer"].strip() for turn in data["turns"]):
+            raise DomainError("请先至少作答一题再评分")
+        try:
+            lead = self.store.get(data["lead_id"])
+        except RecordMissing as exc:
+            raise DomainError("关联岗位不存在") from exc
+        result = score_answers(
+            data["turns"], str(lead["data"].get("jd_text", "")),
+            self.config.get("rubric", {}),
+        )
+        data["evaluation"] = result
         return self.store.save("interview_prep", data, record_id, version)

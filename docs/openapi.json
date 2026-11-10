@@ -325,6 +325,25 @@
         "title": "DecisionInput",
         "type": "object"
       },
+      "EvaluateInput": {
+        "properties": {
+          "source": {
+            "default": "rules",
+            "title": "Source",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "EvaluateInput",
+        "type": "object"
+      },
       "ExecuteInput": {
         "additionalProperties": false,
         "properties": {
@@ -2858,6 +2877,55 @@
           }
         },
         "summary": "Submit Answers"
+      }
+    },
+    "/api/interview-prep/{record_id}/evaluate": {
+      "post": {
+        "operationId": "evaluate_api_interview_prep__record_id__evaluate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Evaluate"
       }
     },
     "/api/jobs": {

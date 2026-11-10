@@ -28,6 +28,11 @@ class AnswersInput(BaseModel):
     answers: list[AnswerItem] = Field(min_length=1)
 
 
+class EvaluateInput(BaseModel):
+    version: int = Field(ge=1)
+    source: str = "rules"
+
+
 def create_router(context: WorkspaceContext) -> APIRouter:
     router = APIRouter()
     store = context.store
@@ -60,5 +65,9 @@ def create_router(context: WorkspaceContext) -> APIRouter:
             record_id, payload.version,
             [item.model_dump() for item in payload.answers],
         )
+
+    @router.post("/api/interview-prep/{record_id}/evaluate", response_model=RecordOut)
+    def evaluate(record_id: str, payload: EvaluateInput) -> dict:
+        return service.evaluate(record_id, payload.version, payload.source)
 
     return router

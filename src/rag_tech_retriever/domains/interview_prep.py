@@ -65,6 +65,10 @@ def validate_interview_prep(payload: dict) -> dict:
     audio = payload.get("audio", {})
     if not isinstance(audio, dict) or len(json.dumps(audio, ensure_ascii=False)) > 4000:
         raise DomainError("语音参数必须是受限对象")
+    evaluation = payload.get("evaluation", {})
+    if (not isinstance(evaluation, dict)
+            or len(json.dumps(evaluation, ensure_ascii=False)) > 8000):
+        raise DomainError("评分结果必须是受限对象")
     return {
         "title": text(payload.get("title", ""), "会话标题", 160, True),
         "company": text(payload.get("company", ""), "公司", 160),
@@ -75,4 +79,5 @@ def validate_interview_prep(payload: dict) -> dict:
         "turns": turns,
         "notes": text(payload.get("notes", ""), "会话备注", 10000),
         "audio": deepcopy(audio),
+        "evaluation": deepcopy(evaluation),
     }
