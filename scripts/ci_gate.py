@@ -39,6 +39,20 @@ PURE_LOGIC_TESTS = [
     "tests/test_wheel_assets.py",
     "tests/test_release_fixture_hashes.py",
     "tests/test_private_backup_preflight.py",
+    "tests/test_self_traits.py",
+    "tests/test_workflow_composer.py",
+    "tests/test_code_workspace.py",
+    "tests/test_resume_optimizer.py",
+    "tests/test_kind_migration.py",
+    "tests/test_interview_prep.py",
+    # 未安装 agent-framework 时整文件跳过；装了的环境（Python 3.11+）跑真实编排。
+    "tests/test_maf_runtime.py",
+    "tests/test_team_service.py",
+    "tests/test_coding_loop.py",
+    "tests/test_model_attempt.py",
+    "tests/test_aider_attempt.py",
+    "tests/test_opencode_attempt.py",
+    "tests/test_loop_service.py",
 ]
 
 
