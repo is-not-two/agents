@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import shlex
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 from rag_tech_retriever.domains.life_planning import DomainError
@@ -19,6 +20,35 @@ from rag_tech_retriever.platform.opencode_attempt import OpenCodeAttempt
 
 ENGINES = ("opencode", "aider", "model")
 TIERS = ("patch", "feature", "epic")
+
+
+def application_root(exports: Path | None = None) -> Path:
+    """从导出目录往上找应用根：含 src/rag_tech_retriever 的那一层。
+
+    导出目录指向 data/local/exports 之类，不能靠 parent 猜深度。
+    """
+    base = Path(exports) if exports is not None else Path.cwd()
+    for candidate in [base, *base.parents]:
+        if (candidate / "src/rag_tech_retriever").is_dir():
+            return candidate
+    return base
+
+
+def build_loop_service(store, connection, base: Path) -> LoopService:
+    """按部署形态构造循环服务。
+
+    opencode 的二进制、HOME 与监督脚本位置与服务进程的沙箱强相关，
+    接口与 worker 必须用同一份装配，否则两条路径的行为会不一致。
+    """
+    root = application_root(base)
+    return LoopService(
+        store, connection,
+        # 服务开了 InaccessiblePaths=/opt/shilie，二进制要放在能访问的位置。
+        opencode_bin=os.environ.get("OPENCODE_BIN", "/usr/local/bin/opencode"),
+        # PrivateTmp 与 ProtectSystem 会挡住 /tmp，HOME 必须落在可写目录。
+        opencode_home=str(root / "data/local/opencode-home"),
+        supervisor_script=str(root / "scripts/opencode_supervisor.sh"),
+    )
 
 
 class LoopService:
@@ -51,7 +81,13 @@ class LoopService:
         return EditingModel(config, worktree, task, readonly=readonly)
 
     def run(self, repo: Path, task: str, gate: str, engine: str, tier: str,
-            writable: bool = True) -> dict:
+            writable: bool = True,
+            progress: Callable[[dict], None] | None = None) -> dict:
+        """跑一次自动编码循环。
+
+        progress 每轮回调一次，供队列把中间态写进库：编码循环要跑几分钟，
+        进程被杀或机器重启时，靠它才能看出已经做到第几轮。
+        """
         if engine not in ENGINES:
             raise DomainError("不支持的执行器")
         if tier not in TIERS:
@@ -76,7 +112,7 @@ class LoopService:
         started = time.time()
         diff = ""
         try:
-            result = loop.run(worker.attempt)
+            result = loop.run(worker.attempt, progress=progress)
             # 必须在副本被删掉之前取 diff。
             diff = self._diff(result, worktree)
         finally:

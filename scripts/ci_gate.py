@@ -53,6 +53,8 @@ PURE_LOGIC_TESTS = [
     "tests/test_aider_attempt.py",
     "tests/test_opencode_attempt.py",
     "tests/test_loop_service.py",
+    "tests/test_task_queue.py",
+    "tests/test_queue_worker.py",
 ]
 
 

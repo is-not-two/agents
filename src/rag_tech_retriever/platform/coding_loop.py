@@ -343,14 +343,27 @@ class CodingLoop:
     # ---------- 主循环 ----------
 
     def run(self, attempt: Callable[[AttemptContext], None], *,
-            milestone_done: Callable[[int], bool] | None = None) -> LoopResult:
-        """驱动循环，直到通过、预算耗尽或连续死路。"""
+            milestone_done: Callable[[int], bool] | None = None,
+            progress: Callable[[dict], None] | None = None) -> LoopResult:
+        """驱动循环，直到通过、预算耗尽或连续死路。
+
+        progress 每轮结束回调一次，用于把中间态写进外部存储：
+        长任务跑一半进程被杀，靠它才能看出已经做到哪一步。
+        """
         self.prepare()
         rounds_used = 0
         attempts: list[Attempt] = []
         feedback = ""
         stuck_at_green = 0
         last_signature = ""
+
+        def report() -> None:
+            """把本轮结果告诉外部：写检查点、让长任务可被中途查看。"""
+            if progress is None or not attempts:
+                return
+            item = attempts[-1]
+            progress({"round": item.round_no, "files": item.files, "lines": item.lines,
+                      "passed": item.passed, "reason": item.output_tail[-300:]})
 
         while rounds_used < self.budget.rounds:
             if (self.clock() - self._started) / 60 > self.budget.minutes:
@@ -370,6 +383,7 @@ class CodingLoop:
                 self._rollback(green)
                 message = f"本轮执行异常：{exc}"[:800]
                 attempts.append(Attempt(rounds_used, 0, 0, False, "error", message))
+                report()
                 feedback = message
                 stuck_at_green = stuck_at_green + 1 if last_signature == "error" else 0
                 last_signature = "error"
@@ -381,6 +395,7 @@ class CodingLoop:
                 self._rollback(green)
                 message = "检测到绕过校验的写法，本轮作废：" + "；".join(violations[:4])
                 attempts.append(Attempt(rounds_used, files, lines, False, "policy", message))
+                report()
                 feedback = message + "\n请改实现本身，不要替换 sys.exit / 内建 / 启动钩子。"
                 stuck_at_green = stuck_at_green + 1 if last_signature == "policy" else 1
                 last_signature = "policy"
@@ -389,6 +404,7 @@ class CodingLoop:
                 self._rollback(green)
                 attempts.append(Attempt(rounds_used, files, lines, False, "budget",
                                         f"改动超限：{files} 文件 / {lines} 行"))
+                report()
                 return LoopResult("budget", rounds_used, self.green_points, attempts,
                                   f"单轮改动超限（{files} 文件 / {lines} 行）")
 
@@ -396,6 +412,7 @@ class CodingLoop:
             signature = self._diff_signature()
             attempts.append(Attempt(rounds_used, files, lines, passed,
                                     signature if not passed else "green", output))
+            report()
             if passed:
                 note = f"（{files} 文件 / {lines} 行）"
                 self._commit_green(rounds_used, note)

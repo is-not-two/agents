@@ -40,6 +40,7 @@ from rag_tech_retriever.api.routes import notifications as notification_routes
 from rag_tech_retriever.api.routes import operations as operations_routes
 from rag_tech_retriever.api.routes import private as private_routes
 from rag_tech_retriever.api.routes import prompts as prompt_routes
+from rag_tech_retriever.api.routes import queue as queue_routes
 from rag_tech_retriever.api.routes import resume_optimizer as resume_optimizer_routes
 from rag_tech_retriever.api.routes import search as search_routes
 from rag_tech_retriever.api.routes import self_traits as self_trait_routes
@@ -460,6 +461,7 @@ def create_app(
         self_trait_routes,
         resume_optimizer_routes,
         interview_prep_routes,
+        queue_routes,
     ):
         application.include_router(module.create_router(context))
 

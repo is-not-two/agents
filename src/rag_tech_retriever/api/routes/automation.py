@@ -1,6 +1,5 @@
 """自动化路由：配置 CRUD、执行、运行详情和人工确认；执行规则在编排层。"""
 
-import os
 from pathlib import Path
 from typing import Literal
 
@@ -14,7 +13,7 @@ from rag_tech_retriever.api.dependencies import WorkspaceContext
 from rag_tech_retriever.api.models import RecordInput, RecordOut
 from rag_tech_retriever.domains.automation import validate_agent
 from rag_tech_retriever.domains.life_planning import DomainError
-from rag_tech_retriever.platform.loop_service import LoopService
+from rag_tech_retriever.platform.loop_service import LoopService, build_loop_service
 from rag_tech_retriever.platform.record_store import RecordMissing
 from rag_tech_retriever.platform.team_service import TeamService
 from rag_tech_retriever.platform.workflow_composer import CONFIRMATION, WorkflowComposer
@@ -115,18 +114,9 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     def _loop_service() -> LoopService:
         # 服务的可写路径被 systemd 限制在 data/local、output 等目录内，
         # 所以 opencode 的 HOME 必须落在 data/local 下（放 /tmp 会被 PrivateTmp 藏起来）。
-        exports = getattr(context, "exports", None)
-        # exports 指向 data/local/exports 之类，不能靠 parent 猜，往上找到含 src 的应用根。
-        base = Path(exports) if exports is not None else Path.cwd()
-        for candidate in [base, *base.parents]:
-            if (candidate / "src/rag_tech_retriever").is_dir():
-                base = candidate
-                break
-        return LoopService(store, getattr(context.search, "connection", None),
-                           # 服务开了 InaccessiblePaths=/opt/shilie，二进制要放在能访问的位置。
-                           opencode_bin=os.environ.get("OPENCODE_BIN", "/usr/local/bin/opencode"),
-                           opencode_home=str(base / "data/local/opencode-home"),
-                           supervisor_script=str(base / "scripts/opencode_supervisor.sh"))
+        # 装配细节统一在 build_loop_service，worker 走同一份，避免两边行为不一致。
+        return build_loop_service(store, getattr(context.search, "connection", None),
+                                  getattr(context, "exports", None))
 
     @router.post("/api/automation/loop/run", status_code=201)
     def loop_run(payload: LoopInput) -> dict:
