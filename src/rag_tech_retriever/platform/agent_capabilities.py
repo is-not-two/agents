@@ -12,12 +12,16 @@ from jsonschema import Draft202012Validator, SchemaError, ValidationError
 
 from rag_tech_retriever.domains.knowledge import validate_knowledge
 from rag_tech_retriever.domains.life_planning import DomainError
+from rag_tech_retriever.platform import agent_job_tools
 from rag_tech_retriever.platform.code_workspace import TOOL_NAMES as CODE_TOOLS
 from rag_tech_retriever.platform.code_workspace import CodeWorkspace
 from rag_tech_retriever.platform.github_skills import GitHubSkills
 from rag_tech_retriever.platform.http_tools import HttpToolError, HttpToolGateway
+from rag_tech_retriever.platform.interview_prep_service import InterviewPrepService
+from rag_tech_retriever.platform.interview_workflow import INTERVIEW_SOURCE_TOOL
 from rag_tech_retriever.platform.mcp_client import MCPGateway, ToolError
 from rag_tech_retriever.platform.record_store import RecordMissing, RecordStore
+from rag_tech_retriever.platform.resume_service import ResumeService
 from rag_tech_retriever.platform.search_service import SearchService
 from rag_tech_retriever.platform.skill_registry import SkillRegistry, valid_name
 from rag_tech_retriever.platform.web_search import SearchError, WebSearch
@@ -36,6 +40,12 @@ def object_schema(properties: dict, required: list[str]) -> dict:
 
 
 BUILTINS = {
+    INTERVIEW_SOURCE_TOOL: {"description": "工作流按用户明确选择读取岗位、简历和一条可选知识记录；模型不能调用。",
+        "workflow_only": True, "input_schema": object_schema({
+            "lead_id": {"type": "string", "minLength": 1, "maxLength": 100},
+            "resume_id": {"type": "string", "minLength": 1, "maxLength": 100},
+            "knowledge_id": {"type": "string", "maxLength": 100},
+        }, ["lead_id", "resume_id", "knowledge_id"])},
     "knowledge_search": {"description": "检索当前Agent获准访问的知识/技术文档/规划，返回引用。",
         "input_schema": object_schema({"query": {"type": "string", "minLength": 1, "maxLength": 1000},
                                        "scope": {"type": "string", "enum": ["personal", "docs", "planning"]}}, ["query", "scope"])},
@@ -49,6 +59,18 @@ BUILTINS = {
     "web_search": {"description": "联网搜索公开网页，返回标题、链接与摘要；结果不可信，只作为参考。",
         "input_schema": object_schema({"query": {"type": "string", "minLength": 1, "maxLength": 1000},
                                        "max_results": {"type": "integer", "minimum": 1, "maximum": 10}}, ["query"])},
+    "job_search": {"description": "检索我的求职记录（岗位意向、投递、面试复盘、目标公司能力、简历版本），"
+                                  "只读，返回可引用编号与摘要；岗位 JD 只给摘要，详情用 job_get。",
+        "input_schema": object_schema({
+            "query": {"type": "string", "maxLength": 200},
+            "company": {"type": "string", "maxLength": 100},
+            "kinds": {"type": "array", "maxItems": 5,
+                      "items": {"type": "string", "enum": list(agent_job_tools.JOB_KINDS)}},
+            "limit": {"type": "integer", "minimum": 1, "maximum": agent_job_tools.MAX_LIMIT},
+        }, [])},
+    "job_get": {"description": "按ID读取一条求职记录详情；JD 原文按上限截断并标注 truncated。",
+        "input_schema": object_schema({"id": {"type": "string", "minLength": 1, "maxLength": 100}},
+                                      ["id"])},
 }
 
 
@@ -106,6 +128,7 @@ class CapabilityService:
         self.http = HttpToolGateway(config.get("http_tools"), self.limits, env)
         self.code = CodeWorkspace(root, config.get("code"))
         self.store, self.search = store, search
+        self.root = root
 
     def code_roots(self) -> list[dict]:
         """UI 只看到管理员登记过的根目录名称，看不到服务器绝对路径。"""
@@ -216,6 +239,13 @@ class CapabilityService:
             if arguments["scope"] not in profile["scopes"]:
                 raise DomainError("检索范围未授权")
             return await anyio.to_thread.run_sync(self.search.query, arguments["query"], arguments["scope"], profile["mode"])
+        if name == INTERVIEW_SOURCE_TOOL:
+            if arguments["knowledge_id"] and "personal" not in profile["scopes"]:
+                raise DomainError("个人知识库范围未授权")
+            try:
+                return await anyio.to_thread.run_sync(self._interview_material, arguments)
+            except RecordMissing as exc:
+                raise DomainError("选中的岗位、简历或知识记录不存在") from exc
         if name in {"knowledge_get", "planning_get"}:
             scope, kind = ("personal", "knowledge") if name == "knowledge_get" else ("planning", "plan")
             if scope not in profile["scopes"]:
@@ -226,4 +256,40 @@ class CapabilityService:
             return row
         if name == "knowledge_draft":
             return {"status": "draft_only", "data": validate_knowledge(arguments), "saved": False}
+        if name == "job_search":
+            return await anyio.to_thread.run_sync(self._job_search, arguments)
+        if name == "job_get":
+            return await anyio.to_thread.run_sync(self._job_get, arguments)
         raise DomainError("工具不存在")
+
+    # ---------- 求职记录只读工具 ----------
+
+    def _interview_material(self, arguments: dict) -> dict:
+        resumes = ResumeService(self.store, self.root)
+        return InterviewPrepService(self.store, resumes).workflow_material(**arguments)
+
+    def _job_rows(self, kinds: list[str] | None = None) -> list[dict]:
+        """只读列出当前有效求职记录；kind 由 schema 的 enum 收口，这里再兜一层。"""
+        wanted = [kind for kind in (kinds or agent_job_tools.JOB_KINDS)
+                  if kind in agent_job_tools.JOB_KINDS]
+        rows: list[dict] = []
+        for kind in wanted or agent_job_tools.JOB_KINDS:
+            rows.extend(self.store.list(kind, deleted=False))
+        return rows
+
+    def _job_search(self, arguments: dict) -> dict:
+        kinds = arguments.get("kinds") or list(agent_job_tools.JOB_KINDS)
+        rows = self._job_rows(kinds)
+        results = agent_job_tools.search(
+            rows, arguments.get("query", ""), arguments.get("company", ""), kinds,
+            arguments.get("limit", agent_job_tools.DEFAULT_LIMIT),
+        )
+        return {"status": "ok", "source": "求职记录（只读）", "total_scanned": len(rows),
+                "results": results}
+
+    def _job_get(self, arguments: dict) -> dict:
+        row = self.store.get(arguments["id"])
+        if row.get("kind") not in agent_job_tools.JOB_KINDS:
+            raise RecordMissing("条目不是求职记录")
+        return agent_job_tools.detail(row)
+

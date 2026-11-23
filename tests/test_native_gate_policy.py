@@ -88,6 +88,25 @@ def test_openapi_contract_drift_blocks_gate(gate, monkeypatch, tmp_path):
     assert not json.loads(report.read_text(encoding="utf-8"))["passed"]
 
 
+def test_vue_candidate_failure_blocks_full_release_before_isolated_gate(gate, monkeypatch, tmp_path):
+    (tmp_path / "shilie").mkdir()
+    report = tmp_path / "gate.json"
+    monkeypatch.setattr(sys, "argv", ["release_gate.py", "--root", str(tmp_path),
+        "--checks", "full", "--backend", "docker", "--report", str(report)])
+    monkeypatch.setattr(gate, "configuration_report", lambda *_: {"passed": True, "checks": []})
+    calls = []
+
+    def run(command, **_):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, int("scripts/check_vue_candidate.py" in command), "", "")
+
+    monkeypatch.setattr(gate.subprocess, "run", run)
+    assert gate.main() == 1
+    assert calls[-1] == [sys.executable, "scripts/check_vue_candidate.py",
+                         "--emit-assets", str(report.with_suffix(".vue-assets"))]
+    assert not json.loads(report.read_text(encoding="utf-8"))["passed"]
+
+
 def test_native_client_success_cannot_hide_source_change(gate, monkeypatch, tmp_path):
     (tmp_path / "src").mkdir()
     source = tmp_path / "src/app.py"

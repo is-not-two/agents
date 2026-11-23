@@ -203,10 +203,17 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     @router.get("/api/workflow-runs")
     def runs() -> list:
         # 列表不带大正文与冻结配置，详情按需读取；最近 100 次不删除历史。
+        heavy = ("result", "workflow", "agent", "steps", "node_outputs", "agent_snapshots", "turns")
         rows = [row for kind in ("workflow_run", "agent_session") for row in
                 store.list(kind, limit=100, data_kinds=("answer", "ingest", "graph", "team", "loop"),
-                           omit=("input", "result", "workflow", "agent", "steps", "node_outputs",
-                                 "agent_snapshots", "turns"))]
+                           omit=heavy + (("input",) if kind == "workflow_run" else ()))]
+        for row in rows:
+            data = row["data"]
+            legacy_input = data.pop("input", None)
+            if data.get("private_interview") and not data.get("interview_lead_id") and isinstance(legacy_input, dict):
+                lead_id = legacy_input.get("lead_id")
+                if isinstance(lead_id, str) and len(lead_id) <= 100:
+                    data["interview_lead_id"] = lead_id
         return sorted(rows, key=lambda row: row["data"].get("started_at", ""), reverse=True)[:100]
 
     @router.get("/api/workflow-runs/{record_id}")

@@ -230,3 +230,64 @@ def test_setup_after_custom_agent_creates_isolated_basic_workflows_without_reusi
     assert basic["id"] != custom["id"] and basic["data"]["memory"]["scope"] == "none"
     assert store.get(custom["id"])["version"] == custom["version"]
     assert not client.post('/api/automation/setup').json()["created"]
+
+
+def test_project_markdown_scopes_projection_and_invalidates_only_affected_sessions(api):
+    client, store = api
+    owner, other = agent(client), agent(client)
+    prompts = []
+
+    async def capture(messages, _specs):
+        prompts.append(json.dumps(messages, ensure_ascii=False))
+        return {"content": "fixture answer"}
+
+    client.app.state.agent_runtime.model_chat = capture
+    base = f'/api/agents/{owner["id"]}/memory'
+    seed = {"agent_version": owner["version"], "request_id": "same-id", "content": "# 只给红桥\n专用正文",
+            "project": "红桥", "source_title": "红桥.md"}
+
+    def create(**overrides):
+        res = client.post(base, json={**seed, **overrides})
+        assert res.status_code == 201, res.text
+        return res.json()
+
+    def review(row, project, action, expected=200):
+        res = client.post(f'{base}/{row["id"]}/decide', json={
+            "agent_version": owner["version"], "version": row["version"], "project": project,
+            "action": action, "confirmation": {"confirm": "确认保存长期记忆", "forget": "确认遗忘"}[action],
+        })
+        assert res.status_code == expected, res.text
+        return res.json()
+
+    def run(who, project):
+        res = client.post(f'/api/agents/{who["id"]}/run', json={"version": 1, "query": "任务", "project": project})
+        assert res.status_code == 200 and res.json()["data"]["status"] == "completed", res.text
+        return res.json()
+
+    assert client.post(base, json={**seed, "source_title": "../other.md"}).status_code == 400
+    assert client.post(base, json={**seed, "project": ""}).status_code == 400
+    red = create()
+    blue = create(project="蓝港", source_title="蓝港.md", content="蓝港单独正文")
+    assert red["id"] != blue["id"] and create()["id"] == red["id"]
+    assert client.get(base, params={"project": " 蓝港 "}).json() == [blue]
+    review(red, "蓝港", "confirm", 404)
+    run(owner, "红桥")
+    assert "专用正文" not in prompts[-1]
+    red = review(red, "红桥", "confirm")
+    with_red = run(owner, "红桥")
+    assert "专用正文" in prompts[-1] and "红桥.md" in prompts[-1]
+    assert with_red["kind"] == "agent_session" and with_red["data"]["memory_project"] == "红桥"
+    for who, project in ((other, "红桥"), (owner, "蓝港"), (owner, "")):
+        run(who, project)
+        assert "专用正文" not in prompts[-1]
+    review(blue, "蓝港", "confirm")
+    path = f'/api/agent-runs/{with_red["id"]}/continue'
+    continued = client.post(path, json={"version": with_red["version"], "query": "继续"})
+    assert continued.status_code == 200 and "蓝港单独正文" not in prompts[-1]
+    review(red, "红桥", "forget")
+    before = len(prompts)
+    assert client.post(path, json={"version": continued.json()["version"], "query": "继续"}).status_code == 409
+    assert len(prompts) == before
+    run(owner, "红桥")
+    assert "专用正文" not in prompts[-1]
+    assert "专用正文" not in json.dumps(store.export(), ensure_ascii=False)

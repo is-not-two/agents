@@ -123,13 +123,13 @@ def resolve(value: object, context: dict, label: str = "模板") -> object:
             return value
         if len(matches) == 1 and value == "{{" + matches[0] + "}}":
             return _path(matches[0], context, label)
-        result = value
-        for path in matches:
-            replacement = _path(path, context, label)
+        def substitute(match: re.Match) -> str:
+            replacement = _path(match.group(1), context, label)
             if not isinstance(replacement, (str, int, float)):
                 raise DomainError(f"{label}只能嵌入文本或数字")
-            result = result.replace("{{" + path + "}}", str(replacement))
-        return result
+            return str(replacement)
+
+        return PLACEHOLDER.sub(substitute, value)
     if isinstance(value, dict):
         return {key: resolve(item, context, label) for key, item in value.items()}
     if isinstance(value, list):

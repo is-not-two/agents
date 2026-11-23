@@ -115,10 +115,48 @@ def validate_workflow(payload: dict) -> dict:
     }
 
 
+def _validate_terminal_run(payload: dict) -> dict:
+    """Team and loop records are historical results, never resumable workflow state."""
+    kind = payload["kind"]
+    if payload["status"] not in {"completed", "failed"}:
+        raise DomainError("团队或自动编码备份只允许已结束的运行")
+    if any(payload.get(key) for key in ("pending_calls", "pending_node", "pending_child", "pending_children")):
+        raise DomainError("已结束的运行不能包含待执行操作")
+    text(payload.get("title", ""), "运行名称", 160, True)
+    inputs = payload.get("input")
+    if not isinstance(inputs, dict):
+        raise DomainError("运行输入格式错误")
+    text(inputs.get("task", ""), "运行任务", 2000, True)
+    if kind == "team":
+        result = payload.get("result")
+        if not isinstance(result, dict) or not isinstance(result.get("notes", []), list):
+            raise DomainError("团队运行结果格式错误")
+        text(result.get("answer", ""), "团队回答", 100000)
+        turns = payload.get("turns", [])
+        if not isinstance(turns, list) or len(turns) > 1000:
+            raise DomainError("团队发言记录格式错误")
+        for turn in turns:
+            if not isinstance(turn, dict):
+                raise DomainError("团队发言格式错误")
+            text(turn.get("author", ""), "发言人", 160)
+            text(turn.get("text", ""), "发言正文", 100000)
+    else:
+        summary = payload.get("summary")
+        if not isinstance(summary, dict):
+            raise DomainError("自动编码运行缺少结果摘要")
+        attempts = summary.get("attempts", [])
+        if not isinstance(attempts, list) or len(attempts) > 1000 or any(not isinstance(a, dict) for a in attempts):
+            raise DomainError("自动编码轮次记录格式错误")
+        text(summary.get("diff", ""), "改动摘要", 100000)
+    return deepcopy(payload)
+
+
 def validate_run(payload: dict) -> dict:
     """恢复已存运行记录时验证必要结构，禁止伪造类型进入其他领域。"""
     if not isinstance(payload.get("kind"), str) or not isinstance(payload.get("status"), str):
         raise DomainError("运行类型与状态必须是文本")
+    if payload["kind"] in {"team", "loop"}:
+        return _validate_terminal_run(payload)
     if payload.get("kind") not in {"answer", "ingest", "agent", "graph"} or payload.get("status") not in {
         "running", "completed", "fallback", "awaiting_confirmation", "confirmed", "failed"
     }:

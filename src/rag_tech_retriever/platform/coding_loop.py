@@ -31,6 +31,12 @@ TIERS = {
 
 SHORTSTAT = re.compile(r"(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?")
 
+# git 的「可疑属主」保护：仓库属主与运行用户不一致时，git 会拒绝操作。
+# 服务与 worker 都以非 root 运行，而代码根可能属主不同（迁移目录、root 建库等），
+# 于是 clone 直接报 dubious ownership。-c safe.directory=* 只对本次调用生效，
+# 不改全局配置，也不需要往 HOME 里写 .gitconfig（服务家目录常不可写）。
+GIT_SAFE = ("git", "-c", "safe.directory=*")
+
 # 校验命令会生成缓存文件；它们不能进绿点提交，否则回退点里混着构建产物。
 EXCLUDES = ("**/__pycache__/**", "**/*.pyc", "**/.pytest_cache/**", "**/.ruff_cache/**",
             "**/.mypy_cache/**", "**/node_modules/**", "**/.venv/**", "**/.DS_Store",
@@ -137,6 +143,38 @@ def _rmtree(path: Path) -> None:
         pass
 
 
+def write_safe_directory_config(target: Path, repos: Sequence[Path]) -> Path:
+    """写一份只信任指定仓库的 git 配置，返回配置文件路径。
+
+    为什么需要它：git 的「可疑属主」保护会在仓库属主与运行用户不一致时
+    直接拒绝 clone。服务与 worker 都以非 root 运行，代码根却可能属主不同
+    （迁移目录、管理员建库），于是编码循环在第一步就失败。
+
+    为什么不��用 -c safe.directory=*：本地克隆会派生子进程（upload-pack），
+    子进程不继承 -c；也不接受把任意目录都列为可信（那是安全降级）。
+    这里只把**已登记的代码根**写进配置文件，并通过 GIT_CONFIG_GLOBAL 传给
+    所有 git 子进程——配置只对本次运行生效，不动用户的全局 git 配置。
+    """
+    lines = ["[safe]"]
+    for repo in repos:
+        path = Path(repo).resolve()
+        # git 2.34 判定的是 git 目录本身，仓库根与 .git 两个都要写。
+        for candidate in (path, path / ".git"):
+            # git 配置里的路径要用正斜杠：Windows 的反斜杠会被当成转义符。
+            lines.append(f"\tdirectory = {candidate.as_posix()}")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return target
+
+
+def git_env(config_path: Path | None = None) -> dict[str, str]:
+    """git 子进程的环境变量：带上一份可信目录配置。"""
+    env = dict(os.environ)
+    if config_path is not None:
+        env["GIT_CONFIG_GLOBAL"] = str(config_path)
+    return env
+
+
 class CodingLoop:
     """在一个独立 worktree 里反复「改 → 校验 → 绿点或回退」。"""
 
@@ -144,7 +182,8 @@ class CodingLoop:
                  *, branch: str = "agent/auto", isolation: str = "worktree",
                  clock: Callable[[], float] = time.monotonic,
                  gate_timeout: int = 300, dead_end_limit: int = 3,
-                 no_progress_limit: int = 2) -> None:
+                 no_progress_limit: int = 2,
+                 git_config: Path | None = None) -> None:
         self.repo = Path(repo).resolve()
         self.worktree = Path(worktree).resolve()
         self.gate = list(gate)
@@ -157,14 +196,17 @@ class CodingLoop:
         self.gate_timeout = gate_timeout
         self.dead_end_limit = dead_end_limit
         self.no_progress_limit = no_progress_limit
+        # 可信目录配置文件；为空时 git 会用默认的属主检查。
+        self.git_config = Path(git_config) if git_config else None
         self._started = 0.0
         self._prepared = False
 
     # ---------- git 基础操作 ----------
 
     def _git(self, *args: str, check: bool = True) -> subprocess.CompletedProcess:
-        result = subprocess.run(["git", *args], cwd=self.worktree, capture_output=True,
-                                text=True, encoding="utf-8", errors="replace", check=False)
+        result = subprocess.run([*GIT_SAFE, *args], cwd=self.worktree, capture_output=True,
+                                text=True, encoding="utf-8", errors="replace", check=False,
+                                env=git_env(self.git_config))
         if check and result.returncode != 0:
             raise RuntimeError(f"git {' '.join(args)} 失败：{result.stderr.strip()[:300]}")
         return result
@@ -176,20 +218,23 @@ class CodingLoop:
         if self.isolation == "clone":
             return self._prepare_clone()
         # 目录被手动删掉时，git 里仍有注册残留，不清掉会导致 worktree add 直接失败。
-        subprocess.run(["git", "worktree", "prune"], cwd=self.repo,
-                       capture_output=True, text=True, check=False)
+        subprocess.run([*GIT_SAFE, "worktree", "prune"], cwd=self.repo,
+                       capture_output=True, text=True, check=False,
+                       env=git_env(self.git_config))
         if self.worktree.exists() and any(self.worktree.iterdir()):
             # 上次异常退出会留下副本：先尝试按 git worktree 回收，回收失败才报错。
-            removed = subprocess.run(["git", "worktree", "remove", "--force", str(self.worktree)],
-                                     cwd=self.repo, capture_output=True, text=True, check=False)
+            removed = subprocess.run([*GIT_SAFE, "worktree", "remove", "--force", str(self.worktree)],
+                                     cwd=self.repo, capture_output=True, text=True, check=False,
+                                     env=git_env(self.git_config))
             if removed.returncode != 0 or (self.worktree.exists()
                                            and any(self.worktree.iterdir())):
                 raise RuntimeError(
                     f"副本目录已存在且无法回收：{self.worktree}；请先删除它，或用 --worktree 换一个位置")
         self.worktree.parent.mkdir(parents=True, exist_ok=True)
         added = subprocess.run(
-            ["git", "worktree", "add", "-B", self.branch, str(self.worktree), "HEAD"],
-            cwd=self.repo, capture_output=True, text=True, check=False)
+            [*GIT_SAFE, "worktree", "add", "-B", self.branch, str(self.worktree), "HEAD"],
+            cwd=self.repo, capture_output=True, text=True, check=False,
+            env=git_env(self.git_config))
         if added.returncode != 0:
             raise RuntimeError(f"无法创建副本：{added.stderr.strip()[:300]}")
         self._prepared = True
@@ -202,9 +247,10 @@ class CodingLoop:
         if self.worktree.exists():
             _rmtree(self.worktree)
         self.worktree.parent.mkdir(parents=True, exist_ok=True)
-        added = subprocess.run(["git", "clone", "--quiet", "--local", "--shared",
+        added = subprocess.run([*GIT_SAFE, "clone", "--quiet", "--local", "--shared",
                                 str(self.repo), str(self.worktree)],
-                               capture_output=True, text=True, check=False)
+                               capture_output=True, text=True, check=False,
+                               env=git_env(self.git_config))
         if added.returncode != 0:
             raise RuntimeError(f"无法创建克隆副本：{added.stderr.strip()[:300]}")
         self._prepared = True
@@ -222,10 +268,11 @@ class CodingLoop:
             _rmtree(self.worktree)
             self._prepared = False
             return
-        subprocess.run(["git", "worktree", "remove", "--force", str(self.worktree)],
-                       cwd=self.repo, capture_output=True, text=True, check=False)
-        subprocess.run(["git", "worktree", "prune"], cwd=self.repo, capture_output=True,
-                       text=True, check=False)
+        subprocess.run([*GIT_SAFE, "worktree", "remove", "--force", str(self.worktree)],
+                       cwd=self.repo, capture_output=True, text=True, check=False,
+                       env=git_env(self.git_config))
+        subprocess.run([*GIT_SAFE, "worktree", "prune"], cwd=self.repo, capture_output=True,
+                       text=True, check=False, env=git_env(self.git_config))
         self._prepared = False
 
     def _untracked_names(self) -> list[str]:

@@ -47,6 +47,20 @@ class InterviewPrepService:
             "resume_text": resume_text,
         }
 
+    def workflow_material(self, lead_id: str, resume_id: str, knowledge_id: str = "") -> dict:
+        """Reuse Web interview inputs; include only the explicitly selected knowledge record."""
+        ctx = self._context(lead_id, resume_id)
+        knowledge = "未选择知识记录。"
+        if knowledge_id:
+            row = self.store.get(knowledge_id)
+            if row["kind"] != "knowledge":
+                raise DomainError("选中的记录不属于个人知识库")
+            knowledge = str(row["data"].get("content") or "")
+        return {key: value[:limit] + ("\n（超长，已截断）" if len(value) > limit else "")
+                for key, value, limit in (("jd", ctx["jd"], 6000),
+                                          ("resume_text", ctx["resume_text"], 12000),
+                                          ("knowledge", knowledge, 6000))}
+
     def rules_draft(self, ctx: dict, mode: str) -> dict:
         """确定性模板题：本地可验证，不调用模型。"""
         questions = [

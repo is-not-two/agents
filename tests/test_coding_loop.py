@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+from rag_tech_retriever.platform import coding_loop
 from rag_tech_retriever.platform.coding_loop import Budget, CodingLoop
 
 
@@ -361,3 +362,52 @@ def test_repeated_new_file_is_flagged_as_same_approach(tmp_path):
         loop.close()
     assert result.status == "stuck"
     assert any("必须换一个完全不同的思路" in hint for hint in hints)
+
+
+def test_git_calls_are_exempt_from_dubious_ownership():
+    """git 的「可疑属主」保护会因部署身份不同而随机拒绝操作。
+
+    服务与 worker 都以非 root 运行，代码根却可能属主不同（迁移目录、root 建库），
+    clone 会直接报 dubious ownership。所有 git 调用都要带单次豁免。
+    """
+    from rag_tech_retriever.platform.coding_loop import GIT_SAFE
+
+    assert GIT_SAFE == ("git", "-c", "safe.directory=*")
+    source = Path(coding_loop.__file__).read_text(encoding="utf-8")
+    # 每处 git 调用都要带豁免前缀，不能有裸的 ["git", ...]
+    assert '["git",' not in source
+    for name in ("aider_attempt", "opencode_attempt", "loop_service"):
+        text = Path(coding_loop.__file__).with_name(f"{name}.py").read_text(encoding="utf-8")
+        assert '["git",' not in text, f"{name}.py 还有没加豁免的 git 调用"
+
+
+def test_safe_directory_config_lists_only_given_repos(tmp_path):
+    """可信目录配置只能包含已登记的代码根，不能用通配符放开任意目录。"""
+    from rag_tech_retriever.platform.coding_loop import write_safe_directory_config
+
+    repo = tmp_path / "repo"
+    (repo / ".git").mkdir(parents=True)
+    other = tmp_path / "other"
+    (other / ".git").mkdir(parents=True)
+
+    config = write_safe_directory_config(tmp_path / "conf", [repo])
+    text = config.read_text(encoding="utf-8")
+
+    assert text.startswith("[safe]")
+    assert "*" not in text
+    assert repo.as_posix() in text
+    assert (repo / ".git").as_posix() in text
+    assert other.as_posix() not in text
+    # git 配置里路径必须用正斜杠，反斜杠会被当成转义符
+    assert "\\" not in text
+
+
+def test_git_env_points_global_config_at_file(tmp_path):
+    """git 子进程靠 GIT_CONFIG_GLOBAL 拿到可信目录：-c 传不进 clone 的子进程。"""
+    from rag_tech_retriever.platform.coding_loop import git_env
+
+    config = tmp_path / "conf"
+    env = git_env(config)
+    assert env["GIT_CONFIG_GLOBAL"] == str(config)
+    # 没给配置时不能动用户的全局 git 配置
+    assert "GIT_CONFIG_GLOBAL" not in git_env(None)

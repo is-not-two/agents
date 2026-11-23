@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from rag_tech_retriever.api.main import create_app
 from rag_tech_retriever.api.routes import private
-from rag_tech_retriever.platform.record_store import RecordStore
+from rag_tech_retriever.platform.record_store import RecordMissing, RecordStore
 
 
 def test_password_required_after_restart(tmp_path, monkeypatch) -> None:
@@ -31,6 +31,37 @@ def test_password_required_after_restart(tmp_path, monkeypatch) -> None:
     restarted = client()
     assert restarted.get("/api/private/status").json()["requires_password"] is True
     assert restarted.post("/api/private/session", json={}).status_code == 401
+
+
+def test_private_header_ticket_and_cross_kind_guard(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(private, "_meta_path", lambda _: tmp_path / "vault.json")
+    changes = []
+    store = SimpleNamespace(
+        list=lambda _: [],
+        get=lambda _: {"kind": "wish"},
+        save=lambda *args: changes.append(args),
+        delete=lambda *args: changes.append(args) or {"deleted": True},
+    )
+    app = FastAPI()
+    app.include_router(private.create_router(SimpleNamespace(config=None, store=store)))
+
+    @app.exception_handler(RecordMissing)
+    async def missing(_request, _error):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=404, content={"detail": "not found"})
+
+    with TestClient(app) as client:
+        assert client.post("/api/private/setup", json={"password": "fixture-only"}).status_code == 201
+        ticket = client.post("/api/private/session", json={"password": "fixture-only"}).json()["ticket"]
+        headers = {"X-Private-Ticket": ticket}
+        assert client.get("/api/private/wish").status_code == 401
+        assert client.get("/api/private/wish", headers=headers).json() == []
+        assert client.put("/api/private/diary/wish-id", json={
+            "ticket": ticket, "version": 1, "data": {"title": "wrong kind"},
+        }).status_code == 404
+        assert changes == []
+        assert client.delete("/api/private/wish/wish-id", params={"version": 1}, headers=headers).status_code == 200
+        assert changes == [("wish-id", 1)]
 
 
 def test_private_delete_requires_ticket_kind_and_current_version(tmp_path, monkeypatch) -> None:

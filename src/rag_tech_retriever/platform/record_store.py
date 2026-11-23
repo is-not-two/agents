@@ -72,7 +72,8 @@ class RecordStore:
     """单用户工作台记录存储，table_prefix 可隔离测试与生产数据。"""
 
     def __init__(self, prefix: str = "workspace", config: ConfigLoader | None = None,
-                 pool_size: int = 0, pool_wait_seconds: float = 5.0) -> None:
+                 pool_size: int = 0, pool_wait_seconds: float = 5.0,
+                 pool_min_size: int = 1) -> None:
         """只保存配置；pool_size>0 时复用连接（默认 0 = 每事务新建，便于测试隔离）。"""
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,42}", prefix):
             raise StorageError("非法工作台表前缀")
@@ -81,6 +82,7 @@ class RecordStore:
         self.versions = prefix + "_versions"
         self.config = config or ConfigLoader.load_default()
         self.pool_size = max(0, int(pool_size))
+        self.pool_min_size = min(self.pool_size, max(1, int(pool_min_size)))
         # 池满时最多等这么久再报错；同步接口在工作线程里跑，瞬时并发高于池容量时不应直接 5xx。
         self.pool_wait_seconds = max(0.0, float(pool_wait_seconds))
         self._pool: pg_pool.ThreadedConnectionPool | None = None
@@ -109,7 +111,7 @@ class RecordStore:
         with self._pool_lock:
             if self._pool is None:
                 try:
-                    self._pool = pg_pool.ThreadedConnectionPool(1, self.pool_size, **self._dsn())
+                    self._pool = pg_pool.ThreadedConnectionPool(self.pool_min_size, self.pool_size, **self._dsn())
                 except psycopg2.Error:
                     return None
             return self._pool

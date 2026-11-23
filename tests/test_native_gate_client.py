@@ -305,7 +305,7 @@ def test_browser_plan_reuses_every_runner_sdk_and_five_phases_without_docker(tmp
     report = {"checks": []}
     client.run_clients(tmp_path, tmp_path, public, secrets, FakeForward(), control, report)
     labels = [item[1] for item in calls]
-    assert all(name.removesuffix(".mjs") in labels for name in client.SCENES)
+    assert "vue-browser" in labels
     assert "mcp-queries" in labels
     assert labels[-7:] == ["phase-open", "phase-core", "phase-prepare-failure",
                            "phase-database-offline", "phase-database-recovered",

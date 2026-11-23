@@ -108,4 +108,8 @@ def preview_restore(current: dict, target: dict) -> dict:
         "changes": changes[:50],
         "change_count": len(changes),
         "trash_count": sum(r["deleted"] for r in target["records"]),
+        "missing_learning_sources": sum(
+            row["kind"] == "learning_card" and row["data"]["source"] != "manual"
+            and row["data"]["source_id"] not in desired for row in target["records"]
+        ),
     }

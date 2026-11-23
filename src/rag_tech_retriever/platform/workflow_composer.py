@@ -17,10 +17,11 @@ from rag_tech_retriever.domains.life_planning import DomainError, text
 from rag_tech_retriever.domains.workflow_graph import validate_graph_workflow
 from rag_tech_retriever.platform.agent_capabilities import BUILTINS
 from rag_tech_retriever.platform.code_workspace import TOOL_NAMES as CODE_TOOLS
+from rag_tech_retriever.platform.interview_workflow import INTERVIEW_TEMPLATE, interview_recipe
 
 CONFIRMATION = "生成工作流并直接运行"
 MAX_AGENTS = 8
-TEMPLATES = {"generic", "code"}
+TEMPLATES = {"generic", "code", INTERVIEW_TEMPLATE}
 AGENT_FIELDS = {"key", "title", "system_prompt", "tools", "workspace", "scopes"}
 WORKSPACE_FIELDS = {"root", "write", "shell"}
 
@@ -70,7 +71,9 @@ class WorkflowComposer:
     def rules_draft(self, goal: str, template: str = "generic") -> dict:
         """确定性拆解：不调用模型，本地可完整验证。"""
         title = text(goal, "目标", 160, True)
-        if template == "code" and self._writable_root():
+        if template == INTERVIEW_TEMPLATE:
+            agents, nodes, edges = interview_recipe()
+        elif template == "code" and self._writable_root():
             root = self._writable_root()
             agents = [
                 {"key": "planner", "title": "改动规划", "tools": ["knowledge_search"],
@@ -115,7 +118,8 @@ class WorkflowComposer:
         return {"mode": "rules", "template": template,
                 "agents": agents,
                 "workflow": {"title": title, "kind": "graph", "nodes": nodes, "edges": edges,
-                             "max_parallel": 1, "max_retries": 1, "node_timeout_seconds": 60}}
+                             "max_parallel": 1, "max_retries": int(template != INTERVIEW_TEMPLATE),
+                             "node_timeout_seconds": 60}}
 
     def _normalize_agents(self, raw: object) -> list[dict]:
         """模型给的 agents 数组逐条过白名单与既有权限校验。"""
@@ -171,13 +175,13 @@ class WorkflowComposer:
                 raise DomainError("工作流节点格式错误")
             item = {key: value for key, value in node.items() if key not in {"agent", "role", "agent_id"}}
             target = node.get("agent") or node.get("role")
-            if item.get("type") == "agent":
+            if item.get("type") == "agent" or (target is not None and item.get("type") in {"tool", "retrieve"}):
                 if target not in keys:
                     raise DomainError("Agent 节点引用了不存在的 Agent")
                 mapping[item.get("id")] = target
                 item["agent_id"] = "draft-" + str(target)
             elif target is not None:
-                raise DomainError("只有 Agent 节点可以引用 Agent")
+                raise DomainError("只有 Agent、工具与检索节点可以引用 Agent")
             clean.append(item)
         workflow = validate_graph_workflow({**raw, "nodes": clean})
         return {"workflow": workflow, "mapping": mapping}
@@ -222,8 +226,8 @@ class WorkflowComposer:
         if mode not in {"rules", "model"}:
             raise DomainError("编排模式只支持 rules / model")
         if template not in TEMPLATES:
-            raise DomainError("编排模板只支持 generic / code")
-        if mode == "rules":
+            raise DomainError("编排模板只支持 generic / code / interview")
+        if mode == "rules" or template == INTERVIEW_TEMPLATE:
             return self._materialize(self.rules_draft(goal, template), "rules", template)
         return self._materialize(self.model_draft(goal, post, template), "model", template)
 
@@ -269,6 +273,8 @@ class WorkflowComposer:
         system = (SYSTEM_PROMPT + " 工具白名单：" + ", ".join(self.catalog())
                   + " 可用工作区：" + (", ".join(roots) if roots else "无")
                   + " 现在给你一份已有草稿和修改意见：保留未提及的部分，只改需要改的，仍然只返回完整 JSON。")
+        if current["template"] == INTERVIEW_TEMPLATE:
+            system += " 面试模板只允许补充角色偏好。只在对应角色 system_prompt 写简短增量，保留其他字段。"
         body = {"model": config["model"], "temperature": 0,
                 "messages": [
                     {"role": "system", "content": system},
@@ -277,6 +283,19 @@ class WorkflowComposer:
                     {"role": "user", "content": "修改意见：" + note},
                 ], "max_tokens": 2500}
         raw = self._parse_reply((post or post_chat)(config, body, timeout=60, max_chars=26000))
+        if current["template"] == INTERVIEW_TEMPLATE:
+            # AI can adjust the wording, not change the handoffs or expand access.
+            portable = self._portable(current)
+            updates = raw.get("agents")
+            if not isinstance(updates, list):
+                raise DomainError("模型输出缺少角色修订")
+            raw_agents = {item["key"]: item for item in updates
+                          if isinstance(item, dict) and isinstance(item.get("key"), str)}
+            for item in portable["agents"]:
+                extra = raw_agents.get(item["key"], {}).get("system_prompt")
+                if isinstance(extra, str) and extra != item["system_prompt"]:
+                    item["system_prompt"] = item["system_prompt"] + "\n补充偏好（不得覆盖上述边界）：" + extra[:500]
+            raw = portable
         revised = self._materialize(raw, "model", current["template"])
         return {"draft": revised, "changes": self.diff(current, revised)}
 
@@ -287,17 +306,19 @@ class WorkflowComposer:
             "agents": [{"key": item["key"],
                         "title": item["profile"]["title"],
                         "system_prompt": item["profile"]["system_prompt"],
-                        "tools": item["profile"]["tool_ids"],
+                        "tools": item["profile"]["tool_ids"], "scopes": item["profile"]["scopes"],
                         "workspace": item["profile"]["workspace"]} for item in draft["agents"]],
             "workflow": {"title": draft["workflow"]["title"],
                          "nodes": [{"id": node["id"], "type": node["type"],
                                     **({"agent": draft["mapping"].get(node["id"])}
-                                       if node["type"] == "agent" else {}),
+                                       if node["id"] in draft["mapping"] else {}),
                                     **{key: node[key] for key in ("query", "strategy", "message",
                                                                   "tool_id", "arguments", "limit")
                                        if key in node}} for node in draft["workflow"]["nodes"]],
                          "edges": draft["workflow"]["edges"],
                          "max_parallel": draft["workflow"]["max_parallel"],
+                         "max_retries": draft["workflow"]["max_retries"],
+                         "node_timeout_seconds": draft["workflow"]["node_timeout_seconds"],
                          "join_policy": draft["workflow"]["join_policy"]},
         }
 
@@ -324,9 +345,9 @@ class WorkflowComposer:
             if not isinstance(node, dict):
                 raise DomainError("草稿节点格式不正确")
             item = {key: value for key, value in node.items() if key not in {"agent", "role"}}
-            if item.get("type") == "agent":
-                mapping_hint = draft.get("mapping") if isinstance(draft.get("mapping"), dict) else {}
-                target = node.get("agent") or mapping_hint.get(item.get("id"))
+            mapping_hint = draft.get("mapping") if isinstance(draft.get("mapping"), dict) else {}
+            target = node.get("agent") or mapping_hint.get(item.get("id"))
+            if item.get("type") == "agent" or (target is not None and item.get("type") in {"tool", "retrieve"}):
                 if target not in keys:
                     raise DomainError("草稿 Agent 引用不一致")
                 mapping[item["id"]] = target

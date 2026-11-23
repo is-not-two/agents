@@ -1,0 +1,10 @@
+BEGIN;
+GRANT USAGE ON SCHEMA community TO shilie_pvapp;
+GRANT SELECT ON community.members, community.sessions, community.posts, community.invitations, community.public_topics, community.public_files TO shilie_pvapp;
+GRANT UPDATE(display_name) ON community.members TO shilie_pvapp;
+GRANT INSERT,DELETE,UPDATE(expires_at) ON community.sessions TO shilie_pvapp;
+GRANT DELETE ON community.invitations TO shilie_pvapp;
+GRANT INSERT,UPDATE(request_id,state,score,version,published_at) ON community.posts TO shilie_pvapp;
+GRANT INSERT ON community.reviews TO shilie_pvapp;
+GRANT EXECUTE ON FUNCTION community.submit_post(bytea,uuid,text,text) TO shilie_pvapp;
+COMMIT;

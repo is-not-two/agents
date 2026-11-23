@@ -19,6 +19,8 @@ import urllib.request
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
+from rag_tech_retriever.platform.coding_loop import GIT_SAFE
+
 
 class OpenCodeError(RuntimeError):
     """调用 opencode 服务失败。"""
@@ -237,7 +239,7 @@ class OpenCodeAttempt:
         return "\n".join(chunk for chunk in chunks if chunk).strip()
 
     def _touched_readonly(self) -> list[str]:
-        result = subprocess.run(["git", "status", "--porcelain"], cwd=self.root,
+        result = subprocess.run([*GIT_SAFE, "status", "--porcelain"], cwd=self.root,
                                 capture_output=True, text=True, encoding="utf-8",
                                 errors="replace", timeout=60, check=False)
         names = []

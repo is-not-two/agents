@@ -218,3 +218,53 @@ def test_enqueue_rejects_unknown_kind_at_service_level():
     service = QueueService(FakeQueue())
     with pytest.raises(DomainError):
         service.enqueue("unknown", {"a": 1})
+
+
+# ---------- SQL 格式离线校验 ----------
+
+def test_all_queue_sql_has_valid_placeholder_format():
+    """命名占位符必须带类型符（%(name)s），否则 psycopg2 直接抛 ValueError。
+
+    这类错误只有连真库才暴露：假队列把整个存储层替换掉了，
+    本地测试全绿、线上 worker 一领取就崩。
+    """
+    from rag_tech_retriever.platform import task_queue_store as store
+
+    statements = {
+        "claim": store.claim_sql("workspace_task_jobs"),
+        "renew_lease": store.renew_lease_sql("workspace_task_jobs"),
+        "complete": store.complete_sql("workspace_task_jobs"),
+        "mark_cancelled": store.mark_cancelled_sql("workspace_task_jobs"),
+        "fail_retry": store.fail_retry_sql("workspace_task_jobs"),
+        "fail_dead": store.fail_dead_sql("workspace_task_jobs"),
+        "save_checkpoint": store.save_checkpoint_sql("workspace_task_jobs"),
+        "cancel": store.cancel_sql("workspace_task_jobs"),
+        "replay": store.replay_sql("workspace_task_jobs"),
+    }
+    for name, sql in statements.items():
+        params = store.SQL_PARAMS[name]
+        try:
+            sql % params
+        except (KeyError, ValueError, TypeError) as exc:
+            raise AssertionError(f"{name} 的占位符格式有问题：{exc}") from exc
+
+
+def test_sql_params_cover_every_named_statement():
+    """新增 SQL 语句时必须同步登记参数集，否则离线校验会漏掉它。"""
+    from rag_tech_retriever.platform import task_queue_store as store
+
+    named = [name for name in store.SQL_PARAMS if name in {
+        "claim", "renew_lease", "complete", "mark_cancelled",
+        "fail_retry", "fail_dead", "save_checkpoint", "cancel", "replay"}]
+    assert len(named) == 9
+    # 入队语句用的是行内 SQL，单独登记但不参与「命名语句」计数。
+    assert "enqueue" in store.SQL_PARAMS
+
+
+def test_claim_sql_uses_typed_interval_placeholder():
+    """租约用「秒 → interval」写法，占位符必须写成 %(lease_seconds)s。"""
+    from rag_tech_retriever.platform.task_queue_store import claim_sql
+
+    sql = claim_sql("workspace_task_jobs")
+    assert "%(lease_seconds)s" in sql
+    assert "%(lease_seconds)" not in sql.replace("%(lease_seconds)s", "")

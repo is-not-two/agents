@@ -16,7 +16,13 @@ from rag_tech_retriever.domains.life_planning import DomainError
 from rag_tech_retriever.domains.task_queue import LOOP_ENGINES as ENGINES
 from rag_tech_retriever.domains.task_queue import LOOP_TIERS as TIERS
 from rag_tech_retriever.platform.aider_attempt import AiderAttempt
-from rag_tech_retriever.platform.coding_loop import Budget, CodingLoop
+from rag_tech_retriever.platform.coding_loop import (
+    GIT_SAFE,
+    Budget,
+    CodingLoop,
+    git_env,
+    write_safe_directory_config,
+)
 from rag_tech_retriever.platform.model_attempt import EditingModel
 from rag_tech_retriever.platform.opencode_attempt import OpenCodeAttempt
 
@@ -102,8 +108,15 @@ class LoopService:
 
         worktree = repo.parent / f".auto-loop-{repo.name}"
         isolation = "clone" if engine == "opencode" else "worktree"
+        # git 的「可疑属主」保护：仓库属主与运行用户不一致时会直接拒绝 clone。
+        # 只把当前这个代码根写进可信目录配置，不放开任意目录。
+        git_config = write_safe_directory_config(
+            Path(self.opencode_home).parent / "git-safe-dirs.conf" if self.opencode_home
+            else worktree.parent / "git-safe-dirs.conf",
+            [repo],
+        )
         loop = CodingLoop(repo, worktree, shlex.split(gate), Budget.tier(tier),
-                          isolation=isolation)
+                          isolation=isolation, git_config=git_config)
         # 日志要落在可见可写目录：服务开了 PrivateTmp，/tmp 里的日志外面看不到。
         log_dir = Path(self.opencode_home).parent if self.opencode_home else worktree.parent
         worker = self._worker(engine, config, worktree, task,
@@ -113,7 +126,7 @@ class LoopService:
         try:
             result = loop.run(worker.attempt, progress=progress)
             # 必须在副本被删掉之前取 diff。
-            diff = self._diff(result, worktree)
+            diff = self._diff(result, worktree, git_config)
         finally:
             closer = getattr(worker, "close", None)
             if callable(closer):
@@ -147,14 +160,15 @@ class LoopService:
         return {"id": row["id"], "version": row["version"], **summary}
 
     @staticmethod
-    def _diff(result, worktree: Path) -> str:
+    def _diff(result, worktree: Path, git_config: Path | None = None) -> str:
         """把绿点相对基线的改动取出来，供界面展示。"""
         if len(result.green_points) < 2 or not worktree.exists():
             return ""
         import subprocess
 
         base = result.green_points[0].commit
-        done = subprocess.run(["git", "diff", "--stat", base, result.green_points[-1].commit],
+        done = subprocess.run([*GIT_SAFE, "diff", "--stat", base, result.green_points[-1].commit],
                               cwd=str(worktree), capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", check=False)
+                              encoding="utf-8", errors="replace", check=False,
+                              env=git_env(git_config))
         return (done.stdout or "").strip()[:2000]

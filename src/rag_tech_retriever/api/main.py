@@ -27,6 +27,7 @@ from rag_tech_retriever.api.routes import bookmarks as bookmark_routes
 from rag_tech_retriever.api.routes import capabilities as capability_routes
 from rag_tech_retriever.api.routes import chat as chat_routes
 from rag_tech_retriever.api.routes import collaboration as collaboration_routes
+from rag_tech_retriever.api.routes import draft_projects as draft_project_routes
 from rag_tech_retriever.api.routes import evaluation as evaluation_routes
 from rag_tech_retriever.api.routes import exports as export_routes
 from rag_tech_retriever.api.routes import interview_prep as interview_prep_routes
@@ -97,6 +98,7 @@ def create_app(
         config=config,
         pool_size=int(config.get("web.db_pool_size", 0)),
         pool_wait_seconds=float(config.get("web.db_pool_wait_seconds", 5)),
+        pool_min_size=int(config.get("web.db_pool_min_size", 1)),
     )
     secret = str(settings.env("WORKSPACE_ACCESS_TOKEN", "")) if token is None else token
     mcp_secret = str(settings.env("WORKSPACE_MCP_TOKEN", ""))
@@ -207,6 +209,7 @@ def create_app(
         if (
             request.url.path.startswith(("/api/", "/mcp"))
             and request.url.path != "/api/session"
+            and not (community_origin and (request.method, request.url.path) in community_endpoints)
             and not (mcp_authorized if mcp_path and mcp_secret else auth.authenticated(request))
         ):
             return guard_error(request, "请先登录", ErrorCode.UNAUTHORIZED, 401)
@@ -432,6 +435,21 @@ def create_app(
     context.runtime = AgentRuntime(store, search.connection, context.capabilities)
     context.collaboration = CollaborationService(root, store, search.connection, context.capabilities)
     application.include_router(operations_routes.create_router(context))
+    community_origin = config.env("COMMUNITY_PUBLIC_ORIGIN", "")
+    community_endpoints = frozenset({
+        ("POST", "/api/community/session"), ("DELETE", "/api/community/session"), ("GET", "/api/community/session"),
+        ("POST", "/api/community/posts"), ("GET", "/api/community/topics"),
+        ("POST", "/api/community/reviews"), ("GET", "/api/community/reviews"), ("GET", "/api/community/search"), ("POST", "/api/community/ask"), ("POST", "/api/community/withdraw"), ("GET", "/api/community/mine"),
+    })
+    if community_origin:
+        from rag_tech_retriever.api.routes.community import create_router as community_router
+        from rag_tech_retriever.platform.community_answers import CommunityAnswers
+        application.include_router(community_router(
+            store.transaction, public_origin=community_origin,
+            answers=CommunityAnswers(search.connection.load,int(config.env("COMMUNITY_AI_CONCURRENCY","2")),int(config.env("COMMUNITY_AI_TIMEOUT","20"))),
+            session_seconds=int(config.env("COMMUNITY_SESSION_SECONDS", "28800")),
+            owner_authorized=lambda request: auth.enabled and not auth.is_mcp_token(request) and auth.authenticated(request),
+        ))
     application.state.context = context
     application.state.agent_runtime = context.runtime
     application.state.collaboration_service = context.collaboration
@@ -452,6 +470,7 @@ def create_app(
         export_routes,
         stage_routes,
         automation,
+        draft_project_routes,
         connection_routes,
         private_routes,
         prompt_routes,
@@ -470,19 +489,29 @@ def create_app(
     mounted_lifespans.append(mcp_asgi)
     application.mount("/mcp", mcp_asgi)
 
-    static = Path(__file__).parent / "static"
-    static.mkdir(exist_ok=True)
-    application.mount("/static", StaticFiles(directory=static), name="static")
+    vue_dir = Path(__file__).parent / "static" / "vue"
+    # Isolated QA may supply the exact verified build under its private root.
+    if not (vue_dir / "index.html").is_file() and (root / "frontend/vue/index.html").is_file():
+        vue_dir = root / "frontend/vue"
+    vue_index = vue_dir / "index.html"
+    if vue_index.is_file():
+        application.mount("/static/vue", StaticFiles(directory=vue_dir), name="static")
 
     @application.get("/")
     def index():
-        return FileResponse(static / "shilie" / "index.html")
-
-    @application.get("/legacy")
-    def legacy_index():
-        return FileResponse(static / "index.html")
+        if not vue_index.is_file():
+            raise HTTPException(status_code=503, detail="Vue 前端尚未构建")
+        return FileResponse(vue_index)
 
     return application
 
 
 app = create_app()
+
+
+
+
+
+
+
+

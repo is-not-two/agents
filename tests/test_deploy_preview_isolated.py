@@ -20,6 +20,8 @@ SPEC.loader.exec_module(DEPLOY)
     ("user", "exec_start", "expected"),
     [
         ("shilie_pvapp", "{ path=/var/lib/shilie-preview/app/.venv/bin/python }", True),
+        ("shilie_pvapp", "{ path=/var/lib/shilie-preview/app/.venv312/bin/python }", True),
+        ("shilie_pvapp", "{ path=/usr/bin/python ; argv[]=/var/lib/shilie-preview/app/.venv312/bin/python }", False),
         ("shilie", "{ path=/var/lib/shilie-preview/app/.venv/bin/python }", False),
         ("shilie_pvapp", "{ path=/opt/shilie/preview/.venv/bin/python }", False),
         ("", "", False),

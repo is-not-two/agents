@@ -20,6 +20,7 @@ class AgentRunInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     version: StrictInt = Field(ge=1)
     query: str = Field(min_length=1, max_length=4000)
+    project: str = Field(default="", max_length=80)
 
 
 class ToolCallInput(BaseModel):
@@ -34,6 +35,8 @@ class MemoryProposalInput(BaseModel):
     agent_version: StrictInt = Field(ge=1)
     content: str = Field(min_length=1, max_length=1000000)
     request_id: str = Field(min_length=1, max_length=100)
+    project: str = Field(default="", max_length=80)
+    source_title: str = Field(default="", max_length=160)
 
 
 class MemoryDecisionInput(BaseModel):
@@ -42,6 +45,7 @@ class MemoryDecisionInput(BaseModel):
     version: StrictInt = Field(ge=1)
     action: str
     confirmation: str
+    project: str = Field(default="", max_length=80)
 
 
 class ContinueInput(BaseModel):
@@ -106,17 +110,18 @@ def create_router(context: WorkspaceContext) -> APIRouter:
                 "mcp": mcp, "mcp_errors": errors}
 
     @router.get("/api/agents/{record_id}/memory")
-    def memory_list(record_id: str) -> list:
-        return memory.list(record_id)
+    def memory_list(record_id: str, project: str = "") -> list:
+        return memory.list(record_id, project)
 
     @router.post("/api/agents/{record_id}/memory", status_code=201)
     def memory_propose(record_id: str, payload: MemoryProposalInput) -> dict:
-        return memory.propose(record_id, payload.agent_version, payload.content, payload.request_id)
+        return memory.propose(record_id, payload.agent_version, payload.content, payload.request_id,
+                              project=payload.project, source_title=payload.source_title)
 
     @router.post("/api/agents/{record_id}/memory/{memory_id}/decide")
     def memory_decide(record_id: str, memory_id: str, payload: MemoryDecisionInput) -> dict:
         return memory.decide(record_id, memory_id, payload.version, payload.agent_version,
-                             payload.action, payload.confirmation)
+                             payload.action, payload.confirmation, project=payload.project)
 
     @router.get("/api/skills")
     def skills() -> list:
@@ -155,11 +160,11 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     async def tools(record_id: str) -> list:
         agent = runtime.agent(record_id)
         specs, _ = await caps.catalog(agent["data"])
-        return list(specs.values())
+        return [spec for spec in specs.values() if not spec.get("workflow_only")]
 
     @router.post("/api/agents/{record_id}/run")
     async def run(record_id: str, payload: AgentRunInput) -> dict:
-        return await runtime.start(record_id, payload.version, payload.query)
+        return await runtime.start(record_id, payload.version, payload.query, project=payload.project)
 
     @router.post("/api/agents/{record_id}/tools/call")
     async def call(record_id: str, payload: ToolCallInput) -> dict:

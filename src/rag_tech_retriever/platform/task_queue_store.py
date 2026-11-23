@@ -55,7 +55,7 @@ DDL_STATEMENTS = (
 def claim_sql(table: str) -> str:
     """领取语句：跳过已被别的 worker 锁定的行，并顺带回收过期租约。"""
     return f"""UPDATE {table} SET status = '{RUNNING}', attempts = attempts + 1,
-        lease_until = NOW() + (%(lease_seconds) || ' seconds')::interval,
+        lease_until = NOW() + (%(lease_seconds)s || ' seconds')::interval,
         worker_id = %(worker_id)s, updated_at = NOW()
         WHERE id = (
             SELECT id FROM {table}
@@ -65,6 +65,74 @@ def claim_sql(table: str) -> str:
             FOR UPDATE SKIP LOCKED LIMIT 1
         )
         RETURNING *"""
+
+
+def renew_lease_sql(table: str) -> str:
+    """续租语句；与领取语句同用「秒 → interval」的写法。"""
+    return f"""UPDATE {table} SET lease_until = NOW() + (%(lease_seconds)s || ' seconds')::interval,
+        updated_at = NOW() WHERE id = %(id)s"""
+
+
+def complete_sql(table: str) -> str:
+    """任务成功：写结果、清租约、清错误。"""
+    return f"""UPDATE {table} SET status = '{SUCCEEDED}', result = %(result)s,
+        lease_until = NULL, last_error = NULL, updated_at = NOW()
+        WHERE id = %(id)s"""
+
+
+def mark_cancelled_sql(table: str) -> str:
+    """任务被中途取消：落 cancelled 状态。"""
+    return f"""UPDATE {table} SET status = '{CANCELLED}', result = %(result)s,
+        lease_until = NULL, updated_at = NOW() WHERE id = %(id)s"""
+
+
+def fail_retry_sql(table: str) -> str:
+    """失败但还能重试：回队列并推迟到退避时刻。"""
+    return f"""UPDATE {table} SET status = '{QUEUED}', last_error = %(error)s,
+        lease_until = NULL, next_run_at = %(next_run_at)s, updated_at = NOW()
+        WHERE id = %(id)s"""
+
+
+def fail_dead_sql(table: str) -> str:
+    """失败且已达重试上限：进死信等人处理。"""
+    return f"""UPDATE {table} SET status = '{DEAD}', last_error = %(error)s,
+        lease_until = NULL, updated_at = NOW() WHERE id = %(id)s"""
+
+
+def save_checkpoint_sql(table: str) -> str:
+    """写中间态：长任务重启后能从这里接着看。"""
+    return (f"UPDATE {table} SET checkpoint = %(checkpoint)s, updated_at = NOW() "
+            "WHERE id = %(id)s")
+
+
+def cancel_sql(table: str) -> str:
+    """取消：只有排队中与执行中的任务能取消。"""
+    return f"""UPDATE {table} SET status = '{CANCELLED}', lease_until = NULL,
+        updated_at = NOW() WHERE id = %(id)s AND status IN ('{QUEUED}', '{RUNNING}')"""
+
+
+def replay_sql(table: str) -> str:
+    """死信重放：回到队列，重置尝试计数。"""
+    return f"""UPDATE {table} SET status = '{QUEUED}', attempts = 0,
+        next_run_at = NOW(), last_error = NULL, lease_until = NULL,
+        updated_at = NOW() WHERE id = %(id)s AND status = '{DEAD}'"""
+
+
+# 存储层用到的全部命名占位符参数集。测试用它离线校验 SQL 格式，
+# 不必连库就能发现「占位符缺类型符」这类只有真库才暴露的问题。
+SQL_PARAMS = {
+    "claim": {"worker_id": "w-1", "lease_seconds": 900},
+    "renew_lease": {"id": "job-1", "lease_seconds": 900},
+    "enqueue": {"id": "j-1", "kind": "loop", "priority": 50,
+                "payload": {}, "max_attempts": 3, "idempotency_key": None},
+    "complete": {"id": "job-1", "result": {}},
+    "mark_cancelled": {"id": "job-1", "result": {}},
+    "fail_retry": {"id": "job-1", "error": "x", "next_run_at": None},
+    "fail_dead": {"id": "job-1", "error": "x"},
+    "save_checkpoint": {"id": "job-1", "checkpoint": {}},
+    "cancel": {"id": "job-1"},
+    "replay": {"id": "job-1"},
+}
 
 
 class TaskQueueStore:
@@ -129,12 +197,8 @@ class TaskQueueStore:
     def complete(self, job_id: str, result: dict) -> None:
         """任务成功：写结果、清租约。"""
         with self.store.transaction() as cur:
-            cur.execute(
-                f"""UPDATE {self.table} SET status = '{SUCCEEDED}', result = %(result)s,
-                    lease_until = NULL, last_error = NULL, updated_at = NOW()
-                    WHERE id = %(id)s""",
-                {"id": job_id, "result": Json(result)},
-            )
+            cur.execute(complete_sql(self.table),
+                        {"id": job_id, "result": Json(result)})
 
     def mark_cancelled(self, job_id: str, result: dict) -> None:
         """任务被中途取消：落 cancelled 状态。
@@ -143,67 +207,44 @@ class TaskQueueStore:
         用户明明取消了，列表里却显示「已完成」。
         """
         with self.store.transaction() as cur:
-            cur.execute(
-                f"""UPDATE {self.table} SET status = '{CANCELLED}', result = %(result)s,
-                    lease_until = NULL, updated_at = NOW() WHERE id = %(id)s""",
-                {"id": job_id, "result": Json(result)},
-            )
+            cur.execute(mark_cancelled_sql(self.table),
+                        {"id": job_id, "result": Json(result)})
 
     def fail(self, job_id: str, error: str, attempts: int, max_attempts: int) -> str:
         """任务失败：还能重试就回队列，否则进死信。返回落定的状态。"""
         status = failure_outcome(attempts, max_attempts)
         with self.store.transaction() as cur:
             if status == QUEUED:
-                cur.execute(
-                    f"""UPDATE {self.table} SET status = '{QUEUED}', last_error = %(error)s,
-                        lease_until = NULL, next_run_at = %(next_run_at)s, updated_at = NOW()
-                        WHERE id = %(id)s""",
-                    {"id": job_id, "error": error[:2000], "next_run_at": next_run_at(utcnow(), attempts)},
-                )
+                cur.execute(fail_retry_sql(self.table),
+                            {"id": job_id, "error": error[:2000],
+                             "next_run_at": next_run_at(utcnow(), attempts)})
             else:
-                cur.execute(
-                    f"""UPDATE {self.table} SET status = '{DEAD}', last_error = %(error)s,
-                        lease_until = NULL, updated_at = NOW() WHERE id = %(id)s""",
-                    {"id": job_id, "error": error[:2000]},
-                )
+                cur.execute(fail_dead_sql(self.table),
+                            {"id": job_id, "error": error[:2000]})
         return status
 
     def save_checkpoint(self, job_id: str, checkpoint: dict) -> None:
         """写中间态：长任务重启后能从这里接着看，不至于全丢。"""
         with self.store.transaction() as cur:
-            cur.execute(
-                f"UPDATE {self.table} SET checkpoint = %(checkpoint)s, updated_at = NOW() WHERE id = %(id)s",
-                {"id": job_id, "checkpoint": Json(checkpoint)},
-            )
+            cur.execute(save_checkpoint_sql(self.table),
+                        {"id": job_id, "checkpoint": Json(checkpoint)})
 
     def renew_lease(self, job_id: str, lease_seconds: int = 900) -> None:
         """续租：长任务执行期间别让别的 worker 把任务抢走。"""
         with self.store.transaction() as cur:
-            cur.execute(
-                f"""UPDATE {self.table} SET lease_until = NOW() + (%(lease_seconds) || ' seconds')::interval,
-                    updated_at = NOW() WHERE id = %(id)s""",
-                {"id": job_id, "lease_seconds": lease_seconds},
-            )
+            cur.execute(renew_lease_sql(self.table),
+                        {"id": job_id, "lease_seconds": lease_seconds})
 
     def cancel(self, job_id: str) -> bool:
         """取消排队中或执行中的任务。"""
         with self.store.transaction() as cur:
-            cur.execute(
-                f"""UPDATE {self.table} SET status = '{CANCELLED}', lease_until = NULL,
-                    updated_at = NOW() WHERE id = %(id)s AND status IN ('{QUEUED}', '{RUNNING}')""",
-                {"id": job_id},
-            )
+            cur.execute(cancel_sql(self.table), {"id": job_id})
             return cur.rowcount > 0
 
     def replay(self, job_id: str) -> bool:
         """死信重放：回到队列，重置尝试计数。"""
         with self.store.transaction() as cur:
-            cur.execute(
-                f"""UPDATE {self.table} SET status = '{QUEUED}', attempts = 0,
-                    next_run_at = NOW(), last_error = NULL, lease_until = NULL,
-                    updated_at = NOW() WHERE id = %(id)s AND status = '{DEAD}'""",
-                {"id": job_id},
-            )
+            cur.execute(replay_sql(self.table), {"id": job_id})
             return cur.rowcount > 0
 
     # ---------- 读取 ----------

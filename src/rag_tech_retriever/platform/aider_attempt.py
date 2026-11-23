@@ -18,6 +18,8 @@ import tempfile
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
+from rag_tech_retriever.platform.coding_loop import GIT_SAFE
+
 SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build",
              ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 TEXT_SUFFIX = {".py", ".js", ".ts", ".tsx", ".jsx", ".vue", ".go", ".rs", ".java", ".rb",
@@ -90,7 +92,7 @@ class AiderAttempt:
         return env
 
     def _changed_paths(self) -> list[str]:
-        result = self.runner(["git", "status", "--porcelain"], cwd=self.root, capture_output=True,
+        result = self.runner([*GIT_SAFE, "status", "--porcelain"], cwd=self.root, capture_output=True,
                              text=True, encoding="utf-8", errors="replace", timeout=30,
                              check=False)
         names: list[str] = []
