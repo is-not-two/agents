@@ -1,6 +1,7 @@
 """Preview-only bounded pool retention deployment and preflight."""
-from pathlib import Path
 import subprocess
+from pathlib import Path
+
 tests=Path("tests/test_record_store_pool.py").read_text(encoding="utf-8")
 script=r'''
 import os,subprocess,tempfile,time,ssl,urllib.request,json

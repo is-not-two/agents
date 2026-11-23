@@ -1,9 +1,9 @@
 """Source-bound AI search: model selects evidence; server renders verifiable excerpts."""
 import json
-from itertools import zip_longest
 import re
+from collections.abc import Callable
+from itertools import zip_longest
 from threading import BoundedSemaphore
-from typing import Callable
 
 from rag_tech_retriever.common.provider import ProviderError, post_chat
 

@@ -1,6 +1,9 @@
 """Publish only the Vue community dependency closure; leave workspace index alone."""
+import gzip
+import re
+import subprocess
 from pathlib import Path
-import re,subprocess,gzip,hashlib
+
 root=Path("shilie/dist").resolve()
 pending=[root/"community.html"];files={}
 while pending:

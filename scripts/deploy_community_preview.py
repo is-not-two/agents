@@ -1,5 +1,6 @@
+import subprocess
 from pathlib import Path
-import base64,subprocess
+
 root=Path("src/rag_tech_retriever/api")
 main=(root/"main.py").read_text(encoding="utf-8")
 block=main[main.index("    community_origin ="):main.index("    application.state.context = context")]

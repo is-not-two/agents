@@ -5,11 +5,11 @@ Only invitation digests are stored; community cookies never authenticate workspa
 import base64
 import binascii
 import hashlib
-from urllib.parse import quote
-import secrets
 import io
+import secrets
 import zipfile
-from typing import Callable
+from collections.abc import Callable
+from urllib.parse import quote
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response

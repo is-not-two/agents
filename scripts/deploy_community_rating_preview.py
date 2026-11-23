@@ -1,6 +1,7 @@
 """Deploy public rating explanation to preview without exposing historical notes."""
-from pathlib import Path
 import subprocess
+from pathlib import Path
+
 ui=Path("shilie/public/community-reader.html").read_bytes()
 script=r'''
 from pathlib import Path

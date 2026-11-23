@@ -1,6 +1,7 @@
 """Preview-only owner bridge deployment. No public role assignment endpoint."""
-from pathlib import Path
 import subprocess
+from pathlib import Path
+
 local=Path("src/rag_tech_retriever/api/routes/community.py").read_text(encoding="utf-8")
 session_check=local[local.index("        key=digest(token)",local.index("    def session(")):local.index('    @router.get("/session")')]
 handlers=local[local.index('    @router.get("/session")'):local.index('    @router.post("/session", status_code=201)')]

@@ -1,6 +1,7 @@
 """Preview-only community excerpt fairness update, with baseline/candidate tests."""
-from pathlib import Path
 import subprocess
+from pathlib import Path
+
 source=Path("src/rag_tech_retriever/platform/community_answers.py").read_bytes()
 tests=Path("tests/test_community_answers.py").read_text(encoding="utf-8-sig")
 script=r"""

@@ -1,5 +1,6 @@
+import subprocess
 from pathlib import Path
-import subprocess,base64
+
 root=Path("src/rag_tech_retriever"); M=(root/"api/main.py").read_text(encoding="utf8")
 block=M[M.index("    community_origin ="):M.index("    application.state.context = context")]
 files={s:(root/s).read_bytes() for s in ["api/routes/community.py","platform/community_answers.py"]}

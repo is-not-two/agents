@@ -1,11 +1,13 @@
 """Fail-closed Windows attachment scanning contract; no malware samples."""
 import subprocess
 import sys
-from pathlib import Path
 import unittest
+from pathlib import Path
 from unittest.mock import patch
+
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"src"))
 import rag_tech_retriever.platform.community_windows_scanner as scanner
+
 
 class WindowsScannerContract(unittest.TestCase):
     def test_empty_oversize_and_expired_do_not_launch(self):

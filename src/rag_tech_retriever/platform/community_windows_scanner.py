@@ -4,10 +4,10 @@ Does not change Defender cloud/sample-submission policy. Deployment must approve
 that policy before scanning user content. This module never starts a daemon.
 """
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import time
+from pathlib import Path
 
 MAX_BYTES = 1048576
 
@@ -37,7 +37,8 @@ def scan_windows_payload(blob: bytes, timeout: float = 30.0) -> str:
         powershell = Path(os.environ["SystemRoot"])/"System32/WindowsPowerShell/v1.0/powershell.exe"
         check = subprocess.run([str(powershell), "-NoProfile", "-NonInteractive", "-Command", ps],
                                env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                               timeout=max(.1,deadline-time.monotonic()), creationflags=flags)
+                               timeout=max(.1,deadline-time.monotonic()), creationflags=flags,
+                               check=False)
         if check.returncode or time.monotonic() >= deadline:
             return "pending"
         with tempfile.TemporaryDirectory(prefix="shilie-scan-") as folder:
@@ -46,7 +47,8 @@ def scan_windows_payload(blob: bytes, timeout: float = 30.0) -> str:
             result = subprocess.run([str(executable), "-Scan", "-ScanType", "3",
                                      "-File", str(target), "-DisableRemediation"],
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                                    timeout=max(.1,deadline-time.monotonic()), creationflags=flags)
+                                    timeout=max(.1,deadline-time.monotonic()), creationflags=flags,
+                                    check=False)
             # Defender's code 2 conflates a detection with a scan error: never
             # assert "malware" from that code, and never release those bytes.
             if result.returncode == 0 and target.read_bytes() == blob:
