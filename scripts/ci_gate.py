@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 import time
@@ -61,9 +62,15 @@ PURE_LOGIC_TESTS = [
 
 def run(name: str, command: list[str], timeout: int = 300) -> tuple[bool, str]:
     started = time.time()
+    # Windows 下系统默认编码是 GBK，而 pytest/ruff/Vite 的子进程输出常含 UTF-8
+    # 中文；text=True 会按 GBK 解码抛 UnicodeDecodeError（曾让整个门禁崩溃）。
+    # 强制子进程与解码都用 UTF-8，解码异常用 replace 兜底，门禁结果不因编码失真。
+    env = os.environ.copy()
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    env.setdefault("PYTHONUTF8", "1")
     try:
         result = subprocess.run(command, check=False, cwd=ROOT, capture_output=True, text=True,
-                                timeout=timeout)
+                                encoding="utf-8", errors="replace", env=env, timeout=timeout)
     except subprocess.TimeoutExpired:
         return False, f"{name} 超时（{timeout}s）"
     except OSError:
