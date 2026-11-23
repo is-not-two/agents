@@ -1,0 +1,25 @@
+{
+  "name": "shilie-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "dev:demo": "vite --mode demo --host 127.0.0.1",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview:demo": "vite preview --mode demo --host 127.0.0.1"
+  },
+  "dependencies": {
+    "lucide-vue-next": "0.468.0",
+    "pinia": "2.3.1",
+    "vue": "3.5.24",
+    "vue-router": "4.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.3",
+    "@vitejs/plugin-vue": "5.2.4",
+    "typescript": "5.8.3",
+    "vite": "5.4.21",
+    "vue-tsc": "2.2.10"
+  }
+}

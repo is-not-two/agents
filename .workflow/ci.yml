@@ -2,7 +2,7 @@
 #
 # 使用前提（网页操作，仓库所有者完成）：
 # 1. 仓库「服务 → Gitee Go」开通流水线；
-# 2. 新建主机组 `shilie-ci` 并把构建主机接入（主机需 Python 3.10+ 且能访问 PyPI 镜像）；
+# 2. 新建主机组 `shilie-ci` 并把构建主机接入（Python 3.10+、Node 24 和 npm，能访问依赖镜像）；
 # 3. 新建流水线时选择本文件，或把本文件内容粘贴到流水线的 YAML 编辑器；
 #    若主机组名不同，同步修改下方 hostGroupID。
 #
@@ -36,5 +36,6 @@ stages:
             cd ~/gitee_go/deploy
             python3 -m venv .ci-venv
             .ci-venv/bin/python -m pip install -q --upgrade pip
-            .ci-venv/bin/python -m pip install -q -e '.[web,dev]'
+            .ci-venv/bin/python -m pip install -q -e '.[web,dev]' 'setuptools>=68' wheel
+            npm ci --prefix shilie --ignore-scripts
             .ci-venv/bin/python scripts/ci_gate.py

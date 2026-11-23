@@ -15,11 +15,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 CHECKS: list[tuple[str, list[str]]] = [
     ("ruff 代码检查", [sys.executable, "-m", "ruff", "check", "src", "tests", "scripts"]),
-    ("静态版本号一致", [sys.executable, "scripts/check_static_version.py"]),
     ("OpenAPI 契约一致", [sys.executable, "scripts/openapi_contract.py"]),
     ("前端接口契约一致", [sys.executable, "scripts/frontend_api_contract.py"]),
-    ("静态资源引用完整", [sys.executable, "scripts/check_static_assets.py"]),
-    ("wheel 实际静态资产完整", [sys.executable, "scripts/check_wheel_assets.py", "--build"]),
+    ("Vue wheel 与静态资源", [sys.executable, "scripts/check_vue_candidate.py"]),
 ]
 
 PURE_LOGIC_TESTS = [
@@ -37,6 +35,7 @@ PURE_LOGIC_TESTS = [
     "tests/test_trash_overview.py",
     "tests/test_prompt_optimizer.py",
     "tests/test_wheel_assets.py",
+    "tests/test_vue_source_layout.py",
     "tests/test_release_fixture_hashes.py",
     "tests/test_private_backup_preflight.py",
     "tests/test_self_traits.py",
@@ -45,6 +44,8 @@ PURE_LOGIC_TESTS = [
     "tests/test_resume_optimizer.py",
     "tests/test_kind_migration.py",
     "tests/test_interview_prep.py",
+    "tests/test_simulation_cards.py",
+    "tests/test_agent_job_tools.py",
     # 未安装 agent-framework 时整文件跳过；装了的环境（Python 3.11+）跑真实编排。
     "tests/test_maf_runtime.py",
     "tests/test_team_service.py",
@@ -78,12 +79,13 @@ def run(name: str, command: list[str], timeout: int = 300) -> tuple[bool, str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--desktop-ui", action="store_true", help="执行隔离桌面浏览器交互门禁（需 Node/Playwright）")
+    parser.add_argument("--vue-candidate", action="store_true", help="兼容旧命令；Vue 包验收已是默认步骤")
     args = parser.parse_args()
     failures: list[str] = []
     print("=" * 56)
     print("CI 只读门禁（不依赖 PostgreSQL / Docker）")
     print("=" * 56)
-    checks = CHECKS + ([("桌面 Web 交互", ["node", "scripts/check_desktop_ux.mjs"])] if args.desktop_ui else [])
+    checks = CHECKS + ([("桌面 Vue 交互", [sys.executable, "scripts/check_vue_browser.py"])] if args.desktop_ui else [])
     for name, command in checks:
         ok, message = run(name, command)
         print(message)

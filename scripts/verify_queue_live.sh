@@ -43,10 +43,10 @@ sudo -u "$OWNER" psql -h "$SOCK" -p "$PORT" -d "$DB" -tAc \
   "select to_regclass('workspace_task_jobs') as t, has_table_privilege('$APPUSER','workspace_task_jobs','INSERT') as can_insert"
 
 echo "==== 2. 入队（loop，指向演示仓库） ===="
-cat > /tmp/queue-verify-enqueue.json <<'JSON'
+cat > /tmp/queue-verify-enqueue.json <<JSON
 {"kind":"loop","max_attempts":2,"priority":60,"idempotency_key":"verify-queue-live-1",
  "payload":{"root":"demo","task":"在 mathx.py 里新增函数 mul(a, b)，返回 a 与 b 的乘积，并在 report.py 的 summary 里加上乘法示例",
- "gate":"python -c \"import sys; sys.path.insert(0,'.'); from mathx import mul; assert mul(2,3)==6; print('GATE_OK')\"",
+ "gate":"$PY -c \"import sys; sys.path.insert(0,'.'); from mathx import mul; assert mul(2,3)==6; print('GATE_OK')\"",
  "engine":"opencode","tier":"patch"}}
 JSON
 ENQ=$(curl -k -s --max-time 20 -X POST "$API/api/automation/queue" \

@@ -1,4 +1,10 @@
 # AGENTS.md
+
+## 当前前端迁移约束
+
+- 时列唯一前端是本工作树的 `shilie/`（Vue 3 + Vite + TypeScript）。旧原生前端、入口和构建引用已于 2026-11-12 删除；不要从 Git 历史复制回工作树。
+- `api/static/vue/` 是生成物，不在里面开发；旧书签兼容在 Vue 路由实现。工作树清理不等于线上发布，不删除后端、数据库、用户文件或新版素材。
+
 ## Project Overview
 ### 项目名称
 技术文档RAG检索助手（rag-tech-doc-retriever）

@@ -63,12 +63,12 @@ npx --registry=https://registry.npmjs.org --yes --package @playwright/cli@0.1.22
 之后在项目根目录执行：
 
 ```powershell
-.venv/Scripts/python.exe scripts/web_regression.py
+.venv/Scripts/python.exe scripts/ci_verify.py
 ```
 
-脚本启动带随机名称和所有权标签的独立 PostgreSQL 容器、独立网页服务、临时私密元数据及 Chrome 会话，确认测试服务身份后才操作。覆盖知识创建/编辑/刷新、分叉规划/双击编辑/删除撤销/进度/居中、工作流入库与检索、私密内容与滑块、公共备份恢复及窄屏布局。随后真实停止/重启测试数据库，验证失败时保留输入、恢复后重试只保存一次；最后重启测试网页，确认数据和私密解锁仍可用。原生确认框在测试页面自动同意，删除结果另做断言。
+脚本启动带随机名称和所有权标签的独立 PostgreSQL 容器、Vue 网页服务和 Chrome 会话，确认测试服务身份后才操作。Vue 浏览器合约覆盖导航、求职、任务和工作流等交互；真实数据库场景验证笔记创建、编辑、版本、窄屏和私密锁定，再停启测试库和网页，验证失败保留草稿、恢复后只写一次、重启后仍能读取和解锁。
 
-快速只读检查（不建容器）：四场景浏览器回归 `node verify-ui.mjs all`（在含 playwright 依赖的目录执行，用法见 `scripts/verify-ui.mjs` 头部）；静态资源版本一致性 `.venv/Scripts/python.exe scripts/check_static_version.py`（改版升 vN 后运行，防止版本分裂导致"改了没反应"）。
+快速检查（不建容器）：`.venv/Scripts/python.exe scripts/check_vue_candidate.py` 验证发布包和资源；`.venv/Scripts/python.exe scripts/check_vue_browser.py` 跑本地 Vue 浏览器合约。FastAPI 的首页只服务已构建的 Vue；开发时用 `shilie/` 下的 Vite。
 
 全部通过退出码为 0，失败为非 0；结束时关闭测试浏览器和网页，仅在随机名称及标签均匹配后删除测试容器与它的临时卷。不停止正式数据库，不使用个人数据，也不运行真实模型。工具按缓存版本运行；缓存缺失时先执行上面的命令。若电脑重启或进程被强制结束，清理可能来不及执行，应先核对 `shilie-qa-*` 容器的 `io.shilie.regression` 标签和对应测试记录，再清理遗留资源。
 
@@ -201,10 +201,10 @@ JSON 导入是**恢复内容并形成新版本**，保留现有数据库历史�
 
 | 模块 | 职责 | 不承担 |
 | --- | --- | --- |
-| `api/static/shilie/data.js` | HTTP 请求、工作区数据、显示偏好与模块定义 | 页面布局与 SQL |
-| `api/static/shilie/views.js` | 纯视图、表单结构和安全文字输出 | API 写入 |
-| `api/static/shilie/app.js` | 路由、表单与操作协调、反馈和焦点 | 领域最终校验 |
-| `api/static/shilie/{base.css,demo.css,icons.js}` | 视觉样式、响应式和 SVG 图标 | 业务状态 |
+| `shilie/src/api.ts`、`stores/` | HTTP 请求、会话与显示偏好 | 页面布局与 SQL |
+| `shilie/src/views/` | 页面、表单和操作反馈 | 领域最终校验 |
+| `shilie/src/router/`、`layouts/` | 路由、侧栏、工作台结构 | 数据持久化 |
+| `shilie/src/style.css` | 视觉样式与响应式 | 业务状态 |
 | `api/routes/{knowledge,planning,history,stages,search,exports}.py` | 请求契约、校验与服务组合 | SQL 与模型实现 |
 | `domains/` | 内容、依赖、规划状态与备份规则 | HTTP、文件、数据库 |
 | `platform/record_store.py` | 事务、行锁、版本、软删除与恢复 | 页面与领域规则 |

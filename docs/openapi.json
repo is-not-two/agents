@@ -1,9 +1,56 @@
 {
   "components": {
     "schemas": {
+      "ActionInput": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "advance",
+              "pause",
+              "resume",
+              "gate",
+              "approve",
+              "revise",
+              "choices"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "node": {
+            "default": "",
+            "maxLength": 24,
+            "title": "Node",
+            "type": "string"
+          },
+          "value": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Value",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "action"
+        ],
+        "title": "ActionInput",
+        "type": "object"
+      },
       "AgentRunInput": {
         "additionalProperties": false,
         "properties": {
+          "project": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Project",
+            "type": "string"
+          },
           "query": {
             "maxLength": 4000,
             "minLength": 1,
@@ -668,6 +715,12 @@
             "title": "Confirmation",
             "type": "string"
           },
+          "project": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Project",
+            "type": "string"
+          },
           "version": {
             "minimum": 1.0,
             "title": "Version",
@@ -697,10 +750,22 @@
             "title": "Content",
             "type": "string"
           },
+          "project": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Project",
+            "type": "string"
+          },
           "request_id": {
             "maxLength": 100,
             "minLength": 1,
             "title": "Request Id",
+            "type": "string"
+          },
+          "source_title": {
+            "default": "",
+            "maxLength": 160,
+            "title": "Source Title",
             "type": "string"
           }
         },
@@ -779,6 +844,22 @@
           "data"
         ],
         "title": "ProfileInput",
+        "type": "object"
+      },
+      "ProjectInput": {
+        "additionalProperties": false,
+        "properties": {
+          "goal": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          }
+        },
+        "required": [
+          "goal"
+        ],
+        "title": "ProjectInput",
         "type": "object"
       },
       "PromptOptimizeInput": {
@@ -1836,6 +1917,16 @@
             "required": true,
             "schema": {
               "title": "Record Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "project",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Project",
               "type": "string"
             }
           }
@@ -3178,6 +3269,156 @@
           }
         },
         "summary": "Execute"
+      }
+    },
+    "/api/draft-projects": {
+      "get": {
+        "operationId": "listing_api_draft_projects_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {},
+                  "title": "Response Listing Api Draft Projects Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Listing"
+      },
+      "post": {
+        "operationId": "create_api_draft_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Api Draft Projects Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create"
+      }
+    },
+    "/api/draft-projects/{record_id}": {
+      "get": {
+        "operationId": "detail_api_draft_projects__record_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Detail Api Draft Projects  Record Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Detail"
+      }
+    },
+    "/api/draft-projects/{record_id}/action": {
+      "post": {
+        "operationId": "action_api_draft_projects__record_id__action_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Action Api Draft Projects  Record Id  Action Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Action"
       }
     },
     "/api/eval/questions": {
@@ -5704,6 +5945,57 @@
         "summary": "From Interview"
       }
     },
+    "/api/learning/from-simulation/{run_id}": {
+      "post": {
+        "operationId": "from_simulation_api_learning_from_simulation__run_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response From Simulation Api Learning From Simulation  Run Id  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "From Simulation"
+      }
+    },
     "/api/lessons": {
       "get": {
         "operationId": "lessons_list_api_lessons_get",
@@ -6688,6 +6980,16 @@
               "title": "Password",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "x-private-ticket",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "X-Private-Ticket",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -6804,6 +7106,16 @@
             "schema": {
               "default": "",
               "title": "Ticket",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-private-ticket",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "X-Private-Ticket",
               "type": "string"
             }
           }
@@ -8303,22 +8615,6 @@
         "tags": [
           "operations"
         ]
-      }
-    },
-    "/legacy": {
-      "get": {
-        "operationId": "legacy_index_legacy_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Legacy Index"
       }
     }
   }

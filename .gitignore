@@ -74,3 +74,9 @@ output/v2/recovery-tools/
 
 # 2026-11-10 桌面浏览器断言产物（每次跑门禁重新生成）
 output/desktop-ux-check/
+
+# Vue runtime is generated from shilie/ when building the release.
+/src/rag_tech_retriever/api/static/vue/
+
+# 社区前端验证截图（每次浏览器回归重新生成，不入库）
+output/community-vue/

@@ -1,0 +1,5 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>正在打开技巧交流区</title><a href="community.html">打开新版技巧交流区</a><script>
+const old=new URL(location.href),target=new URL("community.html",old),topic=old.searchParams.get("topic"),query=new URLSearchParams(old.hash.slice(1)),q=query.get("q")||"";
+target.search="";if(topic){const params=new URLSearchParams();if(old.searchParams.get("section")==="rating")params.set("section","rating");if(q)params.set("q",q);target.hash="/topic/"+encodeURIComponent(topic)+(params.size?"?"+params:"")}else if(old.hash.startsWith("#/"))target.hash=old.hash;else target.hash="/"+(q?"?"+new URLSearchParams({q}):"");
+location.replace(target.href);
+</script></html>

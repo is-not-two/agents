@@ -13,9 +13,10 @@ from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[1]
 SPEC = PROJECT / "docs" / "openapi.json"
-FRONTEND = PROJECT / "src" / "rag_tech_retriever" / "api" / "static" / "shilie"
+FRONTEND = PROJECT / "shilie" / "src"
 
 CALL_API = re.compile(r"""api\(\s*(["'`])([^"'`\n]+)\1""")
+CALL_VUE = re.compile(r"""\b(?:request|requestText|send)(?:<[^\n]*?>)?\(\s*(["'`])([^"'`\n]+)\1""")
 CALL_FETCH = re.compile(r"""fetch\(\s*(["'`])(/api/[^"'`\n]*)\1""")
 PARAM = re.compile(r"\{[^}]*\}")
 TEMPLATE = re.compile(r"\$\{[^}]*\}")
@@ -51,8 +52,9 @@ def matches(call: str, spec_path: str, prefix: bool = False) -> bool:
 def extract_calls(text: str) -> set[str]:
     """从一段 JS 源码提取 /api 引用；支持跨行调用与字符串拼接出的前缀。"""
     calls: set[str] = set()
-    for match in CALL_API.finditer(text):
-        calls.add("/api/" + match.group(2).lstrip("/"))
+    for pattern in (CALL_API, CALL_VUE):
+        for match in pattern.finditer(text):
+            calls.add("/api/" + match.group(2).lstrip("/"))
     for match in CALL_FETCH.finditer(text):
         calls.add(match.group(2))
     # 前端 api() 帮助函数自身的 "/api/" + path 拼接不算接口引用
@@ -64,8 +66,12 @@ def main() -> int:
     spec = json.loads(SPEC.read_text(encoding="utf-8"))
     paths = spec["paths"]
     calls: set[str] = set()
-    for file in FRONTEND.rglob("*.js"):
-        calls |= extract_calls(file.read_text(encoding="utf-8"))
+    for file in FRONTEND.rglob("*"):
+        if file.suffix in {".ts", ".vue"} and file.name != "demo-data.ts":
+            calls |= extract_calls(file.read_text(encoding="utf-8"))
+    if not calls:
+        print("未发现 Vue 前端 API 引用")
+        return 1
     missing = []
     for url in sorted(calls):
         if url.endswith("/"):

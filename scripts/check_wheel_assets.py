@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import fnmatch
 import hashlib
 import shutil
 import subprocess
@@ -11,33 +10,18 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-try:
-    import tomllib
-except ImportError:
-    import tomli as tomllib
-
 SUFFIXES = {".html", ".css", ".js", ".svg", ".png", ".webp", ".jpg", ".jpeg",
             ".avif", ".mp4", ".webm", ".ico", ".woff", ".woff2"}
 
 
 def expected_assets(project: Path) -> dict[str, str]:
     """Return packaged runtime paths and exact source hashes; omit declared source-only files."""
-    config = tomllib.loads((project / "pyproject.toml").read_text(encoding="utf-8"))
-    exclude = config.get("tool", {}).get("setuptools", {}).get("exclude-package-data", {})
-    patterns = exclude.get("rag_tech_retriever", []) + exclude.get("*", [])
     package = project / "src" / "rag_tech_retriever"
     result = {}
-    for path in sorted((package / "api" / "static").rglob("*")):
+    for path in sorted((package / "api" / "static" / "vue").rglob("*")):
         if not path.is_file() or path.suffix.lower() not in SUFFIXES:
             continue
         relative = path.relative_to(package).as_posix()
-        # Excluding a runtime asset in pyproject must not also silence this gate.
-        # Only the existing editable/source-only materials may be omitted deliberately.
-        if "css_sources" in path.parts or "_archived" in path.parts:
-            continue
-        if (relative == "api/static/shilie/planning-mist.png"
-                and any(fnmatch.fnmatchcase(relative, p) for p in patterns)):
-            continue
         if path.is_symlink():
             raise ValueError(f"Runtime asset is a symlink: {relative}")
         result[f"rag_tech_retriever/{relative}"] = hashlib.sha256(path.read_bytes()).hexdigest()

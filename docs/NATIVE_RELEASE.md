@@ -90,6 +90,8 @@ python scripts/native_release.py recover --project-root ROOT --expected-project-
 
 原生会话须由管理员放进专用无提权账号的系统隔离单元：PrivateNetwork、只读源码/依赖、生产数据/配置/数据库 socket 不可见。仅 QA 工作根可写；使用随机端口、自有 PostgreSQL marker/进程/SQL 身份，绝不连接现有生产集群。不能直接把未隔离的宿主 PostgreSQL 填进测试环境变量。
 
+只读 QA 源在挂载前须带有生成的 Vue 运行资源：在 `shilie/` 下执行 `npm run build -- --base /static/vue/ --outDir ../src/rag_tech_retriever/api/static/vue`。该目录不是发布源文件，由 Vue 构建及资产指纹单独验收；未生成时原生全量会话不会退回旧页面。
+
 API 和控制器分别监听会话输出目录的 `api.sock`、`control.sock`。桌面只运行浏览器与 SDK 客户端，通过固定目标、临时本地回环 SSH 转发访问这两个文件 socket；不在服务器开放 QA TCP 端口，不改变防火墙，不把数据库暴露给桌面。转发关闭后测试入口消失。普通用户公网访问仍受原生产 HTTPS、令牌和网络白名单约束，QA 通道不能代替正式访问验收。
 
 操作者创建私有 transport JSON，字段为 `schema/host/port/user/identity_file/known_hosts/expected_host_fingerprint/remote_output`。必须核对实际主机指纹和新会话绝对路径；JSON 不包含密码、私钥正文或任意命令模板。随机 QA control/MCP 令牌只在服务器权限受限文件及客户端内存中，禁止复制到聊天、命令行参数或普通证据日志。

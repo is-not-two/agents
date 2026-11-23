@@ -30,6 +30,12 @@ DIGEST = re.compile(r"[a-f0-9]{64}\Z")
 SOURCE_ROOTS = {"src", "config", "scripts", "tests", "docs", ".github"}
 SOURCE_FILES = {"pyproject.toml", "requirements.txt", "README.md", "Dockerfile", "docker-compose.yml",
                 ".env.example", ".gitignore", "data/processed/agent_golden_set.json", "data/processed/collaboration_tasks.json"}
+VUE_FILES = {"index.html", "package.json", "package-lock.json", "tsconfig.json", "vite.config.ts", "README.md"}
+VUE_DIRS = {"src", "public", "scripts"}
+VUE_SUFFIXES = {".ts", ".vue", ".mjs", ".js", ".css", ".json", ".webp", ".svg", ".woff2"}
+STATIC_PREFIX = "src/rag_tech_retriever/api/static/"
+VUE_PREFIX = STATIC_PREFIX + "vue/"
+VUE_ASSET = re.compile(r"(?:index\.html|assets/[A-Za-z0-9_.-]+\.(?:js|css|webp|svg|woff2)|wallpaper/[A-Za-z0-9_.-]+\.webp)\Z")
 
 
 class ReleaseError(Exception):
@@ -191,7 +197,14 @@ def _source_name(name: str) -> str:
             or any(part.endswith((".", " ")) for part in path.parts)
             or any(part.split(".")[0].upper() in {"CON", "PRN", "AUX", "NUL", *("COM"+str(i) for i in range(1,10)), *("LPT"+str(i) for i in range(1,10))} for part in path.parts)):
         raise ReleaseError("unsafe archive path")
-    if name != "RELEASE-MANIFEST.json" and name not in SOURCE_FILES and path.parts[0] not in SOURCE_ROOTS:
+    if path.parts[0] == "shilie":
+        parts = path.parts[1:]
+        allowed = ((len(parts) == 1 and parts[0] in VUE_FILES)
+                   or (len(parts) >= 2 and parts[0] in VUE_DIRS
+                       and path.suffix in VUE_SUFFIXES and not any(part.startswith(".") for part in parts)))
+        if not allowed:
+            raise ReleaseError("archive contains non-source Vue data")
+    elif name != "RELEASE-MANIFEST.json" and name not in SOURCE_FILES and path.parts[0] not in SOURCE_ROOTS:
         raise ReleaseError("archive contains non-source data")
     if any(part in {".env", "__pycache__", "_archived"} for part in path.parts):
         raise ReleaseError("archive contains private/generated data")
@@ -199,7 +212,7 @@ def _source_name(name: str) -> str:
 
 
 def _manifest(value: dict) -> dict:
-    if not value or len(value) > MAX_FILES:
+    if not isinstance(value, dict) or not value or len(value) > MAX_FILES:
         raise ReleaseError("invalid source manifest")
     for name, sha in value.items():
         if _source_name(name) == "RELEASE-MANIFEST.json" or not isinstance(sha, str) or not DIGEST.fullmatch(sha):
@@ -209,6 +222,22 @@ def _manifest(value: dict) -> dict:
 
 def _source_sha(manifest: dict) -> str:
     return hashlib.sha256(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def _gated_release_manifest(report: dict) -> dict:
+    source = _manifest(report.get("source_manifest") or {})
+    assets = report.get("vue_assets")
+    if "shilie/package-lock.json" not in source:
+        if assets or any(name.startswith(VUE_PREFIX) for name in source):
+            raise ReleaseError("Vue runtime has no gated Vue source")
+        return source
+    if (not isinstance(assets, dict) or VUE_PREFIX + "index.html" not in assets
+            or not any(name.endswith(".js") for name in assets)
+            or not all(name.startswith(VUE_PREFIX) and VUE_ASSET.fullmatch(name.removeprefix(VUE_PREFIX))
+                       for name in assets)):
+        raise ReleaseError("missing or invalid gated Vue runtime assets")
+    _manifest(assets)
+    return {name: sha for name, sha in source.items() if not name.startswith(STATIC_PREFIX)} | assets
 
 
 def stage(root: Path, expected: Path, release_id: str, runtime_id: str, bundle: Path,
@@ -243,7 +272,7 @@ def stage(root: Path, expected: Path, release_id: str, runtime_id: str, bundle: 
                         or item.file_size > MAX_FILE or item.file_size > max(item.compress_size, 1) * 200):
                     raise ReleaseError("nonregular, encrypted or bomb archive entry")
             manifest = _manifest(_json(archive.read("RELEASE-MANIFEST.json")))
-            if set(names) != set(manifest) | {"RELEASE-MANIFEST.json"} or report.get("source_manifest") != manifest:
+            if set(names) != set(manifest) | {"RELEASE-MANIFEST.json"} or _gated_release_manifest(report) != manifest:
                 raise ReleaseError("source gate/manifest mismatch")
             # Read bounded members and verify CRC+hash before publishing any release files.
             contents = {name: archive.read(name) for name in manifest}

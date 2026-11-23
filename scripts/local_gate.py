@@ -4,14 +4,11 @@
 - 不依赖 Docker、不依赖 GitHub、不依赖外网；只用项目自身 .venv 与本机 PostgreSQL。
 - 检查项分「阻断」与「告警」：阻断项失败退出码非零，告警项只提示。
 - 全部检查串行执行并即时输出，失败处立刻可见，不做静默收集。
-- `--deploy-check` 额外比对本地与服务器的静态版本号，抓「改了没生效」这类
-  部署态问题（CI 环境做不到，这是本地门禁独有的价值）。
 - `--quick` 跳过 pytest，用于只改了样式/文档的场合。
 
 用法（项目根目录）：
     .venv/Scripts/python.exe scripts/local_gate.py
     .venv/Scripts/python.exe scripts/local_gate.py --quick
-    .venv/Scripts/python.exe scripts/local_gate.py --deploy-check
 """
 
 from __future__ import annotations
@@ -25,7 +22,6 @@ from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[1]
 VENV_PY = PROJECT / ".venv" / "Scripts" / "python.exe"
-STATIC_DIR = PROJECT / "src" / "rag_tech_retriever" / "api" / "static" / "shilie"
 
 #: 检查结果
 PASS, FAIL, WARN, SKIP = "PASS", "FAIL", "WARN", "SKIP"
@@ -125,32 +121,6 @@ class Gate:
         return 0
 
 
-def check_static_version() -> tuple[bool, str]:
-    """静态资源版本号必须全站一致。"""
-    done = subprocess.run(
-        [str(VENV_PY), "scripts/check_static_version.py"],
-        cwd=PROJECT, check=False, capture_output=True, text=True,
-        encoding="utf-8", errors="replace",
-    )
-    return done.returncode == 0, done.stdout[-600:]
-
-
-def check_js_syntax() -> tuple[bool, str]:
-    """所有前端模块必须语法合法（node --check）。"""
-    if not STATIC_DIR.is_dir():
-        return False, f"静态目录不存在：{STATIC_DIR}"
-    files = sorted(STATIC_DIR.glob("*.js"))
-    if not files:
-        return False, "没有找到 JS 模块"
-    bad: list[str] = []
-    for path in files:
-        done = subprocess.run(["node", "--check", str(path)], check=False,
-                              capture_output=True, text=True, encoding="utf-8", errors="replace")
-        if done.returncode != 0:
-            bad.append(f"{path.name}: {(done.stderr or '').strip().splitlines()[-1:]}")
-    if bad:
-        return False, "\n".join(bad[:8])
-    return True, f"{len(files)} 个模块语法正常"
 
 
 def check_no_secrets_tracked() -> tuple[bool, str]:
@@ -230,65 +200,11 @@ def _query_kinds() -> set[str] | None:
         return None
 
 
-def check_server_version() -> tuple[bool, str]:
-    """比对本地与服务器上实际运行的静态版本号。
-
-    只能在本机执行（依赖 SSH 密钥）。连不上时降级为告警，不阻断。
-    """
-    local = _local_static_version()
-    if not local:
-        return False, "无法读取本地静态版本"
-    remote = _remote_static_version()
-    if remote is None:
-        return True, f"本地 v{local}；服务器不可达，跳过比对"
-    if remote != local:
-        return False, (f"本地 v{local}，服务器 v{remote} 不一致\n"
-                       f"服务器上跑的不是你当前代码；部署前请确认")
-    return True, f"本地与服务器均为 v{local}"
-
-
-def _local_static_version() -> str | None:
-    index = STATIC_DIR / "index.html"
-    if not index.is_file():
-        return None
-    import re
-
-    found = re.findall(r"\?v=(\d+)", index.read_text(encoding="utf-8"))
-    return found[0] if found else None
-
-
-def _remote_static_version() -> str | None:
-    """通过 SSH 读取服务器时列首页的版本号；不可达返回 None。"""
-    import os
-
-    key = Path(os.path.expanduser("~")) / ".ssh" / "selfstock_8_156_81_128_rsa"
-    if not key.is_file():
-        return None
-    cmd = [
-        "ssh", "-F", "none", "-T", "-p", "22", "-o", "BatchMode=yes",
-        "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=no",
-        "-o", "ConnectTimeout=8", "-i", str(key),
-        "root@8.156.81.128",
-        "curl -sk -m 8 https://127.0.0.1:8770/ | grep -o '?v=[0-9]*' | head -1",
-    ]
-    try:
-        done = subprocess.run(cmd, check=False, capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=25)
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    if done.returncode != 0:
-        return None
-    import re
-
-    found = re.findall(r"v=(\d+)", done.stdout)
-    return found[0] if found else None
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--quick", action="store_true", help="跳过 pytest，只做静态检查")
-    parser.add_argument("--deploy-check", action="store_true",
-                        help="额外比对本地与服务器版本（需 SSH 可达）")
     parser.add_argument("--report", type=Path, help="把结果写成 JSON")
     args = parser.parse_args()
 
@@ -304,8 +220,6 @@ def main() -> int:
 
     # 静态与安全检查：始终阻断
     gate.check("敏感文件未入库", check_no_secrets_tracked)
-    gate.check("静态版本号一致", check_static_version)
-    gate.check("前端模块语法", check_js_syntax)
     gate.run("ruff 代码检查",
              [str(VENV_PY), "-m", "ruff", "check", "src", "scripts", "tests"], blocking=True)
     # 契约快照不连数据库：端点或响应模型变化未同步 docs/openapi.json 时阻断。
@@ -315,8 +229,8 @@ def main() -> int:
     gate.run("前端接口契约一致",
              [str(VENV_PY), "scripts/frontend_api_contract.py"], blocking=True)
     # 页面与 CSS 引用的本地静态文件必须存在：改名漏改引用会 404。
-    gate.run("静态资源引用完整",
-             [str(VENV_PY), "scripts/check_static_assets.py"], blocking=True)
+    gate.run("Vue 发布包与入口",
+             [str(VENV_PY), "scripts/check_vue_candidate.py"], blocking=True)
 
     # kind 一致性：连不上库时降级为跳过（CI 无库是正常的）
     gate.run("依赖完整性", [str(VENV_PY), "-m", "pip", "check"], blocking=False)
@@ -330,10 +244,6 @@ def main() -> int:
         gate.run("pytest 全量", [str(VENV_PY), "-m", "pytest", "-q", "--tb=line"],
                  blocking=True, timeout=900)
 
-    # 部署一致性：只在显式要求时跑，且不阻断
-    if args.deploy_check:
-        gate.check("部署版本一致性", check_server_version, blocking=False)
-
     code = gate.summary()
 
     if args.report:
@@ -341,7 +251,7 @@ def main() -> int:
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_path.write_text(json.dumps({
             "passed": code == 0, "quick": args.quick,
-            "deploy_check": args.deploy_check, "checks": gate.results,
+            "checks": gate.results,
         }, ensure_ascii=False, indent=2), encoding="utf-8")
         try:
             shown = report_path.resolve().relative_to(PROJECT)

@@ -1,4 +1,4 @@
-"""Package only the exact source accepted by a full gate; never deploy a server."""
+"""Package the exact source and runtime frontend accepted by a full gate."""
 from __future__ import annotations
 
 import argparse
@@ -13,7 +13,12 @@ from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT / "src"))
-from rag_tech_retriever.common.release_manifest import source_manifest
+from rag_tech_retriever.common.release_manifest import (
+    STATIC_PREFIX,
+    VUE_PREFIX,
+    source_manifest,
+    vue_manifest,
+)
 
 
 def _write_entry(archive: zipfile.ZipFile, name: str, data: bytes) -> None:
@@ -37,7 +42,7 @@ def _remove_own_publication(path: Path, staged: Path) -> None:
 
 
 def build(root: Path, report_path: Path, output: Path) -> dict:
-    """Stage deterministic source-only ZIP/SHA and publish each without overwriting.
+    """Stage deterministic release ZIP/SHA and publish each without overwriting.
 
     Hard-link support and a trusted output directory are required. Compensation is
     not a two-path atomic transaction: a process crash can leave an orphaned ZIP.
@@ -47,6 +52,21 @@ def build(root: Path, report_path: Path, output: Path) -> dict:
     if (report.get("schema") != 1 or report.get("level") != "full"
             or report.get("passed") is not True or report.get("source_manifest") != manifest):
         raise ValueError("发布门禁未全量通过，或报告与当前源不一致")
+    assets_dir = report_path.with_suffix(".vue-assets")
+    assets = {}
+    if "shilie/package-lock.json" in manifest:
+        assets = vue_manifest(assets_dir)
+        if report.get("vue_assets") != assets:
+            raise ValueError("Vue 运行资源与验收报告不一致")
+    release_manifest = ({name: sha for name, sha in manifest.items() if not name.startswith(STATIC_PREFIX)}
+                        | assets) if assets else manifest
+
+    def verify_inputs():
+        if source_manifest(root) != manifest:
+            raise ValueError("打包期间发布源发生变化")
+        if assets and vue_manifest(assets_dir) != assets:
+            raise ValueError("打包期间 Vue 资源发生变化")
+
     checksum = output.with_suffix(output.suffix + ".sha256")
     if os.path.lexists(output) or os.path.lexists(checksum):
         raise ValueError("发布包或校验文件已存在，拒绝覆盖")
@@ -59,31 +79,30 @@ def build(root: Path, report_path: Path, output: Path) -> dict:
                                          suffix=".tmp", delete=False) as stream:
             staged_zip = Path(stream.name)
             with zipfile.ZipFile(stream, "w", zipfile.ZIP_DEFLATED) as archive:
-                for name, digest in sorted(manifest.items()):
-                    data = (root / name).read_bytes()
+                for name, digest in sorted(release_manifest.items()):
+                    path = assets_dir / name.removeprefix(VUE_PREFIX) if name in assets else root / name
+                    data = path.read_bytes()
                     if hashlib.sha256(data).hexdigest() != digest:
                         raise ValueError("打包期间发布源发生变化")
                     _write_entry(archive, name, data)
                 _write_entry(archive, "RELEASE-MANIFEST.json",
-                             json.dumps(manifest, sort_keys=True, indent=2).encode("utf-8"))
+                             json.dumps(release_manifest, sort_keys=True, indent=2).encode("utf-8"))
             stream.flush()
             os.fsync(stream.fileno())
         result = {"sha256": hashlib.sha256(staged_zip.read_bytes()).hexdigest(),
-                  "files": len(manifest)}
+                  "files": len(release_manifest)}
         with tempfile.NamedTemporaryFile(dir=output.parent, prefix=".release-sha-",
                                          suffix=".tmp", delete=False) as stream:
             staged_sha = Path(stream.name)
             stream.write((result["sha256"] + "  " + output.name + "\n").encode("utf-8"))
             stream.flush()
             os.fsync(stream.fileno())
-        if source_manifest(root) != manifest:
-            raise ValueError("打包期间发布源发生变化")
+        verify_inputs()
         # Unlike rename/replace, link is atomic and refuses even a racing target.
         for staged, target in ((staged_zip, output), (staged_sha, checksum)):
             os.link(staged, target)
             published.append((target, staged))
-        if source_manifest(root) != manifest:
-            raise ValueError("打包期间发布源发生变化")
+        verify_inputs()
         committed = True
         return result
     finally:

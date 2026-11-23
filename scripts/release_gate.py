@@ -11,7 +11,7 @@ from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT / "src"))
-from rag_tech_retriever.common.release_manifest import source_manifest
+from rag_tech_retriever.common.release_manifest import source_manifest, vue_manifest
 from rag_tech_retriever.platform.operations import configuration_report
 
 
@@ -39,23 +39,24 @@ def main() -> int:
                    "backend": args.backend if args.checks == "full" else None,
                    "created_at": datetime.now(timezone.utc).isoformat()})
     before = source_manifest(root)
+    vue_assets = args.report.resolve().with_suffix(".vue-assets")
     commands = []
     if args.checks != "config" and report["passed"]:
         commands = [[sys.executable, "-m", "pip", "check"],
                     # Generated evidence/rollback fixtures are not product source.
                     # Keep every published Python code directory in lint scope.
                     [sys.executable, "-m", "ruff", "check", "src", "scripts", "tests"],
-                    [sys.executable, "scripts/check_static_version.py"],
                     # 契约漂移与静态版本一样属于「代码自洽」检查：不连数据库，
                     # 但有端点/模型变化未同步快照时阻断发布。
                     [sys.executable, "scripts/openapi_contract.py"],
                     # 前端调用的 /api 路径必须在 OpenAPI 中存在，防止页面指向已删除/改名的端点。
-                    [sys.executable, "scripts/frontend_api_contract.py"],
-                    # 页面/CSS 引用的本地静态文件必须存在，防止改名后 404 背景图与脚本。
-                    [sys.executable, "scripts/check_static_assets.py"]]
-        commands += [["node", "--check", str(p)] for p in sorted(
-            (root / "src/rag_tech_retriever/api/static/shilie").glob("*.js"))]
-        commands += [["node", "--check", "scripts/verify-ui.mjs"]]
+                    [sys.executable, "scripts/frontend_api_contract.py"]]
+        if (root / "shilie").is_dir():
+            candidate = [sys.executable, "scripts/check_vue_candidate.py"]
+            if args.checks == "full":
+                vue_assets.parent.mkdir(parents=True, exist_ok=True)
+                candidate += ["--emit-assets", str(vue_assets)]
+            commands.append(candidate)
         commands += [[sys.executable, "scripts/agent_eval.py", "--report",
                       str(args.report.resolve().parent / "agent-contract.json")]]
         commands += [[sys.executable, "scripts/collaboration_eval.py", "--report",
@@ -67,7 +68,7 @@ def main() -> int:
                               str(args.report.resolve().parent / "isolated")]]
             else:
                 commands += [[sys.executable, "scripts/ci_verify.py", "--output",
-                              str(args.report.resolve().parent / "isolated")]]
+                              str(args.report.resolve().parent / "isolated"), "--vue-assets", str(vue_assets)]]
     env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1",
            "RAG_PROJECT_ROOT": str(root), "PYTHONPATH": str(root / "src")}
     if args.checks == "full":
@@ -96,6 +97,13 @@ def main() -> int:
         report["passed"] = False
         report["checks"].append({"id": "source_stability", "status": "fail",
                                  "message": "验证期间发布源发生变化"})
+    if report["passed"] and args.checks == "full" and "shilie/package-lock.json" in before:
+        try:
+            report["vue_assets"] = vue_manifest(vue_assets)
+        except (OSError, ValueError):
+            report["passed"] = False
+            report["checks"].append({"id": "vue_assets", "status": "fail",
+                                     "message": "无法确认 Vue 候选包资源"})
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print("GATE_PASS" if report["passed"] else "GATE_BLOCKED")
