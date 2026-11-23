@@ -71,3 +71,9 @@ output/web/*-before/
 
 # 2026-11-04 事故恢复工具与临时副本（一次性，不入库）
 output/v2/recovery-tools/
+
+# 2026-11-04/05 大体积验证副本（可重生成，保留磁盘不入库）
+# release-convergence 含整站代码快照 341MB；frontend-redesign 含 2143 个前端试验文件 75MB。
+output/verification/release-convergence-*/
+output/verification/live-8771-*/
+output/frontend-redesign-*/
