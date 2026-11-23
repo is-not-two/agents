@@ -1,0 +1,114 @@
+
+========== SECTION 1 当前实际状态（只读） ==========
+-- 主机与内核 --
+iZ2vchbwwn8g6h5wtgtlttZ
+Linux 5.15.0-191-generic
+-- 本机 ED25519 主机指纹（应与用户给定值一致）--
+  actual  : SHA256:kf5k4BoDnFNH9oZD/BZCynrBVRfwq9MJWiKPyASx02E
+  expected: SHA256:kf5k4BoDnFNH9oZD/BZCynrBVRfwq9MJWiKPyASx02E
+  [OK]   主机指纹一致
+-- 22 / 8770 / 8771 本机监听 --
+LISTEN 0      128          0.0.0.0:22         0.0.0.0:*    users:(("sshd",pid=68944,fd=3))                                                     
+LISTEN 0      2048         0.0.0.0:8771       0.0.0.0:*    users:(("python",pid=359771,fd=7))                                                  
+LISTEN 0      2048         0.0.0.0:8770       0.0.0.0:*    users:(("python",pid=225177,fd=6))                                                  
+LISTEN 0      128             [::]:22            [::]:*    users:(("sshd",pid=68944,fd=4))                                                     
+-- 服务状态 --
+  preview is-active : active
+  preview User      : shilie_pvapp
+  preview ExecStart : { path=/var/lib/shilie-preview/app/.venv/bin/python ; argv[]=/var/lib/shilie-preview/app/.venv/bin/python -m uvicorn rag_tech_retriever.api.main:app --host 0.0.0.0 --port 8771 --workers 1 --ssl-keyfil
+  PROD MainPID(只读记录) : 225177
+-- 8771 健康端点自测（找第一个 200）--
+  /health -> 200
+  /health/live -> 200
+  /health/ready -> 200
+  /api/session -> 200
+  [OK]   健康端点 = /health
+-- app 布局与属主 --
+  /var/lib/shilie-preview/app directory root:shilie_pvapp 750
+  /var/lib/shilie-preview/app/.venv/lib/python3.10/site-packages/rag_tech_retriever directory root:shilie_pvapp 770
+  /var/lib/shilie-preview/app/src/rag_tech_retriever directory root:shilie_pvapp 770
+-- 上一个助手的 MiMo 修复是否仍在（modified sha = 6af1fca2...）--
+6af1fca2cc8a0aa34b9146f2813a04bd18721f372f1d5c953133da08ac534253  /var/lib/shilie-preview/app/.venv/lib/python3.10/site-packages/rag_tech_retriever/platform/model_connection.py
+6af1fca2cc8a0aa34b9146f2813a04bd18721f372f1d5c953133da08ac534253  /var/lib/shilie-preview/app/src/rag_tech_retriever/platform/model_connection.py
+-- 正式库/正式配置 只读指纹（仅记录，不读写内容）--
+  /opt/shilie root:root 755
+  /etc/shilie root:shilie 750
+  [INFO] 正式库 shilie_native_20261027 本脚本全程不连接
+
+========== SECTION 2 前置校验 ==========
+  [OK]   前置校验通过（/usr/bin=755，非 root 可执行系统二进制）
+
+========== SECTION 3 配置专用部署身份 ==========
+usermod: no changes
+  [OK]   shilie_deploy 已存在，shell=/bin/bash、家目录对齐 /var/lib/shilie-preview/incoming
+uid=991(shilie_deploy) gid=991(shilie_deploy) groups=991(shilie_deploy)
+  [OK]   目录就位 /var/lib/shilie-preview/incoming(0700 deploy) / /var/lib/shilie-preview/previous(0750 root)
+  [INFO] authorized_keys: restrict + command=/usr/bin/shilie-preview-gate（禁转发/禁 pty/禁任意命令/禁 shell）
+  [OK]   gate 就位（/usr/bin/shilie-preview-gate，白名单：status / upload / deploy）
+  [OK]   runner 就位（含路径穿越/软链接/setuid 审查 + 自动回退）
+/etc/sudoers.d/shilie-preview-deploy: parsed OK
+  [OK]   sudoers 精确到单一脚本（visudo 校验通过）
+  [OK]   审计日志 /var/log/shilie-preview-deploy.log (root:shilie_deploy 0660) + journald
+
+========== SECTION 3b sshd 配置复核 ==========
+permitrootlogin yes
+pubkeyauthentication yes
+authorizedkeysfile .ssh/authorized_keys .ssh/authorized_keys2
+  [INFO] 若 AuthorizedKeysFile 不是默认 .ssh/authorized_keys，请把公钥改放到对应位置并保持一致
+
+========== SECTION 4 服务器端自测 ==========
+-- 4.1 负向：任意命令 / 空命令（想要 shell）/ 操作 8770 / 访问正式库 --
+  [OK]   DENY <<id; whoami; cat /etc/shadow>>
+  [OK]   DENY <<>>
+  [OK]   DENY <<systemctl restart shilie>>
+  [OK]   DENY <<sudo -l>>
+  [OK]   DENY <<curl -k https://127.0.0.1:8770/api/session>>
+  [OK]   DENY <<psql -d shilie_native_20261027 -c select>>
+-- 4.2 正向：status 只读 --
+unit=active
+user=shilie_pvapp
+pid=359771
+health=200
+prod_pid_readonly=225177
+-- 4.3 恶意包审计：用 python3 精确构造三类恶意成员，逐条触发审查分支 --
+  [OK]   拒绝 traversal: DEPLOY_FAILED: 路径越界成员: ../evil_escape.py
+  [OK]   拒绝 symlink: DEPLOY_FAILED: 非法成员类型: lrw-r--r-- 0/0               0 1970-01-01 08:00 rag_tech_retriever/link_to_shadow -> /etc/shadow
+  [OK]   拒绝 setuid: DEPLOY_FAILED: 含 setuid/setgid/sticky 位: -rwsr-xr-x 0/0               2 1970-01-01 08:00 rag_tech_retriever/suid.py
+  [OK]   拒绝 absolute: DEPLOY_FAILED: 路径越界成员: /etc/cron.d/evil
+  [OK]   恶意包被拒且线上代码 sha256 未变
+-- 4.4 正常包：就地打包『当前运行中的代码』（含未入库的 MiMo 修复），走完整 upload→deploy --
+  MiMo 文件部署前 sha256 = 6af1fca2cc8a0aa34b9146f2813a04bd18721f372f1d5c953133da08ac534253
+UPLOAD_OK bytes=3291857
+  [OK]   upload 经 gate 成功
+DEPLOY_OK name=verify-current backup=/var/lib/shilie-preview/previous/verify-current-20261104-205626 health=/health
+  [OK]   deploy 经 gate+sudo 成功（真实停/换位/起/健康/回退链路）
+  MiMo 文件部署后 sha256 = 6af1fca2cc8a0aa34b9146f2813a04bd18721f372f1d5c953133da08ac534253
+  [OK]   MiMo 修复未丢失
+-- 4.5 收尾复核 --
+  preview is-active : active
+  health            : 200
+  PROD MainPID      : 225177 -> 225177
+  [OK]   正式 8770 未重启
+  previous 回退副本 :
+app-native-20261104-163726-d33c967
+app-native-20261104-165930-85f3b03
+verify-current-20261104-205626
+  审计日志尾部      :
+2026-11-04T20:56:25+08:00 [runner] ERROR 非法成员类型: lrw-r--r-- 0/0               0 1970-01-01 08:00 rag_tech_retriever/link_to_shadow -> /etc/shadow
+2026-11-04T20:56:25+08:00 [runner] AUDIT bad-setuid
+2026-11-04T20:56:25+08:00 [runner] ERROR 含 setuid/setgid/sticky 位: -rwsr-xr-x 0/0               2 1970-01-01 08:00 rag_tech_retriever/suid.py
+2026-11-04T20:56:25+08:00 [runner] AUDIT bad-absolute
+2026-11-04T20:56:25+08:00 [runner] ERROR 路径越界成员: /etc/cron.d/evil
+2026-11-04T20:56:26+08:00 peer=183.223.250.168 user=root UPLOAD
+2026-11-04T20:56:26+08:00 peer=183.223.250.168 user=root DEPLOY_REQUEST name=verify-current
+2026-11-04T20:56:26+08:00 [runner] AUDIT verify-current
+2026-11-04T20:56:26+08:00 [runner] AUDIT_PASS members=204
+2026-11-04T20:56:26+08:00 [runner] BACKUP /var/lib/shilie-preview/previous/verify-current-20261104-205626 （旧代码保留，不删除 previous/）
+2026-11-04T20:56:26+08:00 [runner] SWAP 开始 name=verify-current
+2026-11-04T20:56:28+08:00 [runner] DEPLOY_OK name=verify-current health=/health prod_pid=225177 backup=/var/lib/shilie-preview/previous/verify-current-20261104-205626
+
+========== 完成 ==========
+服务器端自测完成。
+注意：本脚本自测用 setpriv 模拟 deploy 身份，最终判据仍是用本机专用密钥真实 SSH（README §7）。
+若 SECTION 2 因 /usr/bin 权限不足 exit 3，需先由 root chmod 0755 三个系统目录（系统级改动，需授权）。
+正式环境晋级仍需用户另行明确授权；本脚本未触碰 8770。

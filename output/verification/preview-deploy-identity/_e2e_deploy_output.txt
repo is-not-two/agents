@@ -1,0 +1,31 @@
+=== 0) 记录部署前基线（root 只读）===
+mimo_sha=6af1fca2cc8a0aa34b9146f2813a04bd18721f372f1d5c953133da08ac534253
+prod_pid=225177
+records=64
+
+=== 1) 在服务器本地把当前运行代码打成一个无害验证包，放到 deploy 用户的 incoming ===
+payload_bytes=3291822
+
+=== 2) 专用密钥真实 SSH：把本地打的包经 upload 灌进去 ===
+local_payload_bytes=3291822
+UPLOAD_OK bytes=3291822
+upload_exit=0
+
+=== 3) 专用密钥真实 SSH：deploy ===
+DEPLOY_OK name=e2e-verify backup=/var/lib/shilie-preview/previous/e2e-verify-20261104-205711 health=/health
+deploy_exit=0
+
+=== 4) 复核：健康 / MiMo 修复 / 正式 PID / 数据 / 回退副本 ===
+health=200
+mimo_sha=6af1fca2cc8a0aa34b9146f2813a04bd18721f372f1d5c953133da08ac534253
+prod_pid=225177
+records=64
+preview=active
+--- previous 回退副本 ---
+app-native-20261104-163726-d33c967
+app-native-20261104-165930-85f3b03
+e2e-verify-20261104-205711
+verify-current-20261104-205626
+
+=== 5) 清理本机临时包 ===
+E2E_DEPLOY_END

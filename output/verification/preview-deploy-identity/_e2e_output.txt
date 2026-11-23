@@ -1,0 +1,26 @@
+=== 1_status ===
+unit=active
+user=shilie_pvapp
+pid=359771
+health=200
+prod_pid_readonly=225177
+exit=0
+
+=== 2_任意命令 ===
+REJECTED: 仅允许 status | upload | deploy <name>
+exit=1
+
+=== 3_空命令要shell ===
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+REJECTED: 仅允许 status | upload | deploy <name>
+exit=1
+
+=== 4_操作8770 ===
+REJECTED: 仅允许 status | upload | deploy <name>
+exit=1
+
+=== 5_访问正式库 ===
+REJECTED: 仅允许 status | upload | deploy <name>
+exit=1
+
+E2E_END

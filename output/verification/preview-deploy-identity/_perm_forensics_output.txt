@@ -1,0 +1,117 @@
+=== A. 目录完整时间戳（Modify/Change/Birth）===
+/usr/bin  mode=750 drwxr-x---  owner=root:root  modify=2026-11-04 20:29:27.758096200 +0800  change=2026-11-04 20:29:27.758096200 +0800  birth=2026-09-16 14:00:33.415002537 +0800
+/usr/local/bin  mode=750 drwxr-x---  owner=root:root  modify=2026-11-04 20:29:27.758096200 +0800  change=2026-11-04 20:29:27.758096200 +0800  birth=2026-09-16 14:00:48.040054583 +0800
+/usr/local/sbin  mode=750 drwxr-x---  owner=root:root  modify=2026-11-04 20:27:45.271698661 +0800  change=2026-11-04 20:27:45.271698661 +0800  birth=2026-09-16 14:00:48.040054583 +0800
+/bin  mode=777 lrwxrwxrwx  owner=root:root  modify=2024-09-11 22:18:27.000000000 +0800  change=2026-09-16 14:00:33.354995911 +0800  birth=2026-09-16 14:00:33.354995911 +0800
+/usr  mode=755 drwxr-xr-x  owner=root:root  modify=2024-09-11 22:18:28.000000000 +0800  change=2026-09-16 14:00:33.491010929 +0800  birth=2026-09-16 14:00:33.354995911 +0800
+/usr/local  mode=755 drwxr-xr-x  owner=root:root  modify=2026-10-27 15:21:10.456850847 +0800  change=2026-10-27 15:21:10.456850847 +0800  birth=2026-09-16 14:00:33.415002537 +0800
+
+=== B. 这些目录属于哪些包 / 包管理器记录的正常权限 ===
+whois, fail2ban, less, kbd, lsb-release, openssh-client, xterm, tk, tk8.6, tcl, tcl8.6, swig, swig4.0, tcl-dev:amd64, qrencode, libxml2-dev:amd64, sqlite3, libpcre3-dev:amd64, libpcap0.8-dev:amd64, libncurses-dev:amd64, libpng-tools, unzip, zip, rake, ruby, ruby-rubygems, python3-linux-procfs, eatmydata, ncat, python3-jsonschema, python3-jsonpatch, python3-json-pointer, python3-babel, apparmor, makedumpfile, crash, mokutil, libpython3-dev:amd64, python3-pip, libarchive-cpio-perl, binutils, binutils-x86-64-linux-gnu, cloud-guest-utils, byobu, bolt, bc, bash, bash-completion, base-files, apport, wget, vim-tiny, vim, ntfs-3g, perl, landscape-common, jq, linux-base, initramfs-tools-core, ubuntu-drivers-common, open-iscsi, update-manager-core, ubuntu-release-upgrader-core, apt, systemd, sudo, screen, python3-twisted, iputils-tracepath, g++, g++-11, libtool, autopoint, automake, autoconf, python3.10-minimal, python3.10, cups-bsd, mailutils, chrony, ncal, at, fakeroot, cups-client, sosreport, x11-common, pkg-config, icu-devtools, git, libc-bin, util-linux, libglib2.0-bin, libc-devtools, libc-dev-bin, gcc, gcc-11, m4, rpcsvc-proto, uuid-runtime, rsync, gpgv, gpgsm, gpgconf, gpg, gpg-agent, gnupg-utils, gpg-wks-server, dirmngr, gawk, pollinate, udisks2, libmodule-scandeps-perl, bsdextrautils, pkexec, polkitd, postgresql-common, postgresql-client-common, sg3-utils, vim-common, xxd, ubuntu-pro-client, eject, ncurses-bin, dpkg, bsdutils, vim-runtime, libperl5.34:amd64, perl-base, diffutils, coreutils, ssh-import-id, grub-common, os-prober, grub-pc, zstd, xdg-user-dirs, xauth, whiptail, usbutils, unattended-upgrades, ucf, tnftp, tmux, time, telnet, tcpdump, strace, squashfs-tools, sensible-utils, sbsigntool, run-one, python3, python3-serial, python3-minimal, libpcre3:amd64, python3-keyring, python3-chardet, python3-automat, psmisc, procps, plymouth, pinentry-curses, pciutils, patch, pastebinit, passwd, networkd-dispatcher, mtr-tiny, mawk, man-db, lsof, login, iptables, install-info, init-system-helpers, info, htop, groff-base, grep, gettext-base, findutils, finalrd, file, e2fsprogs, distro-info, debianutils, debconf, dbus, cron, console-setup, python3-dev, python3.10-dev, libpython3.10-dev:amd64, make, dh-strip-nondeterminism, libarchive-zip-perl, dh-autoreconf, autotools-dev, snapd, dwz, debugedit, dpkg-dev, sysstat, x11-utils, libpng-dev:amd64, xz-utils, openssl, ruby3.0, curl, libcurl4-openssl-dev:amd64, powermgmt-base, lshw, apt-utils, cloud-init, iproute2, cpp, cpp-11: /usr/bin
+kbd, efibootmgr, busybox-static, btrfs-progs, bash, base-files, mount, ntfs-3g, kmod, udev, systemd, nano, pax, util-linux, iputils-ping, cpio, sed, gzip, coreutils, tar, sysvinit-utils, psmisc, procps, netcat-openbsd, login, hostname, grep, fuse3, ed, dash, console-setup, bzip2, net-tools, iproute2: /bin
+
+=== C. root 历史命令里有没有 chmod 750 / 加固关键字 ===
+104:    if Path("/usr/bin/ss").is_file():
+106:            ["/usr/bin/ss", "-H", "-ltn"],
+111:            env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"},
+160:    "PATH": "/usr/sbin:/usr/bin:/sbin:/bin",
+185:    ["/usr/bin/passwd", "--status", user],
+196:os.umask(0o022)
+215:    'restrict,command="/usr/bin/python3 -I '
+336:    if Path("/usr/bin/ss").is_file():
+338:            ["/usr/bin/ss", "-H", "-ltn"],
+343:            env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"},
+392:    "PATH": "/usr/sbin:/usr/bin:/sbin:/bin",
+417:    ["/usr/bin/passwd", "--status", user],
+428:os.umask(0o022)
+447:    'restrict,command="/usr/bin/python3 -I '
+--- history 最后 15 行 ---
+    "software_installed": False,
+    "database_changed": False,
+    "services_restarted": False,
+}))
+SHILIE_PYTHON
+SHILIE_SETUP
+
+printf '\n=== 操作系统 ===\n'
+cat /etc/os-release
+printf '\n=== Python 版本 ===\n'
+python3 --version
+printf '\n=== PostgreSQL 工具 ===\n'
+for tool in psql pg_dump pg_restore pg_lsclusters; do   command -v "$tool" || true; done
+printf '\n=== 已有 PostgreSQL 集群 ===\n'
+if command -v pg_lsclusters >/dev/null 2>&1; then   pg_lsclusters; else   echo "未找到 pg_lsclusters"; fi
+
+=== D. 全局 umask 与 profile 设置 ===
+0022
+/etc/login.defs:131:#	UMASK		Default "umask" value.
+/etc/login.defs:135:# UMASK is the default umask value for pam_umask and is used by
+/etc/login.defs:137:# 022 is the "historical" value in Debian for UMASK
+/etc/login.defs:142:# If USERGROUPS_ENAB is set to "yes", that will modify this UMASK default value
+/etc/login.defs:151:UMASK		022
+/etc/login.defs:155:# If HOME_MODE is not set, the value of UMASK is used to create the mode.
+/etc/login.defs:222:# Enable setting of the umask group bits to be the same as owner bits
+UMASK 行(login.defs):
+151:UMASK		022
+
+=== E. 宝塔面板 / 加固脚本痕迹（安全组里有 8888 宝塔端口）===
+/usr/bin/bt
+==================================================================
+[32mBT-Panel default info![0m
+==================================================================
+外网ipv4面板地址: https://8.156.81.128:8888/e5075888
+内网面板地址:     https://172.30.154.187:8888/e5075888
+-rwxr-xr-x  1 root root 18807 Oct 22 17:45 /etc/init.d/bt
+lrwxrwxrwx  1 root root    14 Oct 22 17:43 /usr/bin/bt -> /etc/init.d/bt
+drwxr-xr-x 16 root root  4096 Oct 22 17:45 /www/server
+
+=== F. 计划任务 / 云助手里有没有权限加固 ===
+LANG=en_US.UTF-8
+LC_ALL=en_US.UTF-8
+
+7 5 * * *  /www/server/cron/3ab48c27ec99cb9787749c362afae517 >> /www/server/cron/3ab48c27ec99cb9787749c362afae517.log 2>&1
+e2scrub_all
+sysstat
+/etc/cron.d/sysstat
+  aliyun.service                                                                       loaded    active     running         Aliyun Assist
+  bt.service                                                                           loaded    active     running         LSB: starts bt
+  cloud-init-hotplugd.service                                                          loaded    inactive   dead            cloud-init hotplug hook daemon
+  cloud-init-local.service                                                             loaded    active     exited          Initial cloud-init job (pre-networking)
+  cloud-init.service                                                                   loaded    active     exited          Initial cloud-init job (metadata service crawler)
+  cloud-init-hotplugd.socket                                                           loaded    active     listening       cloud-init hotplug hook socket
+  cloud-init.target                                                                    loaded    active     active          Cloud-init target
+
+=== G. audit/log 里近期 chmod 记录 ===
+--- auth.log 近期 sudo/root 会话（看谁在什么时候操作）---
+Nov  4 20:33:58 iZ2vchbwwn8g6h5wtgtlttZ systemd: pam_unix(systemd-user:session): session opened for user root(uid=0) by (uid=0)
+Nov  4 20:34:29 iZ2vchbwwn8g6h5wtgtlttZ sshd[366723]: pam_unix(sshd:session): session opened for user root(uid=0) by (uid=0)
+Nov  4 20:34:29 iZ2vchbwwn8g6h5wtgtlttZ systemd: pam_unix(systemd-user:session): session opened for user root(uid=0) by (uid=0)
+Nov  4 20:34:29 iZ2vchbwwn8g6h5wtgtlttZ runuser: pam_unix(runuser:session): session opened for user shilie_pvdb(uid=993) by (uid=0)
+Nov  4 20:35:01 iZ2vchbwwn8g6h5wtgtlttZ CRON[366806]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Nov  4 20:37:22 iZ2vchbwwn8g6h5wtgtlttZ sshd[366854]: pam_unix(sshd:session): session opened for user root(uid=0) by (uid=0)
+Nov  4 20:37:22 iZ2vchbwwn8g6h5wtgtlttZ systemd: pam_unix(systemd-user:session): session opened for user root(uid=0) by (uid=0)
+Nov  4 20:38:31 iZ2vchbwwn8g6h5wtgtlttZ sshd[366980]: pam_unix(sshd:session): session opened for user root(uid=0) by (uid=0)
+Nov  4 20:38:31 iZ2vchbwwn8g6h5wtgtlttZ systemd: pam_unix(systemd-user:session): session opened for user root(uid=0) by (uid=0)
+Nov  4 20:45:01 iZ2vchbwwn8g6h5wtgtlttZ CRON[367141]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Nov  4 20:52:08 iZ2vchbwwn8g6h5wtgtlttZ sshd[367232]: pam_unix(sshd:session): session opened for user root(uid=0) by (uid=0)
+Nov  4 20:52:08 iZ2vchbwwn8g6h5wtgtlttZ systemd: pam_unix(systemd-user:session): session opened for user root(uid=0) by (uid=0)
+
+=== H. 关键反问：之前部署用的是 root 吗（证据）===
+--- 8770/8771 服务身份 ---
+shilie
+shilie_pvapp
+--- .ssh/authorized_keys 里现有公钥（看有几个部署身份、都是什么）---
+/root/.ssh/authorized_keys:
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDBKeYy4pDFPhpIlvkFieaahJ1Q1nL1L3gB9MswMAsOqtJxwvzy+F
+--- 历史部署目录的属主（都是 root 建的？）---
+lrwxrwxrwx  1 root root           51 Nov  3 12:43 /opt/shilie/current -> /opt/shilie/releases/native-20261103-124220-d131fc7
+lrwxrwxrwx  1 root root           51 Nov  3 23:29 /opt/shilie/preview -> /opt/shilie/releases/native-20261103-232849-ec9d769
+drwxr-x--- 13 root shilie_pvapp 4096 Nov  4 16:59 /var/lib/shilie-preview/app
+--- /var/log/shilie 相关部署日志属主 ---
+-rw-rw----  1 root      shilie_deploy         0 Nov  4 20:29 shilie-preview-deploy.log
+
+=== I. 结论用：750 是否影响 root ===
+root 能否执行 /usr/bin/id: 0
+OK
+root 能否执行 systemctl: active
+FORENSICS_END

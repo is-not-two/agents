@@ -1,0 +1,231 @@
+=== 时间基准 ===
+2026-11-05T09:20:53+08:00
+主机: iZ2vchbwwn8g6h5wtgtlttZ  用户: root
+
+=== 1) 专用部署审计日志（全文 + 统计）===
+文件: /var/log/shilie-preview-deploy.log  大小=3582 bytes  修改=2026-11-05 09:05:53.927030069 +0800  属主=root:shilie_deploy 660
+总行数: 36
+--- 全文 ---
+2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='id; whoami; cat /etc/shadow' reason=仅允许 status | upload | deploy <name>
+2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='<empty>' reason=仅允许 status | upload | deploy <name>
+2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='systemctl restart shilie' reason=仅允许 status | upload | deploy <name>
+2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='sudo -l' reason=仅允许 status | upload | deploy <name>
+2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='curl -k https://127.0.0.1:8770/api/session' reason=仅允许 status | upload | deploy <name>
+2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='psql -d shilie_native_20261027 -c select' reason=仅允许 status | upload | deploy <name>
+2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root STATUS
+2026-11-04T20:56:25+08:00 [runner] AUDIT bad-traversal
+2026-11-04T20:56:25+08:00 [runner] ERROR 路径越界成员: ../evil_escape.py
+2026-11-04T20:56:25+08:00 [runner] AUDIT bad-symlink
+2026-11-04T20:56:25+08:00 [runner] ERROR 非法成员类型: lrw-r--r-- 0/0               0 1970-01-01 08:00 rag_tech_retriever/link_to_shadow -> /etc/shadow
+2026-11-04T20:56:25+08:00 [runner] AUDIT bad-setuid
+2026-11-04T20:56:25+08:00 [runner] ERROR 含 setuid/setgid/sticky 位: -rwsr-xr-x 0/0               2 1970-01-01 08:00 rag_tech_retriever/suid.py
+2026-11-04T20:56:25+08:00 [runner] AUDIT bad-absolute
+2026-11-04T20:56:25+08:00 [runner] ERROR 路径越界成员: /etc/cron.d/evil
+2026-11-04T20:56:26+08:00 peer=183.223.250.168 user=root UPLOAD
+2026-11-04T20:56:26+08:00 peer=183.223.250.168 user=root DEPLOY_REQUEST name=verify-current
+2026-11-04T20:56:26+08:00 [runner] AUDIT verify-current
+2026-11-04T20:56:26+08:00 [runner] AUDIT_PASS members=204
+2026-11-04T20:56:26+08:00 [runner] BACKUP /var/lib/shilie-preview/previous/verify-current-20261104-205626 （旧代码保留，不删除 previous/）
+2026-11-04T20:56:26+08:00 [runner] SWAP 开始 name=verify-current
+2026-11-04T20:56:28+08:00 [runner] DEPLOY_OK name=verify-current health=/health prod_pid=225177 backup=/var/lib/shilie-preview/previous/verify-current-20261104-205626
+2026-11-04T20:57:09+08:00 peer=183.223.250.168 user=shilie_deploy UPLOAD
+2026-11-04T20:57:11+08:00 peer=183.223.250.168 user=shilie_deploy DEPLOY_REQUEST name=e2e-verify
+2026-11-04T20:57:11+08:00 [runner] AUDIT e2e-verify
+2026-11-04T20:57:11+08:00 [runner] AUDIT_PASS members=204
+2026-11-04T20:57:11+08:00 [runner] BACKUP /var/lib/shilie-preview/previous/e2e-verify-20261104-205711 （旧代码保留，不删除 previous/）
+2026-11-04T20:57:11+08:00 [runner] SWAP 开始 name=e2e-verify
+2026-11-04T20:57:14+08:00 [runner] DEPLOY_OK name=e2e-verify health=/health prod_pid=225177 backup=/var/lib/shilie-preview/previous/e2e-verify-20261104-205711
+2026-11-04T21:02:39+08:00 peer=183.223.250.168 user=shilie_deploy DENY orig='status; echo EXIT=$LASTEXITCODE' reason=仅允许 status | upload | deploy <name>
+2026-11-04T21:03:10+08:00 peer=183.223.250.168 user=shilie_deploy STATUS
+2026-11-04T21:04:45+08:00 peer=183.223.250.168 user=shilie_deploy STATUS
+2026-11-04T21:05:18+08:00 peer=183.223.250.168 user=shilie_deploy UPLOAD
+2026-11-04T21:06:58+08:00 peer=183.223.250.168 user=shilie_deploy STATUS
+2026-11-05T09:02:36+08:00 peer=125.70.13.156 user=shilie_deploy DENY orig='status ; echo exit=$LASTEXITCODE' reason=仅允许 status | upload | deploy <name>
+2026-11-05T09:05:53+08:00 peer=125.70.13.156 user=shilie_deploy STATUS
+
+=== 2) 异常关键字扫描（审计日志）===
+  ERROR : 4 次
+  DENY : 8 次
+  ROLLBACK : 0
+0 次
+  DEPLOY_FAILED : 0
+0 次
+  FATAL : 0
+0 次
+  Permission denied : 0
+0 次
+  failed : 0
+0 次
+  REJECTED : 0
+0 次
+--- 命中 ERROR/DENY/ROLLBACK/DEPLOY_FAILED 的行 ---
+1:2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='id; whoami; cat /etc/shadow' reason=仅允许 status | upload | deploy <name>
+2:2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='<empty>' reason=仅允许 status | upload | deploy <name>
+3:2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='systemctl restart shilie' reason=仅允许 status | upload | deploy <name>
+4:2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='sudo -l' reason=仅允许 status | upload | deploy <name>
+5:2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='curl -k https://127.0.0.1:8770/api/session' reason=仅允许 status | upload | deploy <name>
+6:2026-11-04T20:56:25+08:00 peer=183.223.250.168 user=root DENY orig='psql -d shilie_native_20261027 -c select' reason=仅允许 status | upload | deploy <name>
+9:2026-11-04T20:56:25+08:00 [runner] ERROR 路径越界成员: ../evil_escape.py
+11:2026-11-04T20:56:25+08:00 [runner] ERROR 非法成员类型: lrw-r--r-- 0/0               0 1970-01-01 08:00 rag_tech_retriever/link_to_shadow -> /etc/shadow
+13:2026-11-04T20:56:25+08:00 [runner] ERROR 含 setuid/setgid/sticky 位: -rwsr-xr-x 0/0               2 1970-01-01 08:00 rag_tech_retriever/suid.py
+15:2026-11-04T20:56:25+08:00 [runner] ERROR 路径越界成员: /etc/cron.d/evil
+30:2026-11-04T21:02:39+08:00 peer=183.223.250.168 user=shilie_deploy DENY orig='status; echo EXIT=$LASTEXITCODE' reason=仅允许 status | upload | deploy <name>
+35:2026-11-05T09:02:36+08:00 peer=125.70.13.156 user=shilie_deploy DENY orig='status ; echo exit=$LASTEXITCODE' reason=仅允许 status | upload | deploy <name>
+
+=== 3) journald: 部署 tag（最近 100 行）===
+Nov 04 20:56:12 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[367956]: DENY orig='id; whoami; cat /etc/shadow' reason=仅允许 status | upload | deploy <name>
+Nov 04 20:56:12 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368012]: DENY orig='<empty>' reason=仅允许 status | upload | deploy <name>
+Nov 04 20:56:12 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368068]: DENY orig='systemctl restart shilie' reason=仅允许 status | upload | deploy <name>
+Nov 04 20:56:13 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368124]: DENY orig='psql -d shilie_native_20261027 -c select' reason=仅允许 status | upload | deploy <name>
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368264]: DENY orig='id; whoami; cat /etc/shadow' reason=仅允许 status | upload | deploy <name>
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368268]: DENY orig='<empty>' reason=仅允许 status | upload | deploy <name>
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368272]: DENY orig='systemctl restart shilie' reason=仅允许 status | upload | deploy <name>
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368276]: DENY orig='sudo -l' reason=仅允许 status | upload | deploy <name>
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368280]: DENY orig='curl -k https://127.0.0.1:8770/api/session' reason=仅允许 status | upload | deploy <name>
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368284]: DENY orig='psql -d shilie_native_20261027 -c select' reason=仅允许 status | upload | deploy <name>
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368287]: STATUS
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368307]: runner: AUDIT bad-traversal
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368312]: runner: ERROR 路径越界成员: ../evil_escape.py
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368324]: runner: AUDIT bad-symlink
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368332]: runner: ERROR 非法成员类型: lrw-r--r-- 0/0               0 1970-01-01 08:00 rag_tech_retriever/link_to_shadow -> /etc/shadow
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368344]: runner: AUDIT bad-setuid
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368352]: runner: ERROR 含 setuid/setgid/sticky 位: -rwsr-xr-x 0/0               2 1970-01-01 08:00 rag_tech_retriever/suid.py
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368364]: runner: AUDIT bad-absolute
+Nov 04 20:56:25 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368369]: runner: ERROR 路径越界成员: /etc/cron.d/evil
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368385]: UPLOAD
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368394]: DEPLOY_REQUEST name=verify-current
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368400]: runner: AUDIT verify-current
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368408]: runner: AUDIT_PASS members=204
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368428]: runner: BACKUP /var/lib/shilie-preview/previous/verify-current-20261104-205626 （旧代码保留，不删除 previous/）
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368432]: runner: SWAP 开始 name=verify-current
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368462]: runner: DEPLOY_OK name=verify-current health=/health prod_pid=225177 backup=/var/lib/shilie-preview/previous/verify-current-20261104-205626
+Nov 04 20:57:09 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368729]: UPLOAD
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368792]: DEPLOY_REQUEST name=e2e-verify
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368798]: runner: AUDIT e2e-verify
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368806]: runner: AUDIT_PASS members=204
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368827]: runner: BACKUP /var/lib/shilie-preview/previous/e2e-verify-20261104-205711 （旧代码保留，不删除 previous/）
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368831]: runner: SWAP 开始 name=e2e-verify
+Nov 04 20:57:14 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[368862]: runner: DEPLOY_OK name=e2e-verify health=/health prod_pid=225177 backup=/var/lib/shilie-preview/previous/e2e-verify-20261104-205711
+Nov 04 21:02:39 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[369219]: DENY orig='status; echo EXIT=$LASTEXITCODE' reason=仅允许 status | upload | deploy <name>
+Nov 04 21:03:10 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[369291]: STATUS
+Nov 04 21:04:45 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[369392]: STATUS
+Nov 04 21:05:18 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[369478]: UPLOAD
+Nov 04 21:06:58 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[369649]: STATUS
+Nov 05 09:02:36 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[380482]: DENY orig='status ; echo exit=$LASTEXITCODE' reason=仅允许 status | upload | deploy <name>
+Nov 05 09:05:53 iZ2vchbwwn8g6h5wtgtlttZ shilie-preview-deploy[380602]: STATUS
+
+=== 4) journald: shilie-preview.service 最近 60 行 ===
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ systemd[1]: Stopping Shilie preview workspace (test environment)...
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ python[359771]: INFO:     Shutting down
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ python[359771]: INFO:     Waiting for application shutdown.
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ python[359771]: [11/04/26 20:56:26] INFO     StreamableHTTP       streamable_http_manager.py:166
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ python[359771]:                              session manager
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ python[359771]:                              shutting down
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ python[359771]: INFO:     Application shutdown complete.
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ python[359771]: INFO:     Finished server process [359771]
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ systemd[1]: shilie-preview.service: Deactivated successfully.
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ systemd[1]: Stopped Shilie preview workspace (test environment).
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ systemd[1]: shilie-preview.service: Consumed 14.880s CPU time.
+Nov 04 20:56:26 iZ2vchbwwn8g6h5wtgtlttZ systemd[1]: Started Shilie preview workspace (test environment).
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: INFO:     Started server process [368445]
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: INFO:     Waiting for application startup.
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: [11/04/26 20:56:28] INFO     StreamableHTTP       streamable_http_manager.py:162
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ python[368445]:                              session manager
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ python[368445]:                              started
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: INFO:     Application startup complete.
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: INFO:     Uvicorn running on https://0.0.0.0:8771 (Press CTRL+C to quit)
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: {"ts": "2026-11-04T20:56:28", "level": "INFO", "logger": "shilie.access", "msg": "http_request", "request_id": "0b04c9e2d942", "method": "GET", "path": "/health", "status": 200, "elapsed_ms": 3.6}
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: INFO:     127.0.0.1:53176 - "GET /health HTTP/1.1" 200 OK
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: {"ts": "2026-11-04T20:56:28", "level": "INFO", "logger": "shilie.access", "msg": "http_request", "request_id": "c52225556baf", "method": "GET", "path": "/health", "status": 200, "elapsed_ms": 1.2}
+Nov 04 20:56:28 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: INFO:     127.0.0.1:53182 - "GET /health HTTP/1.1" 200 OK
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: {"ts": "2026-11-04T20:57:11", "level": "INFO", "logger": "shilie.access", "msg": "http_request", "request_id": "e2ea742314ba", "method": "GET", "path": "/health", "status": 200, "elapsed_ms": 1.4}
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: INFO:     127.0.0.1:44578 - "GET /health HTTP/1.1" 200 OK
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ systemd[1]: Stopping Shilie preview workspace (test environment)...
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: INFO:     Shutting down
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: INFO:     Waiting for application shutdown.
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: [11/04/26 20:57:11] INFO     StreamableHTTP       streamable_http_manager.py:166
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ python[368445]:                              session manager
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ python[368445]:                              shutting down
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: INFO:     Application shutdown complete.
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ python[368445]: INFO:     Finished server process [368445]
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ systemd[1]: shilie-preview.service: Deactivated successfully.
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ systemd[1]: Stopped Shilie preview workspace (test environment).
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ systemd[1]: shilie-preview.service: Consumed 1.605s CPU time.
+Nov 04 20:57:11 iZ2vchbwwn8g6h5wtgtlttZ systemd[1]: Started Shilie preview workspace (test environment).
+Nov 04 20:57:13 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     Started server process [368844]
+Nov 04 20:57:13 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     Waiting for application startup.
+Nov 04 20:57:13 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: [11/04/26 20:57:13] INFO     StreamableHTTP       streamable_http_manager.py:162
+Nov 04 20:57:13 iZ2vchbwwn8g6h5wtgtlttZ python[368844]:                              session manager
+Nov 04 20:57:13 iZ2vchbwwn8g6h5wtgtlttZ python[368844]:                              started
+Nov 04 20:57:13 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     Application startup complete.
+Nov 04 20:57:13 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     Uvicorn running on https://0.0.0.0:8771 (Press CTRL+C to quit)
+Nov 04 20:57:14 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: {"ts": "2026-11-04T20:57:14", "level": "INFO", "logger": "shilie.access", "msg": "http_request", "request_id": "03d02b3b80dd", "method": "GET", "path": "/health", "status": 200, "elapsed_ms": 2.5}
+Nov 04 20:57:14 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     127.0.0.1:44608 - "GET /health HTTP/1.1" 200 OK
+Nov 04 20:57:14 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: {"ts": "2026-11-04T20:57:14", "level": "INFO", "logger": "shilie.access", "msg": "http_request", "request_id": "136cd2da3941", "method": "GET", "path": "/health", "status": 200, "elapsed_ms": 1.3}
+Nov 04 20:57:14 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     127.0.0.1:36962 - "GET /health HTTP/1.1" 200 OK
+Nov 04 21:03:10 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: {"ts": "2026-11-04T21:03:10", "level": "INFO", "logger": "shilie.access", "msg": "http_request", "request_id": "ca8e832463c1", "method": "GET", "path": "/health", "status": 200, "elapsed_ms": 1.3}
+Nov 04 21:03:10 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     127.0.0.1:41626 - "GET /health HTTP/1.1" 200 OK
+Nov 04 21:04:45 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: {"ts": "2026-11-04T21:04:45", "level": "INFO", "logger": "shilie.access", "msg": "http_request", "request_id": "354236d51c25", "method": "GET", "path": "/health", "status": 200, "elapsed_ms": 1.4}
+Nov 04 21:04:45 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     127.0.0.1:34020 - "GET /health HTTP/1.1" 200 OK
+Nov 04 21:06:58 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: {"ts": "2026-11-04T21:06:58", "level": "INFO", "logger": "shilie.access", "msg": "http_request", "request_id": "7d877beeefa8", "method": "GET", "path": "/health", "status": 200, "elapsed_ms": 1.3}
+Nov 04 21:06:58 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     127.0.0.1:53112 - "GET /health HTTP/1.1" 200 OK
+Nov 05 09:02:26 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: {"ts": "2026-11-05T09:02:26", "level": "INFO", "logger": "shilie.access", "msg": "http_request", "request_id": "d72b98689266", "method": "GET", "path": "/health", "status": 200, "elapsed_ms": 1.6}
+Nov 05 09:02:26 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     127.0.0.1:35194 - "GET /health HTTP/1.1" 200 OK
+Nov 05 09:05:53 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: {"ts": "2026-11-05T09:05:53", "level": "INFO", "logger": "shilie.access", "msg": "http_request", "request_id": "dafaef663d4f", "method": "GET", "path": "/health", "status": 200, "elapsed_ms": 1.7}
+Nov 05 09:05:53 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     127.0.0.1:52670 - "GET /health HTTP/1.1" 200 OK
+Nov 05 09:20:52 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: {"ts": "2026-11-05T09:20:52", "level": "INFO", "logger": "shilie.access", "msg": "http_request", "request_id": "f817e4597e49", "method": "GET", "path": "/", "status": 200, "elapsed_ms": 91.2}
+Nov 05 09:20:52 iZ2vchbwwn8g6h5wtgtlttZ python[368844]: INFO:     125.70.13.156:52262 - "GET / HTTP/1.1" 200 OK
+
+=== 5) 服务状态 / 重启计数 / 健康 ===
+  is-active  : active
+  User       : shilie_pvapp
+  MainPID    : 368844
+  NRestarts  : 0
+  ActiveEnter: Wed 2026-11-04 20:57:11 CST
+  ExecMainStart: Wed 2026-11-04 20:57:11 CST
+  Result     : success
+  health(本机回环): 200
+
+=== 6) previous/ 回退目录（看有没有异常频繁部署/失败回退）===
+total 8
+drwxr-x--- 13 root shilie_pvapp 4096 2026-11-04 16:37 app-native-20261104-165930-85f3b03
+drwxr-x--- 13 root shilie_pvapp 4096 2026-11-04 16:35 app-native-20261104-163726-d33c967
+
+=== 7) incoming/ 是否干净（pending 残留）===
+total 16
+drwx------  4 shilie_deploy shilie_deploy 4096 Nov  4 21:05 .
+drwxr-x--x 10 root          root          4096 Nov  4 20:57 ..
+drwx------  2 shilie_deploy shilie_deploy 4096 Nov  4 20:32 .cache
+drwx------  2 shilie_deploy shilie_deploy 4096 Nov  4 20:26 .ssh
+
+=== 8) 部署身份与护栏现状（确认没复发 750）===
+shilie_deploy:x:991:991::/var/lib/shilie-preview/incoming:/bin/bash
+  755 /usr/bin
+  755 /usr/local/bin
+  755 /usr/local/sbin
+  sudoers 校验: /etc/sudoers.d/shilie-preview-deploy: parsed OK
+  gate 存在   : yes
+  runner 存在 : yes
+
+=== 9) 正式 8770 只读对照（证明没被波及）===
+  shilie MainPID : 225177
+  shilie is-active: active
+
+=== 10) 近期 SSH 登录里 deploy 用户记录（auth.log）===
+Nov  4 21:06:58 iZ2vchbwwn8g6h5wtgtlttZ systemd: pam_unix(systemd-user:session): session opened for user shilie_deploy(uid=991) by (uid=0)
+Nov  4 21:06:58 iZ2vchbwwn8g6h5wtgtlttZ sshd[369646]: Disconnected from user shilie_deploy 183.223.250.168 port 10833
+Nov  4 21:06:58 iZ2vchbwwn8g6h5wtgtlttZ sshd[369575]: pam_unix(sshd:session): session closed for user shilie_deploy
+Nov  5 09:02:36 iZ2vchbwwn8g6h5wtgtlttZ sshd[380415]: Accepted publickey for shilie_deploy from 125.70.13.156 port 63581 ssh2: ED25519 SHA256:iMd1V1+Tw7lSYYqbuktegr6EOFSOAWtvIXV9LOAfnpI
+Nov  5 09:02:36 iZ2vchbwwn8g6h5wtgtlttZ sshd[380415]: pam_unix(sshd:session): session opened for user shilie_deploy(uid=991) by (uid=0)
+Nov  5 09:02:36 iZ2vchbwwn8g6h5wtgtlttZ systemd-logind[795]: New session 5047 of user shilie_deploy.
+Nov  5 09:02:36 iZ2vchbwwn8g6h5wtgtlttZ systemd: pam_unix(systemd-user:session): session opened for user shilie_deploy(uid=991) by (uid=0)
+Nov  5 09:04:36 iZ2vchbwwn8g6h5wtgtlttZ sshd[380479]: Disconnected from user shilie_deploy 125.70.13.156 port 63581
+Nov  5 09:04:36 iZ2vchbwwn8g6h5wtgtlttZ sshd[380415]: pam_unix(sshd:session): session closed for user shilie_deploy
+Nov  5 09:05:53 iZ2vchbwwn8g6h5wtgtlttZ sshd[380528]: Accepted publickey for shilie_deploy from 125.70.13.156 port 31606 ssh2: ED25519 SHA256:iMd1V1+Tw7lSYYqbuktegr6EOFSOAWtvIXV9LOAfnpI
+Nov  5 09:05:53 iZ2vchbwwn8g6h5wtgtlttZ sshd[380528]: pam_unix(sshd:session): session opened for user shilie_deploy(uid=991) by (uid=0)
+Nov  5 09:05:53 iZ2vchbwwn8g6h5wtgtlttZ systemd-logind[795]: New session 5050 of user shilie_deploy.
+Nov  5 09:05:53 iZ2vchbwwn8g6h5wtgtlttZ systemd: pam_unix(systemd-user:session): session opened for user shilie_deploy(uid=991) by (uid=0)
+Nov  5 09:05:54 iZ2vchbwwn8g6h5wtgtlttZ sshd[380599]: Disconnected from user shilie_deploy 125.70.13.156 port 31606
+Nov  5 09:05:54 iZ2vchbwwn8g6h5wtgtlttZ sshd[380528]: pam_unix(sshd:session): session closed for user shilie_deploy
+
+AUDIT_END

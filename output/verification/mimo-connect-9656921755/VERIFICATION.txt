@@ -1,0 +1,110 @@
+{
+  "target": "E:\\project\\agents\\rag-tech-doc-retriever\\src\\rag_tech_retriever\\platform\\model_connection.py",
+  "branch": "ModelConnection.test MiMo v2.6 provider-specific thinking",
+  "baseline_sha256": "a374c7f7934aec6f3a932d512f852366e1018faee66be08a98cf5a7269e63cd3",
+  "modified_sha256": "6af1fca2cc8a0aa34b9146f2813a04bd18721f372f1d5c953133da08ac534253",
+  "restored_sha256": "a374c7f7934aec6f3a932d512f852366e1018faee66be08a98cf5a7269e63cd3",
+  "baseline": {
+    "command": [
+      "E:\\project\\agents\\rag-tech-doc-retriever\\.venv\\Scripts\\python.exe",
+      "E:\\project\\agents\\rag-tech-doc-retriever\\output\\verification\\mimo-connect-9656921755\\verify_probe.py",
+      "E:\\project\\agents\\rag-tech-doc-retriever\\output\\verification\\mimo-connect-9656921755\\BASELINE.py"
+    ],
+    "stdout": "mimo ok=False thinking=None message=服务响应不符合聊天接口格式，请检查 API 地址和模型\nother-provider ok=True thinking=None message=连接成功，模型已返回有效回复\nmalformed ok=False thinking=None message=服务响应不符合聊天接口格式，请检查 API 地址和模型\ndenied ok=False thinking=None message=密钥无效或已失效\n",
+    "stderr": "",
+    "exit": 0
+  },
+  "modified": {
+    "command": [
+      "E:\\project\\agents\\rag-tech-doc-retriever\\.venv\\Scripts\\python.exe",
+      "E:\\project\\agents\\rag-tech-doc-retriever\\output\\verification\\mimo-connect-9656921755\\verify_probe.py",
+      "E:\\project\\agents\\rag-tech-doc-retriever\\output\\verification\\mimo-connect-9656921755\\MODIFIED_FILE.py"
+    ],
+    "stdout": "mimo ok=True thinking={'type': 'disabled'} message=连接成功，模型已返回有效回复\nother-provider ok=True thinking=None message=连接成功，模型已返回有效回复\nmalformed ok=False thinking=None message=服务响应不符合聊天接口格式，请检查 API 地址和模型\ndenied ok=False thinking=None message=密钥无效或已失效\n",
+    "stderr": "",
+    "exit": 0
+  },
+  "rollback_script": {
+    "command": [
+      "E:\\git\\Git\\bin\\bash.exe",
+      "ROLLBACK.sh",
+      "restored.py"
+    ],
+    "stdout": "",
+    "stderr": "",
+    "exit": 0
+  },
+  "rollback": {
+    "command": [
+      "E:\\project\\agents\\rag-tech-doc-retriever\\.venv\\Scripts\\python.exe",
+      "E:\\project\\agents\\rag-tech-doc-retriever\\output\\verification\\mimo-connect-9656921755\\verify_probe.py",
+      "E:\\project\\agents\\rag-tech-doc-retriever\\output\\verification\\mimo-connect-9656921755\\restored.py"
+    ],
+    "stdout": "mimo ok=False thinking=None message=服务响应不符合聊天接口格式，请检查 API 地址和模型\nother-provider ok=True thinking=None message=连接成功，模型已返回有效回复\nmalformed ok=False thinking=None message=服务响应不符合聊天接口格式，请检查 API 地址和模型\ndenied ok=False thinking=None message=密钥无效或已失效\n",
+    "stderr": "",
+    "exit": 0
+  },
+  "patch_apply": {
+    "command": [
+      "git",
+      "apply",
+      "--unsafe-paths",
+      "E:\\project\\agents\\rag-tech-doc-retriever\\output\\verification\\mimo-connect-9656921755\\DIFF_FILE.patch"
+    ],
+    "stdout": "",
+    "stderr": "",
+    "exit": 0
+  },
+  "initial_error": "previous attempt AssertionError because original file uses CRLF; no target write",
+  "scope": "mock provider; not real MiMo; no deployment",
+  "supplemental_checks": [
+    {
+      "command": [
+        "E:\\project\\agents\\rag-tech-doc-retriever\\.venv\\Scripts\\python.exe",
+        "-c",
+        "from pathlib import Path; import sys; compile(Path(sys.argv[1]).read_bytes(),sys.argv[1],\"exec\"); print(\"syntax OK\")",
+        "E:\\project\\agents\\rag-tech-doc-retriever\\output\\verification\\mimo-connect-9656921755\\MODIFIED_FILE.py"
+      ],
+      "stdout": "syntax OK\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "command": [
+        "E:\\project\\agents\\rag-tech-doc-retriever\\.venv\\Scripts\\ruff.exe",
+        "check",
+        "--no-cache",
+        "E:\\project\\agents\\rag-tech-doc-retriever\\output\\verification\\mimo-connect-9656921755\\MODIFIED_FILE.py"
+      ],
+      "stdout": "All checks passed!\n",
+      "stderr": "",
+      "exit": 0
+    },
+    {
+      "command": [
+        "E:\\project\\agents\\rag-tech-doc-retriever\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "tests/test_prompt_optimizer.py"
+      ],
+      "stdout": "............                                                             [100%]\n12 passed in 0.06s\n",
+      "stderr": "",
+      "exit": 0
+    }
+  ],
+  "preview_deployment": {
+    "ssh_exit": 0,
+    "stdout": "{\"systemctl show shilie-preview.service --property=User --value\": {\"exit\": 0, \"stdout\": \"shilie_pvapp\", \"stderr\": \"\"}, \"systemctl show shilie-preview.service --property=ExecStart --value\": {\"exit\": 0, \"stdout\": \"{ path=/var/lib/shilie-preview/app/.venv/bin/python ; argv[]=/var/lib/shilie-preview/app/.venv/bin/python -m uvicorn rag_tech_retriever.api.main:app --host 0.0.0.0 --port 8771 --workers 1 --ssl-keyfile /var/lib/shilie-preview/app/credentials/server.key --ssl-certfile /var/lib/shilie-preview/app/credentials/server.crt ; ignore_errors=no ; start_time=[Wed 2026-11-04 16:59:47 CST] ; stop_time=[n/a] ; pid=353463 ; code=(null) ; status=0/0 }\", \"stderr\": \"\"}, \"systemctl is-active shilie-preview.service\": {\"exit\": 0, \"stdout\": \"active\", \"stderr\": \"\"}, \"systemctl stop shilie-preview.service\": {\"exit\": 0, \"stdout\": \"\", \"stderr\": \"\"}, \"systemctl start shilie-preview.service\": {\"exit\": 0, \"stdout\": \"\", \"stderr\": \"\"}, \"health_8771\": 200, \"new_hashes\": [\"6af1fca2cc8a0aa34b9146f2813a04bd18721f372f1d5c953133da08ac534253\", \"6af1fca2cc8a0aa34b9146f2813a04bd18721f372f1d5c953133da08ac534253\"], \"preserved_originals\": [{\"path\": \"/var/lib/shilie-preview/app/src/rag_tech_retriever/platform/model_connection.py.mimo-before-9656921755\", \"sha256\": \"a374c7f7934aec6f3a932d512f852366e1018faee66be08a98cf5a7269e63cd3\"}, {\"path\": \"/var/lib/shilie-preview/app/.venv/lib/python3.10/site-packages/rag_tech_retriever/platform/model_connection.py.mimo-before-9656921755\", \"sha256\": \"a374c7f7934aec6f3a932d512f852366e1018faee66be08a98cf5a7269e63cd3\"}], \"status\": \"DEPLOYED\"}\n",
+    "stderr": "",
+    "command": "pinned SSH python3 -I, replace only preview source and installed module, restart shilie-preview.service, auto rollback on failure"
+  },
+  "preview_service_identity_probe": {
+    "ssh_exit": 0,
+    "stdout": "service_identity_probe_exit 0\nruntime_module=/var/lib/shilie-preview/app/.venv/lib/python3.10/site-packages/rag_tech_retriever/platform/model_connection.py\nfake_mimo_ok=True\nthinking_disabled=True\n\nstderr \nhealth_status 200\n",
+    "stderr": "",
+    "scope": "fake provider, actual 8771 installed module, no API key used"
+  }
+}
