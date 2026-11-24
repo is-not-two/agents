@@ -15,6 +15,8 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 
+from rag_tech_retriever.platform.community_pagination import decode_cursor, page_result
+
 COOKIE = "__Secure-community_session"
 PREFIX = "/api/community"
 
@@ -45,6 +47,15 @@ class Withdrawal(BaseModel):
     version: int = Field(ge=1)
 
 
+class Revision(BaseModel):
+    """A version-bound, retry-safe author correction."""
+    post_id: UUID
+    version: int = Field(ge=1)
+    request_id: UUID
+    title: str = Field(min_length=1,max_length=120)
+    body: str = Field(min_length=1,max_length=20000)
+
+
 class Review(BaseModel):
     post_id: UUID
     version: int = Field(ge=1)
@@ -52,13 +63,14 @@ class Review(BaseModel):
     score: int = Field(ge=0, le=100)
     rationale: str = Field(min_length=1, max_length=2000)
     public_rationale: bool = False
+    author_feedback: str = Field(default="",max_length=2000)
 
 
 def digest(value: str) -> bytes:
     return hashlib.sha256(value.encode()).digest()
 
 
-def create_router(transaction: Callable, *, public_origin: str, session_seconds: int, answers=None, owner_authorized: Callable | None = None) -> APIRouter:
+def create_router(transaction: Callable, *, public_origin: str, session_seconds: int, answers=None, owner_authorized: Callable | None = None, public_cache=None) -> APIRouter:
     """Build invite, logout and submission routes; commit precedes success response."""
     router = APIRouter(prefix=PREFIX)
 
@@ -126,8 +138,9 @@ def create_router(transaction: Callable, *, public_origin: str, session_seconds:
     @router.delete("/session", status_code=204)
     def logout(request: Request) -> Response:
         same_origin(request)
+        key=session(request)
         with transaction() as cur:
-            cur.execute("DELETE FROM community.sessions WHERE token_digest=%s",(session(request),))
+            cur.execute("DELETE FROM community.sessions WHERE token_digest=%s",(key,))
         result=Response(status_code=204)
         result.delete_cookie(COOKIE,path=PREFIX,secure=True,httponly=True,samesite="strict")
         return result
@@ -211,15 +224,70 @@ def create_router(transaction: Callable, *, public_origin: str, session_seconds:
         return {"id":fid,"state":"pending"}
 
     @router.get("/mine")
-    def mine(request: Request) -> dict:
+    def mine(request: Request, before: str | None = Query(default=None,max_length=256)) -> dict:
+        key=session(request)
+        try:
+            boundary=decode_cursor(before,"mine")
+        except ValueError:
+            raise HTTPException(422,"分页位置无效，请从第一批重新读取") from None
         with transaction() as cur:
-            cur.execute("SELECT member_id FROM community.sessions WHERE token_digest=%s AND expires_at>now()",(session(request),))
+            cur.execute("SELECT member_id FROM community.sessions WHERE token_digest=%s AND expires_at>now()",(key,))
             actor=cur.fetchone()
             if not actor:
                 raise HTTPException(401,"请登录交流区")
-            cur.execute("""SELECT id,title,state,version FROM community.posts WHERE author_id=%s
-                ORDER BY created_at DESC,id DESC LIMIT 30""",(actor["member_id"],))
-            return {"items":cur.fetchall()}
+            condition=" AND (p.created_at,p.id)<(%s,%s::uuid)" if boundary else ""
+            cur.execute("""SELECT p.id,p.title,p.state,p.version,p.created_at,coalesce(r.author_feedback,'') AS author_feedback
+                FROM community.posts p LEFT JOIN community.reviews r ON r.post_id=p.id AND r.version=p.version-1
+                WHERE p.author_id=%s"""+condition+" ORDER BY p.created_at DESC,p.id DESC LIMIT 31",
+                (actor["member_id"],*(boundary or ())))
+            return page_result(cur.fetchall(),30,"mine")
+
+    @router.get("/draft")
+    def read_draft(post: UUID,request: Request) -> dict:
+        """Return only the current author's private draft and explicit feedback."""
+        key=session(request)
+        with transaction() as cur:
+            cur.execute("""SELECT p.id,p.title,p.body,p.state,p.version,coalesce(r.author_feedback,'') AS author_feedback FROM community.posts p
+                JOIN community.sessions s ON s.member_id=p.author_id
+                LEFT JOIN community.reviews r ON r.post_id=p.id AND r.version=p.version-1
+                WHERE p.id=%s AND s.token_digest=%s AND s.expires_at>now()""",(str(post),key))
+            row=cur.fetchone()
+        if not row:
+            raise HTTPException(404,"找不到你的投稿")
+        return {"item":row}
+
+    @router.post("/revise")
+    def revise(data: Revision,request: Request) -> dict:
+        """Archive the prior version and require new approval, under a row lock."""
+        same_origin(request)
+        key=session(request)
+        title,body=data.title.strip(),data.body.strip()
+        if not title or not body:
+            raise HTTPException(422,"标题和正文不能为空")
+        with transaction() as cur:
+            cur.execute("""SELECT p.* FROM community.posts p JOIN community.sessions s ON s.member_id=p.author_id
+                WHERE p.id=%s AND s.token_digest=%s AND s.expires_at>now() FOR UPDATE OF p""",(str(data.post_id),key))
+            row=cur.fetchone()
+            if not row:
+                raise HTTPException(404,"找不到你的投稿")
+            cur.execute("SELECT version FROM community.post_revisions WHERE post_id=%s AND request_id=%s",
+                        (str(data.post_id),str(data.request_id)))
+            prior=cur.fetchone()
+            if prior:
+                if prior["version"]==data.version and row["version"]==data.version+1 and row["title"]==title and row["body"]==body:
+                    return {"version":row["version"],"state":row["state"],"reused":True}
+                raise HTTPException(409,"改稿请求编号已用于其他版本或内容")
+            if row["version"]!=data.version or row["state"] not in {"pending","published","rejected"}:
+                raise HTTPException(409,"投稿状态或版本已变化，请重新读取")
+            cur.execute("SELECT 1 FROM community.attachments WHERE post_id=%s LIMIT 1",(str(data.post_id),))
+            if cur.fetchone():
+                raise HTTPException(409,"含附件的投稿暂不支持改稿，请撤回后重新投稿")
+            cur.execute("""INSERT INTO community.post_revisions(post_id,version,request_id,title,body,state,score,published_at)
+                SELECT id,version,%s,title,body,state,score,published_at FROM community.posts WHERE id=%s""",
+                        (str(data.request_id),str(data.post_id)))
+            cur.execute("""UPDATE community.posts SET title=%s,body=%s,state='pending',score=0,
+                published_at=NULL,version=version+1 WHERE id=%s RETURNING version""",(title,body,str(data.post_id)))
+            return {"version":cur.fetchone()["version"],"state":"pending","reused":False}
 
     @router.post("/withdraw")
     def withdraw(data: Withdrawal, request: Request) -> dict:
@@ -253,9 +321,13 @@ def create_router(transaction: Callable, *, public_origin: str, session_seconds:
                                  "Cache-Control":"no-store","X-Content-Type-Options":"nosniff"})
 
     @router.get("/reviews")
-    def pending(request: Request) -> dict:
+    def pending(request: Request, after: str | None = Query(default=None,max_length=256)) -> dict:
         """Give moderators a bounded queue, excluding their own submissions."""
         key=session(request)
+        try:
+            boundary=decode_cursor(after,"reviews")
+        except ValueError:
+            raise HTTPException(422,"分页位置无效，请从第一批重新读取") from None
         with transaction() as cur:
             cur.execute("""SELECT m.id,m.role FROM community.members m JOIN community.sessions s
                 ON s.member_id=m.id WHERE s.token_digest=%s AND s.expires_at>now()""",(key,))
@@ -264,15 +336,19 @@ def create_router(transaction: Callable, *, public_origin: str, session_seconds:
                 raise HTTPException(401,"请登录交流区")
             if member["role"]!="moderator":
                 raise HTTPException(403,"需要审核权限")
-            cur.execute("""SELECT id,title,body,version FROM community.posts
-                WHERE state='pending' AND author_id<>%s ORDER BY created_at,id LIMIT 20""",(member["id"],))
-            return {"items":cur.fetchall()}
+            condition=" AND (created_at,id)>(%s,%s::uuid)" if boundary else ""
+            cur.execute("""SELECT id,title,body,version,created_at FROM community.posts
+                WHERE state='pending' AND author_id<>%s"""+condition+" ORDER BY created_at,id LIMIT 21",
+                (member["id"],*(boundary or ())))
+            return page_result(cur.fetchall(),20,"reviews")
 
     @router.post("/reviews")
     def review(data: Review, request: Request) -> dict:
         """Decide once against the inspected version; reviewers cannot grade themselves."""
         same_origin(request)
         key = session(request)
+        if not data.publish and not data.author_feedback.strip():
+            raise HTTPException(422,"退回时请填写给投稿人的修改建议")
         if not data.rationale.strip() or (data.publish and data.score < 60):
             raise HTTPException(422, "公开需要至少 60 分并记录依据")
         with transaction() as cur:
@@ -292,8 +368,8 @@ def create_router(transaction: Callable, *, public_origin: str, session_seconds:
                 raise HTTPException(403,"不能审核自己的投稿")
             if post["state"]!="pending" or post["version"]!=data.version:
                 raise HTTPException(409,"投稿状态已变更，请刷新")
-            cur.execute("""INSERT INTO community.reviews(post_id,reviewer_id,version,score,rationale,rationale_public)
-                VALUES(%s,%s,%s,%s,%s,%s)""",(str(data.post_id),reviewer["id"],data.version,data.score,data.rationale.strip(),data.public_rationale))
+            cur.execute("""INSERT INTO community.reviews(post_id,reviewer_id,version,score,rationale,rationale_public,author_feedback)
+                VALUES(%s,%s,%s,%s,%s,%s,%s)""",(str(data.post_id),reviewer["id"],data.version,data.score,data.rationale.strip(),data.public_rationale,data.author_feedback.strip()))
             state="published" if data.publish else "rejected"
             cur.execute("""UPDATE community.posts SET state=%s,score=%s,version=version+1,
                 published_at=CASE WHEN %s THEN now() ELSE NULL END WHERE id=%s""",
@@ -328,38 +404,56 @@ def create_router(transaction: Callable, *, public_origin: str, session_seconds:
                 result["mode"]="no_evidence"
         return result
 
-    @router.get("/search")
-    def search(q: str = Query(min_length=1, max_length=120)) -> dict:
-        """Literal keyword retrieval over public posts only, with title matches first."""
+    def public_response(cur,request,key,loader):
+        if public_cache is None:
+            return loader()
+        cur.execute("SELECT token FROM community.public_epoch WHERE id=true")
+        epoch=str(cur.fetchone()["token"])
+        value=public_cache.get(epoch,key)
+        if value is None:
+            value=public_cache.put(epoch,key,loader())
+        return public_cache.response(value,request.headers.get("accept-encoding",""))
+
+    @router.get("/search",response_model=None)
+    def search(request: Request,q: str = Query(min_length=1, max_length=120)) -> Response | dict:
+        """Only public search can reuse encoded output; DB token guards every hit."""
         term=q.strip()
         if not term:
             raise HTTPException(422,"请输入关键词")
         with transaction() as cur:
-            cur.execute("SELECT * FROM community.search_public(%s)",(term,))
-            return {"items":cur.fetchall(),"mode":"keyword"}
+            def load():
+                cur.execute("SELECT * FROM community.search_public(%s)",(term,))
+                return {"items":cur.fetchall(),"mode":"keyword"}
+            return public_response(cur,request,("search",term),load)
 
-    @router.get("/topics")
-    def topics(before: UUID | None = None, topic: UUID | None = None) -> dict:
-        """Stable descending feed; only published posts are available here."""
+    @router.get("/topics",response_model=None)
+    def topics(request: Request,before: UUID | None = None, topic: UUID | None = None, expected_version: int | None = Query(default=None,ge=1)) -> Response | dict:
+        """Stable feed; optional citation version must match the public revision."""
+        if expected_version is not None and topic is None:
+            raise HTTPException(422,"引用版本需要同时指定帖子")
         with transaction() as cur:
             if topic is not None:
                 cur.execute("SELECT id,title,body,score,version,published_at FROM community.public_topics WHERE id=%s",(str(topic),))
                 row=cur.fetchone()
                 if not row:
                     raise HTTPException(404,"找不到已公开的帖子")
+                if expected_version is not None and row["version"]!=expected_version:
+                    raise HTTPException(409,"这条引用对应的版本已变化，请重新检索，不要把新版当作原引用")
                 cur.execute("""SELECT id,filename,media_type,bytes FROM community.public_files
                     WHERE post_id=%s ORDER BY filename,id LIMIT 3""",(str(topic),))
                 files=cur.fetchall()
                 cur.execute("SELECT score,rationale,reviewed_at FROM community.public_review_evidence WHERE post_id=%s",(str(topic),))
                 return {"item":{**row,"files":files,"review":cur.fetchone()}}
-            sql = "SELECT id,title,score,published_at FROM community.public_topics "
-            args = ()
-            if before is not None:
-                sql += "WHERE (published_at,id)<(SELECT published_at,id FROM community.public_topics WHERE id=%s) "
-                args = (str(before),)
-            cur.execute(sql+"ORDER BY published_at DESC,id DESC LIMIT 31",args)
-            rows = cur.fetchall()
-        return {"items": rows[:30], "next": str(rows[29]["id"]) if len(rows)>30 else None}
+            def load():
+                sql = "SELECT id,title,score,published_at FROM community.public_topics "
+                args = ()
+                if before is not None:
+                    sql += "WHERE (published_at,id)<(SELECT published_at,id FROM community.public_topics WHERE id=%s) "
+                    args = (str(before),)
+                cur.execute(sql+"ORDER BY published_at DESC,id DESC LIMIT 31",args)
+                rows=cur.fetchall()
+                return {"items":rows[:30],"next":str(rows[29]["id"]) if len(rows)>30 else None}
+            return public_response(cur,request,("feed",str(before) if before else ""),load)
 
     return router
 

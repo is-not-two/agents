@@ -1,4 +1,5 @@
 """Fail-closed Windows attachment scanning contract; no malware samples."""
+import os
 import subprocess
 import sys
 import unittest
@@ -9,6 +10,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"src"))
 import rag_tech_retriever.platform.community_windows_scanner as scanner
 
 
+@unittest.skipUnless(os.name=="nt","Windows Defender integration contract")
 class WindowsScannerContract(unittest.TestCase):
     def test_empty_oversize_and_expired_do_not_launch(self):
         with patch.object(scanner.subprocess,"run") as run:

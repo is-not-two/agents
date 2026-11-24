@@ -14,7 +14,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.middleware.gzip import GZipMiddleware
 
 from rag_tech_retriever.agent.capability_runtime import AgentRuntime
 from rag_tech_retriever.agent.collaboration import CollaborationService
@@ -48,6 +47,7 @@ from rag_tech_retriever.api.routes import self_traits as self_trait_routes
 from rag_tech_retriever.api.routes import stages as stage_routes
 from rag_tech_retriever.common.account_auth import is_configured, verify_login
 from rag_tech_retriever.common.config_loader import PROJECT_ROOT, ConfigLoader
+from rag_tech_retriever.common.middleware.compression import NegotiatedGZipMiddleware
 from rag_tech_retriever.common.middleware.exception import (
     AppError,
     ErrorCode,
@@ -173,11 +173,17 @@ def create_app(
         RateLimitMiddleware,
         limit=rate_limit,
         window_seconds=60,
+        max_clients=int(settings.env(
+            "WEB_RATE_LIMIT_MAX_CLIENTS", str(config.get("web.rate_limit_max_clients", 4096)),
+        )),
+        max_events=int(settings.env(
+            "WEB_RATE_LIMIT_MAX_EVENTS", str(config.get("web.rate_limit_max_events", 131072)),
+        )),
     )
     application.add_middleware(TracerMiddleware)
     # 静态资源与 JSON 响应压缩：app.css 约 177KB，自托管服务器上不压缩会明显拖慢首屏。
     # Starlette 默认跳过 text/event-stream（MCP/SSE 不受影响）。
-    application.add_middleware(GZipMiddleware, minimum_size=1024)
+    application.add_middleware(NegotiatedGZipMiddleware, minimum_size=1024)
     application.state.store = store
     application.state.journal = journal
     application.state.search = search
@@ -437,18 +443,20 @@ def create_app(
     application.include_router(operations_routes.create_router(context))
     community_origin = config.env("COMMUNITY_PUBLIC_ORIGIN", "")
     community_endpoints = frozenset({
-        ("POST", "/api/community/session"), ("DELETE", "/api/community/session"), ("GET", "/api/community/session"),
+        ("POST", "/api/community/session"), ("DELETE", "/api/community/session"), ("GET", "/api/community/session"), ("GET", "/api/community/draft"), ("POST", "/api/community/revise"),
         ("POST", "/api/community/posts"), ("GET", "/api/community/topics"),
         ("POST", "/api/community/reviews"), ("GET", "/api/community/reviews"), ("GET", "/api/community/search"), ("POST", "/api/community/ask"), ("POST", "/api/community/withdraw"), ("GET", "/api/community/mine"),
     })
     if community_origin:
         from rag_tech_retriever.api.routes.community import create_router as community_router
         from rag_tech_retriever.platform.community_answers import CommunityAnswers
+        from rag_tech_retriever.platform.community_public_cache import PublicResponseCache
         application.include_router(community_router(
             store.transaction, public_origin=community_origin,
-            answers=CommunityAnswers(search.connection.load,int(config.env("COMMUNITY_AI_CONCURRENCY","2")),int(config.env("COMMUNITY_AI_TIMEOUT","20"))),
+            answers=CommunityAnswers(search.connection.load,int(config.env("COMMUNITY_AI_CONCURRENCY","2")),int(config.env("COMMUNITY_AI_TIMEOUT","20")),int(config.env("COMMUNITY_AI_MAX_OUTPUT_TOKENS","512"))),
             session_seconds=int(config.env("COMMUNITY_SESSION_SECONDS", "28800")),
             owner_authorized=lambda request: auth.enabled and not auth.is_mcp_token(request) and auth.authenticated(request),
+            public_cache=PublicResponseCache(int(config.env("COMMUNITY_PUBLIC_CACHE_ENTRIES","64")),int(config.env("COMMUNITY_PUBLIC_CACHE_BYTES","2097152"))) if int(config.env("COMMUNITY_PUBLIC_CACHE_ENTRIES","64")) else None,
         ))
     application.state.context = context
     application.state.agent_runtime = context.runtime
