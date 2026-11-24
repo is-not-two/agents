@@ -145,6 +145,28 @@ def test_native_release_stage_never_overwrites_and_hashes_every_file(installatio
         native._release(root, "v1")
 
 
+def test_native_release_accepts_only_gated_vue_source_and_runtime(installation):
+    root = installation
+    files = {"shilie/package-lock.json": b"{}", "shilie/src/App.vue": b"<template />",
+             native.VUE_PREFIX + "index.html": b"<html>Vue</html>",
+             native.VUE_PREFIX + "assets/fixture.js": b"console.log('fixture');"}
+    path, gate, sha, runtime_id = bundle(root, "vue", files=files)
+    report = json.loads(gate.read_text())
+    manifest = report["source_manifest"]
+    report["vue_assets"] = {name: digest for name, digest in manifest.items() if name.startswith(native.VUE_PREFIX)}
+    report["source_manifest"] = {name: digest for name, digest in manifest.items() if name not in report["vue_assets"]}
+    gate.write_text(json.dumps(report))
+    assert native.stage(root, root, "vue", runtime_id, path, gate, sha)["staged"]
+    assert (root / "releases/vue" / (native.VUE_PREFIX + "index.html")).read_bytes() == b"<html>Vue</html>"
+    report["vue_assets"][native.VUE_PREFIX + "assets/fixture.js"] = "0" * 64
+    gate.write_text(json.dumps(report))
+    with pytest.raises(native.ReleaseError, match="gate/manifest mismatch"):
+        native.stage(root, root, "vue-tampered", runtime_id, path, gate, sha)
+    for name in ("shilie/.env.local", "shilie/node_modules/x.js", "shilie/dist/bundle.js", "shilie/src/.hidden.js"):
+        with pytest.raises(native.ReleaseError):
+            native._source_name(name)
+
+
 def test_native_release_atomic_json_pointer_replace_failure_keeps_old(installation, monkeypatch):
     root = installation; stage(root, "old"); stage(root, "new")
     native._switch(root, "current", "old")

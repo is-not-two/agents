@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import importlib.util
+import io
+import tarfile
 from pathlib import Path
 
 import pytest
@@ -38,3 +40,24 @@ def test_deploy_script_refuses_before_any_remote_write():
     window = source[guard:guard + 700]
     assert "raise DeployError" in window
     assert "破坏隔离" in window
+
+
+@pytest.mark.parametrize("legacy, entry, accepted", [(False, True, True), (True, True, False), (False, False, False)])
+def test_runtime_tar_checks_vue_entry_and_rejects_legacy(tmp_path, legacy, entry, accepted):
+    path = tmp_path / "runtime.tar.gz"
+    html = b'<script type="module" src="/static/vue/assets/index-fixture.js"></script>'
+    files = {DEPLOY.VUE_INDEX.as_posix(): html}
+    if entry:
+        files[(DEPLOY.STATIC_ROOT / "vue/assets/index-fixture.js").as_posix()] = b"// script"
+    if legacy:
+        files[(DEPLOY.STATIC_ROOT / "shilie/index.html").as_posix()] = b"old"
+    with tarfile.open(path, "w:gz") as archive:
+        for name, data in files.items():
+            info = tarfile.TarInfo("./" + name)
+            info.size = len(data)
+            archive.addfile(info, io.BytesIO(data))
+    if accepted:
+        assert DEPLOY.package_frontend(path) == (DEPLOY.hashlib.sha256(html).hexdigest(), "/static/vue/assets/index-fixture.js")
+    else:
+        with pytest.raises(DEPLOY.DeployError):
+            DEPLOY.package_frontend(path)

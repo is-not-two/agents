@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from rag_tech_retriever.common.release_manifest import source_manifest
+from rag_tech_retriever.common.release_manifest import VUE_PREFIX, source_manifest, vue_manifest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,6 +39,47 @@ def release(tmp_path):
 def checksum(output: Path) -> Path:
     """Return the existing public checksum naming convention."""
     return output.with_suffix(output.suffix + ".sha256")
+
+
+def test_vue_sources_are_signed_and_generated_files_excluded(package, release):
+    root, report, output = release
+    sources = ["shilie/package-lock.json", "shilie/src/App.vue", "shilie/public/wallpaper/spring.webp"]
+    ignored = ["shilie/.env.local", "shilie/src/.env.production", "shilie/dist/bundle.js", "shilie/node_modules/tool.js"]
+    for name in sources + ignored:
+        target = root / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"fixture")
+    manifest = source_manifest(root)
+    assert set(sources) <= manifest.keys()
+    assert set(ignored).isdisjoint(manifest)
+    data = json.loads(report.read_text(encoding="utf-8"))
+    legacy = "src/rag_tech_retriever/api/static/shilie/index.html"
+    legacy_path = root / legacy
+    legacy_path.parent.mkdir(parents=True)
+    legacy_path.write_text("legacy")
+    manifest = source_manifest(root)
+    data["source_manifest"] = manifest
+    report.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="Vue 构建目录"):
+        package.build(root, report, output)
+    assets = report.with_suffix(".vue-assets")
+    (assets / "assets").mkdir(parents=True)
+    (assets / "index.html").write_text("Vue index")
+    (assets / "assets/fixture.js").write_text("fixture")
+    data["vue_assets"] = vue_manifest(assets)
+    report.write_text(json.dumps(data), encoding="utf-8")
+    package.build(root, report, output)
+    with zipfile.ZipFile(output) as archive:
+        assert set(sources) <= set(archive.namelist())
+        assert set(ignored).isdisjoint(archive.namelist())
+        assert legacy not in archive.namelist()
+        assert archive.read(VUE_PREFIX + "assets/fixture.js") == b"fixture"
+    (assets / "assets/fixture.js").write_text("tampered runtime asset")
+    with pytest.raises(ValueError, match="Vue 运行资源"):
+        package.build(root, report, output.with_name("tampered.zip"))
+    (root / sources[1]).write_bytes(b"unverified edit")
+    with pytest.raises(ValueError, match="报告与当前源不一致"):
+        package.build(root, report, output.with_name("changed.zip"))
 
 
 def assert_no_artifacts(output: Path) -> None:

@@ -12,6 +12,12 @@ import anyio
 from rag_tech_retriever.domains.automation import validate_agent
 from rag_tech_retriever.domains.life_planning import DomainError
 from rag_tech_retriever.domains.workflow_graph import resolve, validate_graph_workflow
+from rag_tech_retriever.platform.interview_workflow import (
+    EVIDENCE_PROTOCOL,
+    EVIDENCE_STAGES,
+    INTERVIEW_SOURCE_TOOL,
+    evidence_output,
+)
 from rag_tech_retriever.platform.mcp_client import ToolError
 from rag_tech_retriever.platform.record_store import RecordMissing, RecordStore, VersionConflict
 
@@ -61,9 +67,19 @@ class GraphWorkflowService:
             live = self.runtime.agent(agent_id)
             snapshots[agent_id] = {"id": agent_id, "version": live["version"],
                                    "data": validate_agent(live["data"])}
-        row = self.store.save("workflow_run", {
+        private = any(node.get("tool_id") == INTERVIEW_SOURCE_TOOL for node in cfg["nodes"])
+        if private:
+            guarded = {node["id"] for node in cfg["nodes"] if node["type"] == "agent"
+                       and EVIDENCE_PROTOCOL in node.get("query", "")}
+            if not EVIDENCE_STAGES <= guarded:
+                raise DomainError("此面试流程缺少证据校验，请新建标准工作流；旧运行仍可查看")
+        lead_id = payload.get("lead_id")
+        row = self.store.save("agent_session" if private else "workflow_run", {
             "title": cfg["title"], "workflow_id": workflow_id, "kind": "graph",
             "status": "running", "started_at": _now(), "input": deepcopy(payload),
+            **({"private_interview": True,
+                "interview_lead_id": lead_id if isinstance(lead_id, str) and len(lead_id) <= 100 else ""}
+               if private else {}),
             "workflow": workflow, "agent_snapshots": snapshots,
             "steps": [], "node_outputs": {}, "node_status": {}, "node_attempts": {},
             "pending_node": "", "pending_kind": "", "pending_child": None, "pending_children": [],
@@ -74,7 +90,7 @@ class GraphWorkflowService:
 
     async def confirm(self, run_id: str, version: int, approve: bool) -> dict:
         row = self.store.get(run_id)
-        if row["kind"] != "workflow_run" or row["data"].get("kind") != "graph":
+        if row["kind"] not in {"workflow_run", "agent_session"} or row["data"].get("kind") != "graph":
             raise RecordMissing("图工作流运行不存在")
         if row["version"] != version or row["data"]["status"] != "awaiting_confirmation":
             raise VersionConflict("运行已处理或版本改变，请重新读取")
@@ -96,11 +112,12 @@ class GraphWorkflowService:
                     data["node_status"][node_id] = "failed"
                     data["result"]["notes"].append(f"节点 {node_id} 的子 Agent 未完成")
                 else:
-                    data["node_outputs"][node_id] = {
-                        "run_id": item["run_id"], "answer": result["data"]["result"].get("answer", ""),
-                        "notes": result["data"]["result"].get("notes", []),
-                    }
-                    data["node_status"][node_id] = "completed"
+                    try:
+                        data["node_outputs"][node_id] = self._agent_output(data, node_id, item["run_id"], result)
+                        data["node_status"][node_id] = "completed"
+                    except DomainError as exc:
+                        data["node_status"][node_id] = "failed"
+                        data["result"]["notes"].append(str(exc))
             if remaining:
                 first = remaining[0]
                 data.update(status="awaiting_confirmation", pending_node=first["node"],
@@ -124,7 +141,7 @@ class GraphWorkflowService:
     async def resume(self, run_id: str, version: int) -> dict:
         """恢复崩溃后停在 running 的只读节点；Agent/审批节点必须先人工预检。"""
         row = self.store.get(run_id)
-        if row["kind"] != "workflow_run" or row["data"].get("kind") != "graph":
+        if row["kind"] not in {"workflow_run", "agent_session"} or row["data"].get("kind") != "graph":
             raise RecordMissing("图工作流运行不存在")
         if row["version"] != version:
             raise VersionConflict("运行记录已变化，请刷新后重试")
@@ -192,26 +209,63 @@ class GraphWorkflowService:
             if not spec["read_only"]:
                 raise DomainError("工作流节点只能自动执行只读工具；写操作须走人工确认 Agent 会话")
             arguments = resolve(node.get("arguments", {}), context, "工具模板")
+            if node["tool_id"] == INTERVIEW_SOURCE_TOOL and any(
+                arguments.get(key) != data["input"].get(key, "")
+                for key in ("lead_id", "resume_id", "knowledge_id")
+            ):
+                raise DomainError("面试材料只能读取本次运行选中的岗位、简历与知识记录")
             return await self.capabilities.execute(spec, arguments, agent["data"], skills, False)
         if kind == "agent":
             agent = self._agent(data, node)
             query = resolve(node.get("query", ""), context, "Agent 指令")
-            child = await self.runtime.start(agent["id"], agent["version"], query)
+            private = data.get("private_interview", False)
+            options = {"private": True} if private else {}
+            child = await self.runtime.start(agent["id"], agent["version"], query, **options)
             if child["data"]["status"] == "awaiting_confirmation":
                 raise _Pause("agent", node["id"], {"run_id": child["id"], "version": child["version"]})
             if child["data"]["status"] == "failed":
-                raise DomainError(f"节点 {node['id']} 的 Agent 运行失败")
-            return {"run_id": child["id"], "answer": child["data"]["result"].get("answer", ""),
-                    "notes": child["data"]["result"].get("notes", [])}
+                notes = child["data"]["result"].get("notes", []) if private else []
+                reason = f"：{notes[-1]}" if notes else ""
+                raise DomainError(f"节点 {node['id']} 的 Agent 运行失败{reason}")
+            return self._agent_output(data, node["id"], child["id"], child)
         if kind == "merge":
             texts = []
             for source in self._predecessors(data, node["id"]):
-                value = data["node_outputs"].get(source, {})
-                for key in ("answer", "text"):
-                    if isinstance(value.get(key), str) and value[key].strip():
-                        texts.append(value[key].strip())
-            return {"answer": "\n\n".join(texts)}
+                texts.extend(self._content_of(data, source))
+            # 审批等无正文节点会被穿透，可能让同一条正文出现多次。
+            return {"answer": "\n\n".join(dict.fromkeys(texts))}
         raise DomainError("工作流节点类型不支持")
+
+    @staticmethod
+    def _agent_output(data: dict, node_id: str, run_id: str, child: dict) -> dict:
+        result = child["data"]["result"]
+        answer = result.get("answer", "")
+        output = {"run_id": run_id, "answer": answer, "notes": result.get("notes", [])}
+        if data.get("private_interview"):
+            if child["data"]["status"] != "completed" or not answer.strip():
+                raise DomainError(f"节点 {node_id} 未获得有效模型回答")
+            if node_id in EVIDENCE_STAGES:
+                prior = data["node_outputs"]
+                material = prior.get("material")
+                if not material or "resume_text" not in material or "knowledge" not in material:
+                    raise DomainError("未找到可核对的面试原始材料")
+                output.update(evidence_output(answer, material, prior, node_id))
+        return output
+
+    def _content_of(self, data: dict, node_id: str, seen: set[str] | None = None) -> list[str]:
+        """向上游收集正文；approval 这类只有状态没有正文的节点会被穿透。"""
+        seen = set() if seen is None else seen
+        if node_id in seen:
+            return []
+        seen.add(node_id)
+        value = data["node_outputs"].get(node_id, {})
+        for key in ("answer", "text"):
+            if isinstance(value.get(key), str) and value[key].strip():
+                return [value[key].strip()]
+        texts: list[str] = []
+        for source in self._predecessors(data, node_id):
+            texts.extend(self._content_of(data, source, seen))
+        return texts
 
     def _predecessors(self, data: dict, node_id: str) -> list[str]:
         return [source for source, target in data["workflow"]["data"]["edges"] if target == node_id]

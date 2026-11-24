@@ -1,0 +1,3 @@
+# Frozen fixture digests must not depend on the checkout OS or core.autocrlf.
+/data/processed/agent_golden_set.json text eol=lf
+/data/processed/collaboration_tasks.json text eol=lf

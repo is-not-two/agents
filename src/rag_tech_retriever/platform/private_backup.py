@@ -58,6 +58,28 @@ def _timestamp(value: object) -> None:
         raise ValueError("时间格式错误")
 
 
+def _validate_cipher(cipher: dict) -> None:
+    """Reject structurally broken ciphertext before destination DB/file access.
+
+    Empty salts are valid for current session-key ciphertext; 16-byte salts are
+    valid for older password-derived ciphertext. Historical xor-hmac (including
+    its omitted algorithm default) remains readable. This checks structure, not
+    authenticity of individual records: only the original vault key can do that.
+    """
+    try:
+        algorithm = cipher.get("alg", "xor-hmac")
+        if not isinstance(algorithm, str) or algorithm not in ("aes-gcm", "xor-hmac"):
+            raise ValueError("unsupported cipher")
+        values = [cipher[field] for field in ("salt", "nonce", "data")]
+        if not all(isinstance(value, str) for value in values):
+            raise ValueError("cipher fields must be strings")
+        salt, nonce, blob = [base64.b64decode(value, validate=True) for value in values]
+        if len(salt) not in (0, 16) or len(nonce) != 12 or len(blob) < 16:
+            raise ValueError("invalid cipher lengths")
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("私密备份密文格式不正确") from exc
+
+
 def validate(payload: dict) -> None:
     """Validate the complete archive before touching destination state."""
     try:
@@ -94,6 +116,7 @@ def validate(payload: dict) -> None:
                 raise ValueError("记录状态格式错误")
             if set(row["data"]) != {"cipher"} or not isinstance(row["data"]["cipher"], dict):
                 raise ValueError("备份只能包含私密密文")
+            _validate_cipher(row["data"]["cipher"])
             _timestamp(row["created_at"])
         for record_id, row in current.items():
             actual = {version for key, version in history if key == record_id}

@@ -71,6 +71,23 @@ class InterviewPrepService:
             "resume_text": resume_text,
         }
 
+    def workflow_material(self, lead_id: str, resume_id: str, knowledge_id: str = "") -> dict:
+        """工作流按用户明确选择读取岗位、简历与一条可选知识记录。"""
+        ctx = self._context(lead_id, resume_id)
+        knowledge = "未选择知识记录。"
+        if knowledge_id:
+            try:
+                row = self.store.get(knowledge_id)
+            except RecordMissing as exc:
+                raise DomainError("选中的记录不存在") from exc
+            if row["kind"] != "knowledge":
+                raise DomainError("选中的记录不属于个人知识库")
+            knowledge = str(row["data"].get("content") or "")
+        return {key: value[:limit] + ("\n（超长，已截断）" if len(value) > limit else "")
+                for key, value, limit in (("jd", ctx["jd"], 6000),
+                                          ("resume_text", ctx["resume_text"], 12000),
+                                          ("knowledge", knowledge, 6000))}
+
     def _check_references(self, data: dict) -> None:
         """落库前确认岗位与简历引用真实存在，避免写入孤儿会话。"""
         for field, kind in (("lead_id", "job_lead"), ("resume_id", "resume_version")):

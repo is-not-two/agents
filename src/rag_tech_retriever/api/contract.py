@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import Any
 
 from rag_tech_retriever.common.config_loader import PROJECT_ROOT
@@ -36,8 +37,19 @@ def build_schema() -> dict[str, Any]:
     # 延迟导入避免 api.main 与路由模块在包初始化期形成循环依赖。
     from rag_tech_retriever.api.main import create_app
 
-    app = create_app(store=RecordStore("openapi_contract"), token="")
-    return app.openapi()
+    # 社区公开路由按 COMMUNITY_PUBLIC_ORIGIN 条件挂载；社区已是交付功能，
+    # 契约快照必须覆盖它，否则前端社区接口的漂移无人察觉。构建期用一个
+    # 占位 origin 强制挂载，仅影响路由注册、不连数据库、不读 .env。
+    old_origin = os.environ.get("COMMUNITY_PUBLIC_ORIGIN")
+    os.environ["COMMUNITY_PUBLIC_ORIGIN"] = "https://contract.invalid"
+    try:
+        app = create_app(store=RecordStore("openapi_contract"), token="")
+        return app.openapi()
+    finally:
+        if old_origin is None:
+            os.environ.pop("COMMUNITY_PUBLIC_ORIGIN", None)
+        else:
+            os.environ["COMMUNITY_PUBLIC_ORIGIN"] = old_origin
 
 
 def canonical(schema: dict[str, Any]) -> str:

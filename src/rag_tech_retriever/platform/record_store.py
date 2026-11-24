@@ -41,7 +41,9 @@ RECORD_KINDS = {
     # 因此不与普通内容混用同一字段语义。
     "wish",
     "diary",
-    # 模拟面试：面之前的练习与示范问答，与真实面试复盘 interview_report 分开。
+    # 人物：可修订的自我观察卡，复用版本历史与软删除；字段加密由配置按 kind 开启。
+    "self_trait",
+    # 预面试：面之前的练习与示范问答，与真实面试复盘 interview_report 分开。
     "interview_prep",
 }
 # 外发意图不能进入公共恢复，否则恢复旧备份可能重发消息。
@@ -70,7 +72,8 @@ class RecordStore:
     """单用户工作台记录存储，table_prefix 可隔离测试与生产数据。"""
 
     def __init__(self, prefix: str = "workspace", config: ConfigLoader | None = None,
-                 pool_size: int = 0, pool_wait_seconds: float = 5.0) -> None:
+                 pool_size: int = 0, pool_wait_seconds: float = 5.0,
+                 pool_min_size: int = 1) -> None:
         """只保存配置；pool_size>0 时复用连接（默认 0 = 每事务新建，便于测试隔离）。"""
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,42}", prefix):
             raise StorageError("非法工作台表前缀")
@@ -79,6 +82,7 @@ class RecordStore:
         self.versions = prefix + "_versions"
         self.config = config or ConfigLoader.load_default()
         self.pool_size = max(0, int(pool_size))
+        self.pool_min_size = min(self.pool_size, max(1, int(pool_min_size)))
         # 池满时最多等这么久再报错；同步接口在工作线程里跑，瞬时并发高于池容量时不应直接 5xx。
         self.pool_wait_seconds = max(0.0, float(pool_wait_seconds))
         self._pool: pg_pool.ThreadedConnectionPool | None = None
@@ -107,7 +111,7 @@ class RecordStore:
         with self._pool_lock:
             if self._pool is None:
                 try:
-                    self._pool = pg_pool.ThreadedConnectionPool(1, self.pool_size, **self._dsn())
+                    self._pool = pg_pool.ThreadedConnectionPool(self.pool_min_size, self.pool_size, **self._dsn())
                 except psycopg2.Error:
                     return None
             return self._pool

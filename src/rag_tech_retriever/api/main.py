@@ -14,7 +14,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.middleware.gzip import GZipMiddleware
 
 from rag_tech_retriever.agent.capability_runtime import AgentRuntime
 from rag_tech_retriever.agent.collaboration import CollaborationService
@@ -27,6 +26,7 @@ from rag_tech_retriever.api.routes import bookmarks as bookmark_routes
 from rag_tech_retriever.api.routes import capabilities as capability_routes
 from rag_tech_retriever.api.routes import chat as chat_routes
 from rag_tech_retriever.api.routes import collaboration as collaboration_routes
+from rag_tech_retriever.api.routes import draft_projects as draft_project_routes
 from rag_tech_retriever.api.routes import evaluation as evaluation_routes
 from rag_tech_retriever.api.routes import exports as export_routes
 from rag_tech_retriever.api.routes import interview_prep as interview_prep_routes
@@ -40,10 +40,14 @@ from rag_tech_retriever.api.routes import notifications as notification_routes
 from rag_tech_retriever.api.routes import operations as operations_routes
 from rag_tech_retriever.api.routes import private as private_routes
 from rag_tech_retriever.api.routes import prompts as prompt_routes
+from rag_tech_retriever.api.routes import queue as queue_routes
+from rag_tech_retriever.api.routes import resume_optimizer as resume_optimizer_routes
 from rag_tech_retriever.api.routes import search as search_routes
+from rag_tech_retriever.api.routes import self_traits as self_trait_routes
 from rag_tech_retriever.api.routes import stages as stage_routes
 from rag_tech_retriever.common.account_auth import is_configured, verify_login
 from rag_tech_retriever.common.config_loader import PROJECT_ROOT, ConfigLoader
+from rag_tech_retriever.common.middleware.compression import NegotiatedGZipMiddleware
 from rag_tech_retriever.common.middleware.exception import (
     AppError,
     ErrorCode,
@@ -94,6 +98,7 @@ def create_app(
         config=config,
         pool_size=int(config.get("web.db_pool_size", 0)),
         pool_wait_seconds=float(config.get("web.db_pool_wait_seconds", 5)),
+        pool_min_size=int(config.get("web.db_pool_min_size", 1)),
     )
     secret = str(settings.env("WORKSPACE_ACCESS_TOKEN", "")) if token is None else token
     mcp_secret = str(settings.env("WORKSPACE_MCP_TOKEN", ""))
@@ -168,11 +173,17 @@ def create_app(
         RateLimitMiddleware,
         limit=rate_limit,
         window_seconds=60,
+        max_clients=int(settings.env(
+            "WEB_RATE_LIMIT_MAX_CLIENTS", str(config.get("web.rate_limit_max_clients", 4096)),
+        )),
+        max_events=int(settings.env(
+            "WEB_RATE_LIMIT_MAX_EVENTS", str(config.get("web.rate_limit_max_events", 131072)),
+        )),
     )
     application.add_middleware(TracerMiddleware)
     # 静态资源与 JSON 响应压缩：app.css 约 177KB，自托管服务器上不压缩会明显拖慢首屏。
     # Starlette 默认跳过 text/event-stream（MCP/SSE 不受影响）。
-    application.add_middleware(GZipMiddleware, minimum_size=1024)
+    application.add_middleware(NegotiatedGZipMiddleware, minimum_size=1024)
     application.state.store = store
     application.state.journal = journal
     application.state.search = search
@@ -204,6 +215,7 @@ def create_app(
         if (
             request.url.path.startswith(("/api/", "/mcp"))
             and request.url.path != "/api/session"
+            and not (community_origin and (request.method, request.url.path) in community_endpoints)
             and not (mcp_authorized if mcp_path and mcp_secret else auth.authenticated(request))
         ):
             return guard_error(request, "请先登录", ErrorCode.UNAUTHORIZED, 401)
@@ -429,6 +441,23 @@ def create_app(
     context.runtime = AgentRuntime(store, search.connection, context.capabilities)
     context.collaboration = CollaborationService(root, store, search.connection, context.capabilities)
     application.include_router(operations_routes.create_router(context))
+    community_origin = config.env("COMMUNITY_PUBLIC_ORIGIN", "")
+    community_endpoints = frozenset({
+        ("POST", "/api/community/session"), ("DELETE", "/api/community/session"), ("GET", "/api/community/session"), ("GET", "/api/community/draft"), ("POST", "/api/community/revise"),
+        ("POST", "/api/community/posts"), ("GET", "/api/community/topics"),
+        ("POST", "/api/community/reviews"), ("GET", "/api/community/reviews"), ("GET", "/api/community/search"), ("POST", "/api/community/ask"), ("POST", "/api/community/withdraw"), ("GET", "/api/community/mine"),
+    })
+    if community_origin:
+        from rag_tech_retriever.api.routes.community import create_router as community_router
+        from rag_tech_retriever.platform.community_answers import CommunityAnswers
+        from rag_tech_retriever.platform.community_public_cache import PublicResponseCache
+        application.include_router(community_router(
+            store.transaction, public_origin=community_origin,
+            answers=CommunityAnswers(search.connection.load,int(config.env("COMMUNITY_AI_CONCURRENCY","2")),int(config.env("COMMUNITY_AI_TIMEOUT","20")),int(config.env("COMMUNITY_AI_MAX_OUTPUT_TOKENS","512"))),
+            session_seconds=int(config.env("COMMUNITY_SESSION_SECONDS", "28800")),
+            owner_authorized=lambda request: auth.enabled and not auth.is_mcp_token(request) and auth.authenticated(request),
+            public_cache=PublicResponseCache(int(config.env("COMMUNITY_PUBLIC_CACHE_ENTRIES","64")),int(config.env("COMMUNITY_PUBLIC_CACHE_BYTES","2097152"))) if int(config.env("COMMUNITY_PUBLIC_CACHE_ENTRIES","64")) else None,
+        ))
     application.state.context = context
     application.state.agent_runtime = context.runtime
     application.state.collaboration_service = context.collaboration
@@ -450,12 +479,16 @@ def create_app(
         export_routes,
         stage_routes,
         automation,
+        draft_project_routes,
         connection_routes,
         private_routes,
         prompt_routes,
         capability_routes,
         mcp_routes,
         evaluation_routes,
+        self_trait_routes,
+        resume_optimizer_routes,
+        queue_routes,
     ):
         application.include_router(module.create_router(context))
 
@@ -464,19 +497,29 @@ def create_app(
     mounted_lifespans.append(mcp_asgi)
     application.mount("/mcp", mcp_asgi)
 
-    static = Path(__file__).parent / "static"
-    static.mkdir(exist_ok=True)
-    application.mount("/static", StaticFiles(directory=static), name="static")
+    vue_dir = Path(__file__).parent / "static" / "vue"
+    # Isolated QA may supply the exact verified build under its private root.
+    if not (vue_dir / "index.html").is_file() and (root / "frontend/vue/index.html").is_file():
+        vue_dir = root / "frontend/vue"
+    vue_index = vue_dir / "index.html"
+    if vue_index.is_file():
+        application.mount("/static/vue", StaticFiles(directory=vue_dir), name="static")
 
     @application.get("/")
     def index():
-        return FileResponse(static / "shilie" / "index.html")
-
-    @application.get("/legacy")
-    def legacy_index():
-        return FileResponse(static / "index.html")
+        if not vue_index.is_file():
+            raise HTTPException(status_code=503, detail="Vue 前端尚未构建")
+        return FileResponse(vue_index)
 
     return application
 
 
 app = create_app()
+
+
+
+
+
+
+
+

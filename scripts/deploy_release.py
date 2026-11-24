@@ -23,11 +23,16 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tarfile
+import tempfile
 import time
+import zipfile
 from datetime import datetime
 from pathlib import Path
 
@@ -38,6 +43,9 @@ KEY = Path(os.path.expanduser("~")) / ".ssh" / "selfstock_8_156_81_128_rsa"
 KNOWN_HOSTS = PROJECT / "output/playwright/review-001-gpt/fix-v84/enterprise-ops-v85/native-server-access/known_hosts"
 REMOTE_ROOT = "/opt/shilie"
 SITE_PKG = "lib/python3.10/site-packages/rag_tech_retriever"
+STATIC_ROOT = Path("src/rag_tech_retriever/api/static")
+VUE_INDEX = STATIC_ROOT / "vue/index.html"
+VUE_ENTRY = re.compile(rb'<script[^>]+src="(/static/vue/assets/[A-Za-z0-9_.-]+\.js)"')
 
 #: 部署目标：两套环境各自独立数据库与代码目录，仅共用模型缓存。
 #: 测试库用于预览验证，写操作不再进入正式数据；preview 部署不自动备份生产库。
@@ -131,21 +139,21 @@ def fail(msg: str) -> None:
     print(f"  [FAIL] {msg}")
 
 
-def local_version() -> str:
-    """本地静态版本号。"""
-    index = PROJECT / "src/rag_tech_retriever/api/static/shilie/index.html"
-    found = re.findall(r"\?v=(\d+)", index.read_text(encoding="utf-8"))
-    if not found:
-        raise DeployError("本地 index.html 找不到版本号")
-    return found[0]
-
-
 def remote_version() -> str | None:
-    """目标环境当前对外提供的静态版本号。"""
+    """Display identity only; the post-activation check verifies the full digest."""
     code, out = run_remote(
-        f"curl -sk -m 10 {SCHEME}://127.0.0.1:{WEB_PORT}/ | grep -o '?v=[0-9]*' | head -1",
+        f"""home=$(mktemp) || exit 1
+trap 'rm -f "$home"' EXIT
+curl -fsk -m 10 {SCHEME}://127.0.0.1:{WEB_PORT}/ -o "$home" || exit 1
+if grep -q '/static/vue/assets/' "$home"; then
+    printf 'Vue '; sha256sum "$home" | cut -c1-12
+else
+    grep -o '?v=[0-9]*' "$home" | head -1
+fi""",
         timeout=40,
     )
+    if code == 0 and re.fullmatch(r"Vue [a-f0-9]{12}", out.strip()):
+        return out.strip()
     found = re.findall(r"v=(\d+)", out)
     return found[0] if (code == 0 and found) else None
 
@@ -161,8 +169,8 @@ def preflight() -> dict:
     if not KEY.is_file():
         raise DeployError(f"SSH 密钥不存在：{KEY}")
 
-    local_ver = local_version()
-    ok(f"本地版本 v{local_ver}")
+    local_ver = head_commit()
+    ok(f"目标提交 {local_ver}")
 
     script = f"""
 set -e
@@ -236,7 +244,7 @@ echo "PROBE_END"
         ok(f"{len(RECORD_KINDS)} 种 kind 与数据库一致")
 
     info["running_version"] = remote_version()
-    ok(f"线上版本 v{info['running_version']} -> 目标 v{local_ver}")
+    ok(f"线上前端 {info['running_version']} -> 目标提交 {local_ver}")
     return info
 
 
@@ -252,32 +260,91 @@ def head_commit() -> str:
     return done.stdout.strip()
 
 
-def make_package() -> tuple[Path, str]:
+def vue_entry(html: bytes) -> str:
+    match = VUE_ENTRY.search(html)
+    if not match:
+        raise DeployError("发布包首页没有有效的 Vue 入口")
+    return match[1].decode("ascii")
+
+
+def build_staged_vue(stage: Path, work: Path) -> None:
+    """Build only archived Vue source in an empty dependency directory; never fetch packages."""
+    source = stage / "shilie"
+    if not (source / "package-lock.json").is_file():
+        raise DeployError("确认的 Git 提交没有 Vue 锁文件；拒绝打包旧前端")
+    if any(path.name != ".env.example" for path in source.glob(".env*")):
+        raise DeployError("Vue 源码含环境文件，拒绝将环境值编入浏览器资源")
+    npm = shutil.which("npm.cmd" if os.name == "nt" else "npm")
+    if not npm:
+        raise DeployError("缺少 npm，无法构建 Vue")
+    frontend = work / "vue-source"
+    source.rename(frontend)
+    target = stage / STATIC_ROOT
+    if target.exists():
+        if not target.resolve().is_relative_to(stage.resolve()):
+            raise DeployError("拒绝清理超出打包暂存目录的静态文件")
+        shutil.rmtree(target)
+    env = {key: value for key, value in os.environ.items() if not key.upper().startswith("VITE_")}
+    for arguments in (
+        ["ci", "--offline", "--ignore-scripts", "--no-audit", "--no-fund"],
+        ["run", "build", "--", "--base", "/static/vue/", "--outDir", str(target / "vue")],
+    ):
+        result = subprocess.run([npm, *arguments], cwd=frontend, env=env, capture_output=True,
+                                text=True, encoding="utf-8", errors="replace", timeout=180, check=False)
+        if result.returncode:
+            raise DeployError(f"Vue 构建失败（{arguments[0]}，退出码 {result.returncode}）："
+                              + (result.stderr or result.stdout)[-1500:])
+    entry = vue_entry((stage / VUE_INDEX).read_bytes())
+    if not (stage / STATIC_ROOT / entry.removeprefix("/static/")).is_file():
+        raise DeployError("Vue 首页入口资源未构建")
+
+
+def package_frontend(package: Path) -> tuple[str, str]:
+    """Read the exact archived homepage and reject legacy or missing entry files."""
+    with tarfile.open(package, "r:gz") as archive:
+        members = {item.name.removeprefix("./"): item for item in archive.getmembers() if item.isfile()}
+        index = members.get(VUE_INDEX.as_posix())
+        if index is None or any(name.startswith(STATIC_ROOT.as_posix() + "/")
+                                and not name.startswith((STATIC_ROOT / "vue").as_posix() + "/") for name in members):
+            raise DeployError("运行包缺少 Vue 首页或仍混有旧前端")
+        with archive.extractfile(index) as stream:
+            html = stream.read()
+        entry = vue_entry(html)
+        if (STATIC_ROOT / entry.removeprefix("/static/")).as_posix() not in members:
+            raise DeployError("运行包缺少 Vue 首页入口资源")
+    return hashlib.sha256(html).hexdigest(), entry
+
+
+def make_package(*, output_dir: Path | None = None) -> tuple[Path, str]:
     """从 git HEAD 打包，返回 (包路径, release 名)。
 
-    release 名由「提交哈希 + 时间戳」组成：哈希保证可追溯到具体提交，
-    时间戳区分同一提交的重复部署。用户在 dry-run 阶段就能看到确切名称，
-    不必猜时间戳——这正是 `--confirm` 可用的前提。
-
-    用 zip + .NET 解压而非 tar：Windows 自带 tar（bsdtar）在解含中文文件名的
-    归档时会报 "Invalid empty pathname"，data/raw/aihuoke_docs 下的中文文档会
-    整批丢失。zip 走 UTF-8 标志位，两侧都能正确还原。
+    用 Git ZIP 保留中文文件名；临时源码和依赖不保留，只留下验证后的运行包。
     """
     step("打包")
-    import shutil
-    import zipfile
-
-    commit = head_commit()
+    commit = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD^{commit}"],
+                                     cwd=PROJECT, text=True).strip()
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    release = f"native-{stamp}-{commit}"
-    work = PROJECT / "output" / "deployment" / f"_release-{stamp}"
+    release = f"native-{stamp}-{commit[:7]}"
+    parent = output_dir or PROJECT / "output" / "deployment"
+    parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="shilie-native-stage-", dir=parent) as scratch:
+        pkg = assemble_package(Path(scratch), commit, release)
+        output = parent / pkg.name
+        try:
+            os.link(pkg, output)
+        except FileExistsError as exc:
+            raise DeployError(f"发布包已存在，拒绝覆盖：{output.name}") from exc
+    return output, release
+
+
+def assemble_package(work: Path, commit: str, release: str) -> Path:
     stage = work / "stage"
     stage.mkdir(parents=True, exist_ok=True)
 
     archive = work / "rel.zip"
     done = subprocess.run(
         ["git", "-c", "core.quotepath=false", "archive", "--format=zip",
-         f"--output={archive}", "HEAD"],
+         f"--output={archive}", commit],
         cwd=PROJECT, check=False, capture_output=True, text=True,
         encoding="utf-8", errors="replace",
     )
@@ -301,6 +368,8 @@ def make_package() -> tuple[Path, str]:
     if weird.exists():
         weird.unlink()
 
+    build_staged_vue(stage, work)
+
     # tar.gz 供上传（压缩比好），内容由 zip 正确解出后再压
     pkg = work / f"{release}.tar.gz"
     packed = subprocess.run(
@@ -309,11 +378,12 @@ def make_package() -> tuple[Path, str]:
     )
     if packed.returncode != 0 or not pkg.is_file():
         raise DeployError(f"压缩失败：{packed.stderr[-400:]}")
+    package_frontend(pkg)
 
     files = sum(1 for _ in stage.rglob("*") if _.is_file())
     size_mb = round(pkg.stat().st_size / 1024 / 1024, 2)
     ok(f"{release}：{files} 个文件，{size_mb} MB")
-    return pkg, release
+    return pkg
 
 
 def backup(prev_release: str) -> str:
@@ -341,6 +411,7 @@ du -sh "$BK" | awk '{{print "BACKUP_SIZE=" $1}}'
 
 def deploy(pkg: Path, release: str) -> None:
     """上传并部署到新 release 目录。"""
+    vue_sha, _ = package_frontend(pkg)
     step("上传")
     remote_pkg = f"{REMOTE_ROOT}/incoming/{pkg.name}"
     done = subprocess.run(
@@ -368,8 +439,10 @@ def deploy(pkg: Path, release: str) -> None:
     script = f"""
 set -e
 DEST={REMOTE_ROOT}/releases/{release}
-rm -rf "$DEST"; mkdir -p "$DEST"
+mkdir "$DEST"
 tar -xzf {remote_pkg} -C "$DEST"
+printf '%s  %s\n' '{vue_sha}' "$DEST/{VUE_INDEX.as_posix()}" | sha256sum -c -
+test ! -e "$DEST/{(STATIC_ROOT / 'shilie').as_posix()}"
 PREV=$(readlink -f {REMOTE_APP})
 cp -a "$PREV/.venv" "$DEST/.venv"
 
@@ -420,7 +493,7 @@ EOF
 systemctl daemon-reload
 
 echo "PREV_RELEASE=$PREV"
-echo "NEW_VERSION=$(grep -o '?v=[0-9]*' "$DEST/src/rag_tech_retriever/api/static/shilie/index.html" | head -1)"
+echo "VUE_HOME_SHA={vue_sha}"
 echo "SKILLS_DIR=$(readlink -f "$DEST/data/local/skills")"
 """
     code, out = run_remote(script, timeout=600)
@@ -491,30 +564,36 @@ def verify(expected: dict) -> None:
         raise DeployError(f"健康检查 180 秒内未通过{hint}")
     ok(f"健康：{health[:120]}")
 
-    ver = remote_version()
-    if ver != expected["local_version"]:
-        raise DeployError(f"版本不符：期望 v{expected['local_version']}，实际 v{ver}")
-    ok(f"线上版本 v{ver}")
-
+    sha, entry = expected["vue_sha"], expected["vue_entry"]
+    if not re.fullmatch(r"[a-f0-9]{64}", sha) or not re.fullmatch(r"/static/vue/assets/[A-Za-z0-9_.-]+\.js", entry):
+        raise DeployError("发布包前端指纹或入口无效")
     script = f"""
+set -e
+base={SCHEME}://127.0.0.1:{WEB_PORT}
+home=$(mktemp)
+trap 'rm -f "$home"' EXIT
+curl -fsk -m 10 "$base/" -o "$home"
+printf '%s  %s\n' '{sha}' "$home" | sha256sum -c -
+test "$(curl -sk -m 8 -o /dev/null -w '%{{http_code}}' "$base{entry}")" = 200
+test "$(curl -sk -m 8 -o /dev/null -w '%{{http_code}}' "$base/api/session")" = 200
+for legacy in /legacy /static/shilie/app.js /static/index.html; do
+    test "$(curl -sk -m 8 -o /dev/null -w '%{{http_code}}' "$base$legacy")" = 404
+done
 sudo -u postgres psql -d {DB} -tAc "select count(*) from workspace_records" | sed 's/^/R=/'
 sudo -u postgres psql -d {DB} -tAc "select count(*) from rag_chunks" | sed 's/^/V=/'
-curl -sk -m 8 -o /dev/null -w "STATIC=%{{http_code}}\\n" {SCHEME}://127.0.0.1:{WEB_PORT}/static/shilie/evaluation.js
 """
     code, out = run_remote(script, timeout=90)
+    if code != 0:
+        raise DeployError("Vue 首页指纹、入口资源、会话或旧路径验收失败")
     records = next((int(l.split("=", 1)[1]) for l in out.splitlines() if l.startswith("R=")), -1)
     vectors = next((int(l.split("=", 1)[1]) for l in out.splitlines() if l.startswith("V=")), -1)
-    static_code = next((l.split("=", 1)[1] for l in out.splitlines() if l.startswith("STATIC=")), "?")
 
     if records != expected.get("records"):
         raise DeployError(f"记录数变化：部署前 {expected.get('records')}，现在 {records}")
     if vectors != expected.get("vectors"):
         raise DeployError(f"向量数变化：部署前 {expected.get('vectors')}，现在 {vectors}")
     ok(f"数据未变：{records} 条记录 / {vectors} 条向量")
-    if static_code not in {"200", "404"}:
-        warn(f"evaluation.js 返回 {static_code}（404 表示该版本无此模块，正常）")
-    else:
-        ok(f"evaluation.js HTTP {static_code}")
+    ok(f"Vue 首页指纹 {sha[:12]} 匹配；入口资源与会话 200，旧入口 404")
 
 
 def prune_script(keep: int) -> str:
@@ -623,8 +702,8 @@ def main() -> int:
 
     if not args.apply:
         step("计划")
-        print(f"  目标版本：v{info['local_version']}")
-        print(f"  当前环境：v{info['running_version']}（{target['label']} :{target['port']}）")
+        print(f"  目标提交：{info['local_version']}（Vue）")
+        print(f"  当前环境：{info['running_version']}（{target['label']} :{target['port']}）")
         print(f"  数据基线：{info.get('records')} 条记录 / {info.get('vectors')} 条向量")
         print(f"  将要部署：{head_commit()}")
         print("  将执行：打包 -> " + ("" if skip_backup else "备份 -> ") + "上传 -> 解包 -> 切换 -> 验证 -> 清理旧版本")
@@ -634,7 +713,14 @@ def main() -> int:
         print(f"  （或指定完整名称，如 --confirm native-<stamp>-{head_commit()}）")
         return 0
 
-    pkg, release = make_package()
+    try:
+        pkg, release = make_package()
+        if not release.endswith("-" + info["local_version"]):
+            raise DeployError("预检后 Git HEAD 发生变化，请重新确认")
+        info["vue_sha"], info["vue_entry"] = package_frontend(pkg)
+    except (DeployError, OSError, subprocess.SubprocessError) as exc:
+        fail(f"打包中止，未上传或切换：{exc}")
+        return 1
     # 允许用 HEAD 表示「部署当前提交」，避免操作者去抄时间戳
     expected = release if args.confirm == "HEAD" else args.confirm
     if expected != release:
@@ -664,7 +750,7 @@ def main() -> int:
     prune_releases(args.keep_releases)
 
     step("完成")
-    ok(f"{target['label']}已是 v{info['local_version']}（{release}）")
+    ok(f"{target['label']}已启用 Vue（{release}）")
     print(f"  地址：{target['scheme']}://{HOST}:{target['port']}/")
     if backup_dir:
         print(f"  备份：{backup_dir}")

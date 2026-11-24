@@ -1,3 +1,12 @@
+FROM node:24-slim AS frontend
+WORKDIR /web
+COPY shilie/package*.json ./
+RUN npm ci --ignore-scripts
+COPY shilie/index.html shilie/tsconfig.json shilie/vite.config.ts ./
+COPY shilie/src ./src
+COPY shilie/public ./public
+RUN npm run build -- --base /static/vue/
+
 # 本地/服务器工作台；WITH_RAG=true 加装 CPU 语义模型依赖。
 FROM python:3.12-slim
 
@@ -12,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
 
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY --from=frontend /web/dist ./src/rag_tech_retriever/api/static/vue
 COPY config ./config
 COPY scripts ./scripts
 RUN pip install --no-cache-dir '.[web]' && \

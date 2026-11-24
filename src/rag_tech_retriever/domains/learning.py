@@ -1,6 +1,7 @@
 """复习卡和不可变复习记录规则；模型不决定调度或写入权限。"""
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta
 
 from rag_tech_retriever.domains.jobs import timestamp
@@ -81,12 +82,20 @@ VALIDATORS = {"learning_card": validate_card, "learning_review": validate_review
 
 
 def validate_references(records: list[dict]) -> None:
-    """来源和审计允许引用归档记录，但绝不指向私密或错误类型记录。"""
+    """已生成的卡可保留缺失来源的历史标记；真实存在的错误类型仍拒绝。"""
     indexed = {row["id"]: row for row in records}
     for row in records:
         if row["kind"] == "learning_card" and row["data"]["source"] != "manual":
             parent = indexed.get(row["data"]["source_id"])
             expected = "interview_report" if row["data"]["source"] == "interview" else "job_lead"
+            if parent is None:
+                # An older snapshot may no longer contain the original report/JD.
+                # Keep the frozen reference only for the service's generated ID shape.
+                # No parent is created or looked up outside this backup.
+                key = row["data"]["source_key"]
+                prefix = "learn-" if expected == "interview_report" else "learn-jd-"
+                if re.fullmatch(r"[a-f0-9]{64}", key) and row["id"] == prefix + key:
+                    continue
             if parent is None or parent["kind"] != expected:
                 raise DomainError("复习卡来源记录缺失或类型不匹配")
         if row["kind"] == "learning_review":

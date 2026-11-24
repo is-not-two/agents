@@ -39,9 +39,6 @@ ZERO = "0" * 64
 HEX12 = re.compile(r"[a-f0-9]{12}\Z")
 HEX32 = re.compile(r"[a-f0-9]{32}\Z")
 HEX64 = re.compile(r"[a-f0-9]{64}\Z")
-SCENES = ("verify-ui.mjs", "verify-jobs.mjs", "verify-learning.mjs",
-          "verify-job-insights.mjs", "verify-agent-studio.mjs",
-          "verify-collaboration.mjs", "verify-public-corpus.mjs")
 RECEIPT_FIELDS = {"schema", "run_id", "session_id", "seq", "request_id", "operation",
                   "request_sha256", "before", "after", "ok", "completed_scenario", "details",
                   "source_manifest_sha256", "previous_receipt_sha256", "receipt_sha256"}
@@ -51,7 +48,7 @@ FINAL_FILES = ("result.json", "gate-status.json", "workspace-proof.json",
                "pytest.stdout.txt", "pytest.stderr.txt", "pytest.exit.txt",
                "ruff.stdout.txt", "ruff.stderr.txt", "ruff.exit.txt",
                "pip-check.stdout.txt", "pip-check.stderr.txt", "pip-check.exit.txt",
-               "static-version.stdout.txt", "static-version.stderr.txt", "static-version.exit.txt",
+               "vue-static.stdout.txt", "vue-static.stderr.txt", "vue-static.exit.txt",
                "agent-eval.stdout.txt", "agent-eval.stderr.txt", "agent-eval.exit.txt",
                "collaboration-eval.stdout.txt", "collaboration-eval.stderr.txt", "collaboration-eval.exit.txt",
                "agent-contract.json", "collaboration-comparison.json", "gate-app.stdout.txt",
@@ -559,10 +556,9 @@ def _health(api: str, path: str, status: int, *, diagnostics: bool = False) -> d
 
 def run_clients(source: Path, output: Path, public: dict, secrets: dict,
                 forward: Forward, control: Control, report: dict) -> None:
-    """Run the existing seven UI runners, SDK and five persistent browser phases."""
-    node = shutil.which("node")
+    """Run the Vue browser suite, SDK and five real persistence/recovery phases."""
     npx = shutil.which("npx.cmd" if os.name == "nt" else "npx")
-    if not node or not npx:
+    if not shutil.which("node") or not npx:
         raise ClientError("NODE_OR_OFFLINE_PLAYWRIGHT_CLI_UNAVAILABLE")
     env = client_environment(source, public, output)
     checks = report["checks"]
@@ -576,9 +572,7 @@ def run_clients(source: Path, output: Path, public: dict, secrets: dict,
         checks.append(value)
         if not value["passed"]:
             raise ClientError("CLIENT_COMMAND_FAILED")
-    for scene in SCENES:
-        args = [node, str(source / "scripts" / scene)] + (["all"] if scene == "verify-ui.mjs" else [])
-        command(args, scene.removesuffix(".mjs"))
+    command([sys.executable, str(source / "scripts/check_vue_browser.py")], "vue-browser")
     command([sys.executable, str(source / "scripts/verify_mcp_queries.py")], "mcp-queries",
             {**env, "WORKSPACE_MCP_TOKEN": secrets["mcp_token"]})
     checks.extend([_health(public["api_url"], "/health/live", 200),
@@ -588,7 +582,7 @@ def run_clients(source: Path, output: Path, public: dict, secrets: dict,
            "--package", "@playwright/cli@0.1.22", "playwright-cli", "-s=qa" + public["run_id"]]
     opened = False
     try:
-        command(cli + ["open", public["api_url"] + "/#module/knowledge", "--browser", "chrome"], "phase-open")
+        command(cli + ["open", public["api_url"] + "/#/module/knowledge", "--browser", "chrome"], "phase-open")
         opened = True
         def phase(name: str) -> None:
             script = (source / "scripts/web_regression.js").read_text(encoding="utf-8")

@@ -110,3 +110,23 @@ def test_lifespan_tolerates_store_without_close():
     close_store(store)
     assert store.called
 
+
+@pytest.mark.parametrize("maximum,minimum,expected", [(0,8,0),(8,0,1),(8,8,8),(8,99,8)])
+def test_pool_minimum_is_bounded(maximum, minimum, expected):
+    """Idle capacity never exceeds the configured connection ceiling."""
+    store = RecordStore("qa_pool_minimum", pool_size=maximum, pool_min_size=minimum)
+    assert store.pool_min_size == expected
+
+
+def test_pool_keeps_configured_idle_connections(monkeypatch):
+    """Do not silently retain only one idle connection under burst traffic."""
+    calls = []
+    marker = object()
+    def factory(minimum, maximum, **dsn):
+        calls.append((minimum, maximum))
+        return marker
+    monkeypatch.setattr(pg_pool, "ThreadedConnectionPool", factory)
+    store = RecordStore("qa_pool_keep", pool_size=8, pool_min_size=8)
+    assert store._connection_pool() is marker
+    assert store._connection_pool() is marker
+    assert calls == [(8,8)]

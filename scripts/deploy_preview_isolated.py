@@ -7,29 +7,34 @@
 - 隔离 unit 的可写目录是稳定路径 `/var/lib/shilie-preview/app/data/local` 与
   `/var/lib/shilie-preview/app/output`，因此这里不切软链，而是整目录换位：
   旧 app 移到 `previous/`，新 app 从 `staging/` 原子改名到 `app`，失败即换回。
-- `.venv312`（Python 3.12）用硬链接克隆（同一文件系统），避免每次复制 1.7G；
-  该 venv 为 editable 安装，`.pth` 指向 `/var/lib/shilie-preview/app/src`，
-  整目录换位后即加载新代码，无需复制包到 site-packages。
+- `.venv` 用硬链接克隆（同一文件系统），避免每次复制 1.7G；新包只替换
+  `site-packages/rag_tech_retriever`，venv 内其它依赖保持原位。
 
 安全边界
 - 只操作 `/var/lib/shilie-preview`、`shilie-preview.service` 与隔离库；
   绝不触碰 `/opt/shilie`、`/etc/shilie`、`/var/lib/shilie`、`shilie.service`、8770。
 - 预检要求 unit 身份为 `shilie_pvapp` 且 `ExecStart` 指向隔离根，否则立即中止。
-- 默认 `--dry-run`；`--apply --confirm HEAD|<release>` 才执行。
+- 默认 `--dry-run`；`--apply --confirm WORKTREE` 才执行。
 - 部署后复核正式服务 PID 未变；正式库/正式私密文件不做任何读写。
 
 用法（项目根目录，Windows PowerShell 或 bash）：
     python scripts/deploy_preview_isolated.py --dry-run
-    python scripts/deploy_preview_isolated.py --apply --confirm HEAD
+    python scripts/deploy_preview_isolated.py --apply --confirm WORKTREE
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
+import shutil
 import subprocess
 import sys
+import tarfile
+import tempfile
 import time
+import zipfile
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -44,12 +49,56 @@ PREVIEW_DB = "shilie_preview_20261104"
 PREVIEW_PG_SOCK = f"{PREVIEW_ROOT}/pgsock"
 PREVIEW_PG_PORT = 55433
 PROD_SERVICE = "shilie"
-PREVIEW_VENV = ".venv312"
+RUNTIME_SCRIPTS = ("merge_deploy_config.py", "queue_worker.py", "opencode_supervisor.sh")
+
+
+def preview_runtime(exec_start: str) -> str:
+    """Return only a supported venv component from the isolated unit's executable."""
+    match = re.search(r"\bpath=" + re.escape(PREVIEW_APP) + r"/(\.venv(?:312)?)/bin/python(?=\s|;|$)", exec_start)
+    return match[1] if match else ""
+
+def package_vue(work: Path) -> tuple[Path, str, str]:
+    """Ship corpus/config, current runtime scripts, Python and Vue; never resurrect HEAD's UI tools."""
+    release = f"vue-{datetime.now():%Y%m%d-%H%M%S}-{base.head_commit()}"
+    stage = work / "source"
+    stage.mkdir()
+    archive = work / "tracked.zip"
+    subprocess.run(["git", "archive", "--format=zip", f"--output={archive}", "HEAD",
+                    "config", "data/raw", "data/processed"],
+                   cwd=base.PROJECT, check=True, timeout=120)
+    with zipfile.ZipFile(archive) as zf:
+        zf.extractall(stage)
+    for entry in (stage / "data" / "raw", stage / "data" / "processed"):
+        if not entry.is_dir():
+            raise base.DeployError(f"候选包缺少必要语料目录：{entry.name}")
+    (stage / "scripts").mkdir()
+    for name in RUNTIME_SCRIPTS:
+        shutil.copy2(base.PROJECT / "scripts" / name, stage / "scripts" / name)
+    for name in ("README.md", "pyproject.toml"):
+        shutil.copy2(base.PROJECT / name, stage / name)
+    source = base.PROJECT / "src" / "rag_tech_retriever"
+    target = stage / "src" / "rag_tech_retriever"
+    shutil.copytree(source, target, ignore=shutil.ignore_patterns("static", "__pycache__", "*.pyc"))
+    npm = shutil.which("npm.cmd" if sys.platform == "win32" else "npm")
+    if not npm:
+        raise base.DeployError("缺少本机 npm")
+    vue = target / "api" / "static" / "vue"
+    subprocess.run([npm, "run", "build", "--", "--base", "/static/vue/", "--outDir", str(vue)],
+                   cwd=base.PROJECT / "shilie", check=True, timeout=180)
+    index = vue / "index.html"
+    payload = index.read_bytes()
+    entry = base.vue_entry(payload)
+    if not (vue / entry.removeprefix("/static/vue/")).is_file():
+        raise base.DeployError("候选首页引用了缺失的 Vue 入口")
+    package = work / (release + ".tar.gz")
+    with tarfile.open(package, "w:gz") as tar:
+        tar.add(stage, arcname=".")
+    return package, release, hashlib.sha256(payload).hexdigest()
 
 
 def isolated_runtime(user: str, exec_start: str) -> bool:
     """unit 是否运行在隔离身份与隔离根内。"""
-    return user == PREVIEW_USER and PREVIEW_APP in exec_start
+    return user == PREVIEW_USER and bool(preview_runtime(exec_start))
 
 
 def layout_is_plain_dir(kind: str) -> bool:
@@ -68,8 +117,8 @@ def preflight() -> dict:
     if not base.KEY.is_file():
         raise base.DeployError(f"SSH 密钥不存在：{base.KEY}")
 
-    local_ver = base.local_version()
-    base.ok(f"本地版本 v{local_ver}")
+    local_ver = base.head_commit()
+    base.ok(f"当前提交 {local_ver}；预览构建取工作树")
 
     script = f"""
 set -u
@@ -110,6 +159,7 @@ echo "PREFLIGHT_END"
         )
     if info.get("unit_active") != "active":
         raise base.DeployError("8771 当前不是 active，先在测试环境排障，不能用部署覆盖未知状态。")
+    info["runtime"] = preview_runtime(info["unit_exec"])
 
     try:
         info["records"] = int(info.get("records", ""))
@@ -133,24 +183,27 @@ echo "PREFLIGHT_END"
 
     running = remote_version()
     info["running_version"] = running
-    base.ok(f"线上版本 v{running} -> 目标 v{local_ver}")
+    base.ok(f"线上首页 {running} -> Vue 工作树候选")
     if info.get("session"):
         base.ok("登录形态：" + info["session"][:160])
     return info
 
 
 def remote_version() -> str | None:
-    """目标环境当前对外提供的静态版本号。"""
+    """当前隔离预览首页指纹。"""
     code, out = run_remote(
-        f"curl -sk -m 10 https://127.0.0.1:{PREVIEW_PORT}/ | grep -o '?v=[0-9]*' | head -1",
+        f"curl -fsk -m 10 https://127.0.0.1:{PREVIEW_PORT}/ | sha256sum | cut -c1-12",
         timeout=40,
     )
-    found = re.findall(r"v=(\d+)", out)
-    return found[0] if (code == 0 and found) else None
+    return out.strip() if code == 0 and re.fullmatch(r"[a-f0-9]{12}", out.strip()) else None
 
 
-def deploy(pkg: Path, release: str) -> str:
+def deploy(pkg: Path, release: str, vue_sha: str, runtime: str = ".venv") -> str:
     """上传并在 staging 构建完整新 app，返回 staging 绝对路径。"""
+    if runtime not in {".venv", ".venv312"}:
+        raise base.DeployError("隔离运行时路径无效")
+    if not re.fullmatch(r"[a-f0-9]{64}", vue_sha):
+        raise base.DeployError("缺少有效 Vue 首页指纹")
     base.step("上传")
     remote_pkg = f"{PREVIEW_ROOT}/staging/{pkg.name}"
     run_remote(f"mkdir -p {PREVIEW_ROOT}/staging && chmod 711 {PREVIEW_ROOT}/staging", timeout=30)
@@ -168,6 +221,23 @@ def deploy(pkg: Path, release: str) -> str:
 
     base.step("暂存构建")
     stage = f"{PREVIEW_ROOT}/staging/{release}"
+    frontend_check = (f'echo "{vue_sha}  $STAGE/src/rag_tech_retriever/api/static/vue/index.html" | sha256sum -c -\n'
+                      'test ! -e "$STAGE/src/rag_tech_retriever/api/static/shilie"')
+    preview_config = """
+"$PY" - "$STAGE/config/agent-tools.yaml" <<'SHILIE_PREVIEW_CONFIG'
+from pathlib import Path
+import sys
+import yaml
+
+file = Path(sys.argv[1])
+config = yaml.safe_load(file.read_text(encoding="utf-8"))
+code = config.setdefault("code", {})
+code["roots"] = {"shilie": {"path": "src", "title": "隔离预览源码（只读）", "writable": False}}
+code.setdefault("shell", {})["enabled"] = False
+file.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
+SHILIE_PREVIEW_CONFIG
+"""
+    import_target = "rag_tech_retriever.api.main"
     script = f"""
 set -eu
 APP={PREVIEW_APP}
@@ -177,7 +247,8 @@ mkdir -p "$STAGE"
 tar -xzf {remote_pkg} -C "$STAGE"
 
 # venv 硬链接克隆：同文件系统，不复制 1.7G；新包只替换应用自身。
-cp -al "$APP/{PREVIEW_VENV}" "$STAGE/{PREVIEW_VENV}"
+cp -al "$APP/{runtime}" "$STAGE/{runtime}"
+PY="$STAGE/{runtime}/bin/python"
 
 # 用户数据与凭据只从隔离根继承，绝不读 /var/lib/shilie。
 rm -rf "$STAGE/data/local" "$STAGE/data/public" "$STAGE/credentials" "$STAGE/output"
@@ -187,18 +258,26 @@ cp -a "$APP/credentials" "$STAGE/credentials"
 cp -a "$APP/output" "$STAGE/output"
 
 # 共享配置优先、发布包补新键；共享独有文件也复制过来。
-PYTHONPATH="$STAGE/src" "$STAGE/{PREVIEW_VENV}/bin/python" "$STAGE/scripts/merge_deploy_config.py" \
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$STAGE/src" "$PY" "$STAGE/scripts/merge_deploy_config.py" \
   --package "$STAGE/config" --persistent "$APP/config" --dest "$STAGE/config"
 for f in "$APP/config"/*; do
   b=$(basename "$f")
   [ -e "$STAGE/config/$b" ] || cp -a "$f" "$STAGE/config/$b"
 done
+{preview_config}
 
-# editable 安装无需复制包：.pth 指向 app/src，换位后即为新代码。
+# 非 editable 安装：运行期导入 site-packages 里的副本。
+PURELIB=$("$PY" -c 'import sysconfig; print(sysconfig.get_path("purelib"))')
+case "$PURELIB" in "$STAGE/{runtime}/lib/"*/site-packages) ;; *) exit 1 ;; esac
+SITE="$PURELIB/rag_tech_retriever"
+rm -rf "$SITE"
+cp -a "$STAGE/src/rag_tech_retriever" "$SITE"
 
-chown -R root:{PREVIEW_USER} "$STAGE"
+find "$STAGE" -path "$STAGE/{runtime}" -prune -o -exec chown root:{PREVIEW_USER} {{}} +
+chown -R root:{PREVIEW_USER} "$SITE"
 chmod 750 "$STAGE"
-chmod -R g+rX,o-rwx "$STAGE"
+find "$STAGE" -path "$STAGE/{runtime}" -prune -o -exec chmod g+rX,o-rwx {{}} +
+chmod -R g+rX,o-rwx "$SITE"
 chown -R {PREVIEW_USER}:{PREVIEW_USER} "$STAGE/data/local" "$STAGE/output"
 chmod -R u+rwX,g+rwX "$STAGE/data/local" "$STAGE/output"
 chmod 700 "$STAGE/data/local"
@@ -207,10 +286,9 @@ chmod 640 "$STAGE/credentials/server.key" 2>/dev/null || true
 
 # 构建期自检：以服务身份导入包，并核对静态版本号。
 runuser -u {PREVIEW_USER} -- env HOME="$STAGE" RAG_PROJECT_ROOT="$STAGE" PYTHONDONTWRITEBYTECODE=1 \
-  PYTHONPATH="$STAGE/src" \
-  PATH="$STAGE/{PREVIEW_VENV}/bin:/usr/bin:/bin" \
-  "$STAGE/{PREVIEW_VENV}/bin/python" -c "import rag_tech_retriever; print('IMPORT_OK')"
-grep -q "?v={base.local_version()}" "$STAGE/src/rag_tech_retriever/api/static/shilie/index.html"
+  PATH="$STAGE/{runtime}/bin:/usr/bin:/bin" \
+  "$PY" -c "import {import_target}; print('IMPORT_OK')"
+{frontend_check}
 
 echo "STAGE={stage}"
 echo "STAGE_SIZE=$(du -sh "$STAGE" | cut -f1)"
@@ -292,10 +370,15 @@ def verify(info: dict) -> None:
         raise base.DeployError(f"健康检查 180 秒内未通过{hint}")
     base.ok(f"健康：{health[:120]}")
 
-    ver = remote_version()
-    if ver != info["local_version"]:
-        raise base.DeployError(f"版本不符：期望 v{info['local_version']}，实际 v{ver}")
-    base.ok(f"线上版本 v{ver}")
+    frontend_probe = f"""
+home=$(curl -fsk -m 8 https://127.0.0.1:{PREVIEW_PORT}/)
+entry=$(printf '%s' "$home" | grep -oE '/static/vue/assets/[^"]+\\.js' | head -1)
+echo "HOME_SHA=$(curl -fsk -m 8 https://127.0.0.1:{PREVIEW_PORT}/ | sha256sum | cut -d' ' -f1)"
+test -n "$entry" || exit 1
+curl -sk -m 8 -o /dev/null -w "STATIC=%{{http_code}}\\n" "https://127.0.0.1:{PREVIEW_PORT}$entry"
+curl -sk -m 8 -o /dev/null -w "LEGACY=%{{http_code}}\\n" https://127.0.0.1:{PREVIEW_PORT}/legacy
+curl -sk -m 8 -o /dev/null -w "OLD_STATIC=%{{http_code}}\\n" https://127.0.0.1:{PREVIEW_PORT}/static/shilie/app.js
+"""
 
     script = f"""
 echo "USER=$(systemctl show {PREVIEW_SERVICE} --property=User --value)"
@@ -303,12 +386,14 @@ echo "PROD_PID=$(systemctl show {PROD_SERVICE} --property=MainPID --value)"
 echo "R=$(runuser -u shilie_pvdb -- psql -h {PREVIEW_PG_SOCK} -p {PREVIEW_PG_PORT} -d {PREVIEW_DB} -tAc 'select count(*) from workspace_records')"
 echo "V=$(runuser -u shilie_pvdb -- psql -h {PREVIEW_PG_SOCK} -p {PREVIEW_PG_PORT} -d {PREVIEW_DB} -tAc 'select count(*) from workspace_versions')"
 echo "C=$(runuser -u shilie_pvdb -- psql -h {PREVIEW_PG_SOCK} -p {PREVIEW_PG_PORT} -d {PREVIEW_DB} -tAc 'select count(*) from rag_chunks')"
-curl -sk -m 8 -o /dev/null -w "STATIC=%{{http_code}}\\n" https://127.0.0.1:{PREVIEW_PORT}/static/shilie/app.js
+{frontend_probe}
 curl -sk -m 8 -o /dev/null -w "AUTH=%{{http_code}}\\n" https://127.0.0.1:{PREVIEW_PORT}/api/knowledge
 curl -sk -m 8 https://127.0.0.1:{PREVIEW_PORT}/api/session | sed 's/^/SESSION=/'
 echo
 """
     code, out = run_remote(script, timeout=90)
+    if code != 0:
+        raise base.DeployError("HTTP 验证未完整执行")
     values: dict[str, str] = {}
     for line in out.splitlines():
         if "=" in line:
@@ -339,7 +424,10 @@ echo
     base.ok(f"数据未变：{info['records']} 记录 / {info['versions']} 历史 / {info['vectors']} 向量")
 
     if values.get("STATIC") != "200":
-        raise base.DeployError(f"静态资源 app.js 返回 {values.get('STATIC')}")
+        raise base.DeployError(f"前端入口资源返回 {values.get('STATIC')}")
+    if values.get("HOME_SHA") != info["vue_sha"] or values.get("LEGACY") != "404" or values.get("OLD_STATIC") != "404":
+        raise base.DeployError("候选首页指纹不符，或旧前端仍可访问")
+    base.ok("Vue 首页指纹一致，旧页面和脚本均为 404")
     base.ok("静态资源 200")
     if values.get("AUTH") not in {"401", "403"}:
         raise base.DeployError(
@@ -420,9 +508,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true", help="只预检并打印计划（默认行为）")
     parser.add_argument("--apply", action="store_true", help="真正执行（默认只做 dry-run）")
-    parser.add_argument("--confirm", metavar="RELEASE", help="release 名，或 HEAD 表示当前提交")
-    parser.add_argument("--keep-previous", type=int, default=2, metavar="N",
-                        help="成功后保留的旧 app 个数（默认 2）")
+    parser.add_argument("--confirm", metavar="WORKTREE", help="明确确认打包当前工作树")
+    parser.add_argument("--vue", action="store_true", help="兼容旧命令；预览现在只部署 Vue")
     args = parser.parse_args()
     if args.dry_run and args.apply:
         parser.error("--dry-run 与 --apply 不能同时使用")
@@ -439,41 +526,43 @@ def main() -> int:
 
     if not args.apply:
         base.step("计划")
-        print(f"  目标版本：v{info['local_version']}")
-        print(f"  当前环境：v{info['running_version']}（测试环境 :{PREVIEW_PORT}）")
+        print("  目标版本：当前工作树的 Vue 候选")
+        print(f"  当前首页：{info['running_version']}（测试环境 :{PREVIEW_PORT}）")
         print(f"  数据基线：{info['records']} 记录 / {info['versions']} 历史 / {info['vectors']} 向量")
         print(f"  将要部署：{base.head_commit()}")
-        print("  将执行：打包 -> staging 构建 -> 停服换位 -> 启动 -> 验证 -> 清理旧目录")
+        print("  将执行：打包 -> staging 构建 -> 停服换位 -> 启动 -> 验证")
         print("  失败时自动换回旧 app（数据库不在本脚本内变更）")
         print("\n确认无误后执行：")
-        print("  python scripts/deploy_preview_isolated.py --apply --confirm HEAD")
+        print("  python scripts/deploy_preview_isolated.py --apply --confirm WORKTREE")
         return 0
 
-    pkg, release = base.make_package()
-    expected = release if args.confirm == "HEAD" else args.confirm
-    if expected != release:
-        base.fail(f"--confirm 必须是 HEAD 或完整 release 名：{release}")
-        return 1
+    if args.confirm != "WORKTREE":
+        parser.error("--apply 必须同时指定 --confirm WORKTREE")
+    temp = tempfile.TemporaryDirectory(prefix="shilie-preview-vue-")
 
     old = ""
     try:
-        stage = deploy(pkg, release)
+        pkg, release, info["vue_sha"] = package_vue(Path(temp.name))
+        stage = deploy(pkg, release, info["vue_sha"], info["runtime"])
         old = swap(stage, release)
         start_service()
         verify(info)
     except base.DeployError as exc:
         base.fail(str(exc))
-        rollback(old, release)
+        if old:
+            rollback(old, release)
         return 1
     except Exception as exc:  # noqa: BLE001 - 任何异常都必须触发回滚
         base.fail(f"{type(exc).__name__}: {exc}")
-        rollback(old, release)
+        if old:
+            rollback(old, release)
         return 1
 
-    prune(args.keep_previous)
+    finally:
+        temp.cleanup()
 
     base.step("完成")
-    base.ok(f"测试环境已是 v{info['local_version']}（{release}）")
+    base.ok(f"测试环境已启用 Vue（{release}）")
     print(f"  地址：https://{base.HOST}:{PREVIEW_PORT}/")
     print("  回滚：把 /var/lib/shilie-preview/previous/app-<release> 换回 app 并重启")
     return 0

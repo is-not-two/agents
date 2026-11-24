@@ -649,7 +649,11 @@ def run(source: Path, output: Path, work_root: Path, expected_user: str, timeout
             phase = "full_server_checks"
             commands = [
                 ("pip-check", [sys.executable, "-m", "pip", "check"]),
-                ("static-version", [sys.executable, str(source / "scripts/check_static_version.py")]),
+                ("vue-static", [sys.executable, "-c",
+                    ("import sys; from pathlib import Path; "
+                    "from rag_tech_retriever.common.release_manifest import vue_manifest; "
+                    "print(len(vue_manifest(Path(sys.argv[1]))))"),
+                    str(source / "src/rag_tech_retriever/api/static/vue")]),
                 ("agent-eval", [sys.executable, str(source / "scripts/agent_eval.py"), "--report", str(output / "agent-contract.json")]),
                 ("collaboration-eval", [sys.executable, str(source / "scripts/collaboration_eval.py"), "--report", str(output / "collaboration-comparison.json")]),
             ]

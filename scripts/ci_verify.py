@@ -1,6 +1,6 @@
 """Run browser regression against a disposable PostgreSQL container, never the user's DB.
 
-Usage: .venv/Scripts/python.exe scripts/web_regression.py
+Usage: .venv/Scripts/python.exe scripts/ci_verify.py
 Prerequisites: Docker, Chrome, and cached @playwright/cli 0.1.22 (see README).
 """
 
@@ -171,7 +171,7 @@ def serve(root: Path, run_id: str, port: int | None = None, *, uds: Path | None 
         uvicorn.run(app, host="127.0.0.1", port=port, log_level="error")
 
 
-def run() -> None:
+def run(vue_assets: Path | None = None) -> None:
     """Own and clean all test processes/volumes, including after a failed assertion."""
     docker = shutil.which("docker")
     npx = shutil.which("npx.cmd" if os.name == "nt" else "npx")
@@ -187,6 +187,16 @@ def run() -> None:
     with tempfile.TemporaryDirectory(prefix="shilie-regression-") as temp:
         root = Path(temp).resolve()
         assert root.parent == Path(tempfile.gettempdir()).resolve() and root.name.startswith("shilie-regression-")
+        frontend = root / "frontend" / "vue"
+        if vue_assets is None:
+            from check_vue_candidate import check
+
+            check(frontend)
+        else:
+            from rag_tech_retriever.common.release_manifest import vue_manifest
+
+            vue_manifest(vue_assets)
+            shutil.copytree(vue_assets, frontend)
         base_cli = [npx, "--offline", "--registry=https://registry.npmjs.org", "--yes",
                     "--package", CLI_PACKAGE, "playwright-cli", "-s=" + session]
         try:
@@ -262,7 +272,7 @@ def run() -> None:
             proc = start()
             wait_ready(base, run_id, proc)
             launched_browser = True
-            opened = command(base_cli + ["open", base + "/#module/knowledge", "--browser", "chrome"], cwd=root)
+            opened = command(base_cli + ["open", base + "/#/module/knowledge", "--browser", "chrome"], cwd=root)
             if "### Error" in opened:
                 raise RuntimeError(opened[-1500:])
 
@@ -277,78 +287,12 @@ def run() -> None:
                     raise RuntimeError(output[-2200:])
                 print("PASS", phase, flush=True)
 
-            # The same portable scene runner is used locally and on hosted CI.
             images = EVIDENCE / "browser-artifacts"
             images.mkdir(exist_ok=True)
             browser_env = {**env, "WEB_QA_URL": base + "/", "WEB_QA_OUTPUT": str(images), "WEB_QA_RUN_ID": run_id}
-            checked = subprocess.run(["node", str(PROJECT / "scripts/verify-ui.mjs"), "all"],
-                                     check=False, cwd=PROJECT, env=browser_env, capture_output=True,
-                                     text=True, encoding="utf-8", errors="replace", timeout=150,
-                                     **HIDDEN)
-            (EVIDENCE / "browser.stdout.txt").write_text(checked.stdout, encoding="utf-8")
-            (EVIDENCE / "browser.stderr.txt").write_text(checked.stderr, encoding="utf-8")
-            (EVIDENCE / "browser.exit.txt").write_text(str(checked.returncode), encoding="utf-8")
-            print(checked.stdout, flush=True)
-            if checked.returncode or "✗" in checked.stdout:
-                raise RuntimeError("Browser four-scene regression failed")
-            jobs = subprocess.run(["node", str(PROJECT / "scripts/verify-jobs.mjs")],
-                                  check=False, cwd=PROJECT, env=browser_env, capture_output=True,
-                                  text=True, encoding="utf-8", errors="replace", timeout=150,
-                                  **HIDDEN)
-            (EVIDENCE / "jobs.stdout.txt").write_text(jobs.stdout, encoding="utf-8")
-            (EVIDENCE / "jobs.stderr.txt").write_text(jobs.stderr, encoding="utf-8")
-            (EVIDENCE / "jobs.exit.txt").write_text(str(jobs.returncode), encoding="utf-8")
-            print(jobs.stdout, flush=True)
-            if jobs.returncode:
-                raise RuntimeError("Real jobs browser regression failed")
-            learning = subprocess.run(["node", str(PROJECT / "scripts/verify-learning.mjs")],
-                                      check=False, cwd=PROJECT, env=browser_env, capture_output=True,
-                                      text=True, encoding="utf-8", errors="replace", timeout=150,
-                                      **HIDDEN)
-            (EVIDENCE / "learning.stdout.txt").write_text(learning.stdout, encoding="utf-8")
-            (EVIDENCE / "learning.stderr.txt").write_text(learning.stderr, encoding="utf-8")
-            (EVIDENCE / "learning.exit.txt").write_text(str(learning.returncode), encoding="utf-8")
-            print(learning.stdout, flush=True)
-            if learning.returncode:
-                raise RuntimeError("Real learning/outbox browser regression failed")
-            insights = subprocess.run(["node", str(PROJECT / "scripts/verify-job-insights.mjs")],
-                                      check=False, cwd=PROJECT, env=browser_env, capture_output=True,
-                                      text=True, encoding="utf-8", errors="replace", timeout=150,
-                                      **HIDDEN)
-            (EVIDENCE / "job-insights.stdout.txt").write_text(insights.stdout, encoding="utf-8")
-            (EVIDENCE / "job-insights.stderr.txt").write_text(insights.stderr, encoding="utf-8")
-            (EVIDENCE / "job-insights.exit.txt").write_text(str(insights.returncode), encoding="utf-8")
-            print(insights.stdout, flush=True)
-            if insights.returncode:
-                raise RuntimeError("Real JD/weekly browser regression failed")
-            studio = subprocess.run(["node", str(PROJECT / "scripts/verify-agent-studio.mjs")],
-                                    check=False, cwd=PROJECT, env=browser_env, capture_output=True,
-                                    text=True, encoding="utf-8", errors="replace", timeout=150,
-                                    **HIDDEN)
-            (EVIDENCE / "agent-studio.stdout.txt").write_text(studio.stdout, encoding="utf-8")
-            (EVIDENCE / "agent-studio.stderr.txt").write_text(studio.stderr, encoding="utf-8")
-            (EVIDENCE / "agent-studio.exit.txt").write_text(str(studio.returncode), encoding="utf-8")
-            print(studio.stdout, flush=True)
-            if studio.returncode:
-                raise RuntimeError("Real Agent memory/session studio browser regression failed")
-            collab = subprocess.run(["node", str(PROJECT / "scripts/verify-collaboration.mjs")],
-                                    check=False, cwd=PROJECT, env=browser_env, capture_output=True,
-                                    text=True, encoding="utf-8", errors="replace", timeout=150, **HIDDEN)
-            (EVIDENCE / "collaboration.stdout.txt").write_text(collab.stdout, encoding="utf-8")
-            (EVIDENCE / "collaboration.stderr.txt").write_text(collab.stderr, encoding="utf-8")
-            (EVIDENCE / "collaboration.exit.txt").write_text(str(collab.returncode), encoding="utf-8")
-            print(collab.stdout, flush=True)
-            if collab.returncode:
-                raise RuntimeError("Real collaboration browser regression failed")
-            public = subprocess.run(["node", str(PROJECT / "scripts/verify-public-corpus.mjs")],
-                                    check=False, cwd=PROJECT, env=browser_env, capture_output=True,
-                                    text=True, encoding="utf-8", errors="replace", timeout=150, **HIDDEN)
-            (EVIDENCE / "public-corpus.stdout.txt").write_text(public.stdout, encoding="utf-8")
-            (EVIDENCE / "public-corpus.stderr.txt").write_text(public.stderr, encoding="utf-8")
-            (EVIDENCE / "public-corpus.exit.txt").write_text(str(public.returncode), encoding="utf-8")
-            print(public.stdout, flush=True)
-            if public.returncode:
-                raise RuntimeError("Real public corpus browser regression failed")
+            suite = command([sys.executable, str(PROJECT / "scripts/check_vue_browser.py")], cwd=PROJECT,
+                            env=browser_env, timeout=180)
+            (EVIDENCE / "vue-browser.stdout.txt").write_text(suite, encoding="utf-8")
             mcp = subprocess.run([sys.executable, str(PROJECT / "scripts/verify_mcp_queries.py")],
                                 check=False, cwd=PROJECT, env=browser_env, capture_output=True,
                                 text=True, encoding="utf-8", errors="replace", timeout=90, **HIDDEN)
@@ -420,6 +364,7 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, help=argparse.SUPPRESS)
     parser.add_argument("--uds", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--vue-assets", type=Path, help="已验收的 Vue 运行目录")
     args = parser.parse_args()
     if args.output:
         EVIDENCE = args.output.resolve()
@@ -430,7 +375,7 @@ if __name__ == "__main__":
                 parser.error("Choose one QA listener")
             serve(args.serve, args.run_id, args.port, uds=args.uds)
         else:
-            run()
+            run(args.vue_assets)
     except (RuntimeError, subprocess.TimeoutExpired) as error:
         print("FAIL:", error, file=sys.stderr)
         sys.exit(1)

@@ -282,7 +282,7 @@ def knowledge_create(payload: RecordInput) -> dict:
 后续按需要阅读，不要求现在全部打开：
 - [领域校验](E:/project/agents/rag-tech-doc-retriever/src/rag_tech_retriever/domains/knowledge.py)
 - [存储及事务](E:/project/agents/rag-tech-doc-retriever/src/rag_tech_retriever/platform/record_store.py)
-- [网页保存逻辑](E:/project/agents/rag-tech-doc-retriever/src/rag_tech_retriever/api/static/shilie/app.js)
+- [Vue 网页保存逻辑](E:/project/agents/shilie-synced-20261109/shilie/src/views/module/items/RecordEditor.vue)
 
 ### 6.2 LEARN-001：仍由你实现
 
@@ -518,7 +518,7 @@ GitHub 能力导入目前只导入经确认的 `SKILL.md`，不自动安装仓�
 | F03 | [知识规则](E:/project/agents/rag-tech-doc-retriever/src/rag_tech_retriever/domains/knowledge.py)：`validate_knowledge` | W1–W2 | 标题、正文、标签和来源有哪些约束 |
 | F04 | [通用文本检查所在文件](E:/project/agents/rag-tech-doc-retriever/src/rag_tech_retriever/domains/life_planning.py)：`text`、`DomainError` | W1–W2 | 去空白、必填、长度和类型错误；本课不要求读规划全部逻辑 |
 | F05 | [持久化](E:/project/agents/rag-tech-doc-retriever/src/rag_tech_retriever/platform/record_store.py)：`RecordStore.save` | W1–W2 | 保存为何需要事务、记录 ID 和版本；先理解调用边界再看 SQL |
-| F06 | [网页表单](E:/project/agents/rag-tech-doc-retriever/src/rag_tech_retriever/api/static/shilie/app.js)：`saveForm` | W1 | 标签字符串如何变成请求里的数组；不是学习整个前端框架 |
+| F06 | [Vue 网页表单](E:/project/agents/shilie-synced-20261109/shilie/src/views/module/items/RecordEditor.vue)：`save` | W1 | 标签字符串如何变成请求里的数组；不是学习整个前端框架 |
 | F07 | [网页接口测试](E:/project/agents/rag-tech-doc-retriever/tests/test_web_api.py)：`test_blank_input_and_invalid_plan_rejected`、`test_web_save_history_restore_and_export` | W1–W2 | 如何断言 HTTP 结果和持久化行为 |
 | F08 | [存储测试](E:/project/agents/rag-tech-doc-retriever/tests/test_workspace.py)：`test_two_concurrent_updates_exactly_one_succeeds`、`test_snapshot_failure_rolls_back_all_prior_changes` | W2 | 冲突和事务回滚的可观察证据 |
 | F09 | [向量评测脚本](E:/project/agents/rag-tech-doc-retriever/scripts/v1_run_baseline.py)：`run_condition`、`main` | W3–W4 | 一道题如何检索、判断命中、汇总；主入口有哪些写入副作用 |

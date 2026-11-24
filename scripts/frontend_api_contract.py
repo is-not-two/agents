@@ -13,9 +13,10 @@ from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[1]
 SPEC = PROJECT / "docs" / "openapi.json"
-FRONTEND = PROJECT / "src" / "rag_tech_retriever" / "api" / "static" / "shilie"
+FRONTEND = PROJECT / "shilie" / "src"
 
 CALL_API = re.compile(r"""api\(\s*(["'`])([^"'`\n]+)\1""")
+CALL_VUE = re.compile(r"""\b(?:request|requestText|send)(?:<[^\n]*?>)?\(\s*(["'`])([^"'`\n]+)\1""")
 CALL_FETCH = re.compile(r"""fetch\(\s*(["'`])(/api/[^"'`\n]*)\1""")
 PARAM = re.compile(r"\{[^}]*\}")
 TEMPLATE = re.compile(r"\$\{[^}]*\}")
@@ -48,14 +49,21 @@ def matches(call: str, spec_path: str, prefix: bool = False) -> bool:
     return True
 
 
-def extract_calls(text: str) -> set[str]:
-    """从一段 JS 源码提取 /api 引用；支持跨行调用与字符串拼接出的前缀。"""
+def extract_calls(text: str, api_base: str = "/api/") -> set[str]:
+    """从一段 JS 源码提取 /api 引用；支持跨行调用与字符串拼接出的前缀。
+
+    api_base: 该文件里 api("x") helper 的实际前缀。工作台是 "/api/"；
+    社区前端 src/community/api.ts 的 helper 拼 "/api/community/" + path，
+    其调用（如 api("posts")）应映射到 /api/community/posts。
+    """
     calls: set[str] = set()
-    for match in CALL_API.finditer(text):
-        calls.add("/api/" + match.group(2).lstrip("/"))
+    for pattern in (CALL_API, CALL_VUE):
+        for match in pattern.finditer(text):
+            calls.add(api_base + match.group(2).lstrip("/"))
     for match in CALL_FETCH.finditer(text):
         calls.add(match.group(2))
-    # 前端 api() 帮助函数自身的 "/api/" + path 拼接不算接口引用
+    # helper 自身的 base 拼接（如 fetch("/api/community/"+path)）是模板而非具体接口
+    calls.discard(api_base.rstrip("/") + "/")
     calls.discard("/api/")
     return calls
 
@@ -64,8 +72,16 @@ def main() -> int:
     spec = json.loads(SPEC.read_text(encoding="utf-8"))
     paths = spec["paths"]
     calls: set[str] = set()
-    for file in FRONTEND.rglob("*.js"):
-        calls |= extract_calls(file.read_text(encoding="utf-8"))
+    for file in FRONTEND.rglob("*"):
+        if file.suffix in {".ts", ".vue"} and file.name != "demo-data.ts":
+            # 社区前端的 api() helper 拼 "/api/community/" + path；
+            # 工作台的 api() helper 拼 "/api/" + path。按目录选 base。
+            parts = file.relative_to(FRONTEND).parts
+            base = "/api/community/" if "community" in parts else "/api/"
+            calls |= extract_calls(file.read_text(encoding="utf-8"), api_base=base)
+    if not calls:
+        print("未发现 Vue 前端 API 引用")
+        return 1
     missing = []
     for url in sorted(calls):
         if url.endswith("/"):

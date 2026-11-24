@@ -170,6 +170,11 @@ class ModelConnection:
         config = self.prepare(payload, current)
         body = {"model": config["model"], "messages": [{"role": "user", "content": "Reply OK."}],
                 "max_tokens": 8, "stream": False}
+        # MiMo V2.6 defaults to reasoning; an 8-token probe may never emit text.
+        host = (urlsplit(config["base_url"]).hostname or "").lower()
+        if (host == "api.xiaomimimo.com" or host.startswith("token-plan-")
+                and host.endswith(".xiaomimimo.com")) and config["model"].startswith("mimo-v2.6-"):
+            body["thinking"] = {"type": "disabled"}
         try:
             envelope = post_chat(config, body, self.test_timeout, DEFAULT_CONTEXT_CHARS)
             content = envelope["choices"][0]["message"]["content"]

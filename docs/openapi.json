@@ -1,9 +1,56 @@
 {
   "components": {
     "schemas": {
+      "ActionInput": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "advance",
+              "pause",
+              "resume",
+              "gate",
+              "approve",
+              "revise",
+              "choices"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "node": {
+            "default": "",
+            "maxLength": 24,
+            "title": "Node",
+            "type": "string"
+          },
+          "value": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Value",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "action"
+        ],
+        "title": "ActionInput",
+        "type": "object"
+      },
       "AgentRunInput": {
         "additionalProperties": false,
         "properties": {
+          "project": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Project",
+            "type": "string"
+          },
           "query": {
             "maxLength": 4000,
             "minLength": 1,
@@ -101,6 +148,33 @@
         "title": "AnswersInput",
         "type": "object"
       },
+      "ApplyInput": {
+        "properties": {
+          "confirmation": {
+            "title": "Confirmation",
+            "type": "string"
+          },
+          "draft": {
+            "maxLength": 50000,
+            "minLength": 1,
+            "title": "Draft",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "draft",
+          "confirmation"
+        ],
+        "title": "ApplyInput",
+        "type": "object"
+      },
       "ApprovalInput": {
         "additionalProperties": false,
         "properties": {
@@ -119,6 +193,59 @@
           "approve"
         ],
         "title": "ApprovalInput",
+        "type": "object"
+      },
+      "Ask": {
+        "properties": {
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Keywords",
+            "type": "array"
+          },
+          "question": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "keywords"
+        ],
+        "title": "Ask",
+        "type": "object"
+      },
+      "Attachment": {
+        "properties": {
+          "content": {
+            "maxLength": 1398104,
+            "minLength": 4,
+            "title": "Content",
+            "type": "string"
+          },
+          "filename": {
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Filename",
+            "type": "string"
+          },
+          "post_id": {
+            "format": "uuid",
+            "title": "Post Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "post_id",
+          "filename",
+          "content"
+        ],
+        "title": "Attachment",
         "type": "object"
       },
       "Body_markdown_preview_api_knowledge_import_markdown_post": {
@@ -230,6 +357,37 @@
         "title": "CloseInput",
         "type": "object"
       },
+      "ComposeInput": {
+        "description": "AI 自动编排：目标、模式与逐次确认（用户点击生成即确认）。",
+        "properties": {
+          "confirmation": {
+            "default": "",
+            "title": "Confirmation",
+            "type": "string"
+          },
+          "goal": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          },
+          "mode": {
+            "default": "rules",
+            "title": "Mode",
+            "type": "string"
+          },
+          "template": {
+            "default": "generic",
+            "title": "Template",
+            "type": "string"
+          }
+        },
+        "required": [
+          "goal"
+        ],
+        "title": "ComposeInput",
+        "type": "object"
+      },
       "ConfirmInput": {
         "description": "人工确认：入库选片段，或图工作流/Agent 子运行的批准。",
         "properties": {
@@ -323,6 +481,65 @@
           "confirmation"
         ],
         "title": "DecisionInput",
+        "type": "object"
+      },
+      "DraftPayload": {
+        "description": "客户端回传待保存的草稿；服务端一律重新校验。",
+        "properties": {
+          "draft": {
+            "additionalProperties": true,
+            "title": "Draft",
+            "type": "object"
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "title": "DraftPayload",
+        "type": "object"
+      },
+      "EnqueueInput": {
+        "description": "入队参数：任务类型、载荷、重试上限与优先级。",
+        "properties": {
+          "idempotency_key": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "team",
+              "loop"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "max_attempts": {
+            "default": 3,
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Max Attempts",
+            "type": "integer"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "priority": {
+            "default": 50,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Priority",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "payload"
+        ],
+        "title": "EnqueueInput",
         "type": "object"
       },
       "EvaluateInput": {
@@ -504,6 +721,21 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "Invitation": {
+        "properties": {
+          "token": {
+            "maxLength": 128,
+            "minLength": 40,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "Invitation",
+        "type": "object"
+      },
       "JobsOverviewOut": {
         "additionalProperties": true,
         "description": "求职总览契约；分组字段随记录类型扩展。",
@@ -547,6 +779,56 @@
         "title": "JobsOverviewOut",
         "type": "object"
       },
+      "LoopInput": {
+        "description": "一次自动编码：仓库根目录名、目标、门禁命令、执行器与预算档位。",
+        "properties": {
+          "engine": {
+            "default": "opencode",
+            "enum": [
+              "opencode",
+              "aider",
+              "model"
+            ],
+            "title": "Engine",
+            "type": "string"
+          },
+          "gate": {
+            "maxLength": 1000,
+            "minLength": 2,
+            "title": "Gate",
+            "type": "string"
+          },
+          "root": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Root",
+            "type": "string"
+          },
+          "task": {
+            "maxLength": 2000,
+            "minLength": 2,
+            "title": "Task",
+            "type": "string"
+          },
+          "tier": {
+            "default": "patch",
+            "enum": [
+              "patch",
+              "feature",
+              "epic"
+            ],
+            "title": "Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "root",
+          "task",
+          "gate"
+        ],
+        "title": "LoopInput",
+        "type": "object"
+      },
       "MemoryDecisionInput": {
         "additionalProperties": false,
         "properties": {
@@ -561,6 +843,12 @@
           },
           "confirmation": {
             "title": "Confirmation",
+            "type": "string"
+          },
+          "project": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Project",
             "type": "string"
           },
           "version": {
@@ -592,10 +880,22 @@
             "title": "Content",
             "type": "string"
           },
+          "project": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Project",
+            "type": "string"
+          },
           "request_id": {
             "maxLength": 100,
             "minLength": 1,
             "title": "Request Id",
+            "type": "string"
+          },
+          "source_title": {
+            "default": "",
+            "maxLength": 160,
+            "title": "Source Title",
             "type": "string"
           }
         },
@@ -674,6 +974,22 @@
           "data"
         ],
         "title": "ProfileInput",
+        "type": "object"
+      },
+      "ProjectInput": {
+        "additionalProperties": false,
+        "properties": {
+          "goal": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          }
+        },
+        "required": [
+          "goal"
+        ],
+        "title": "ProjectInput",
         "type": "object"
       },
       "PromptOptimizeInput": {
@@ -914,6 +1230,56 @@
         "title": "ResumeAnalyzeInput",
         "type": "object"
       },
+      "Review": {
+        "properties": {
+          "author_feedback": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Author Feedback",
+            "type": "string"
+          },
+          "post_id": {
+            "format": "uuid",
+            "title": "Post Id",
+            "type": "string"
+          },
+          "public_rationale": {
+            "default": false,
+            "title": "Public Rationale",
+            "type": "boolean"
+          },
+          "publish": {
+            "title": "Publish",
+            "type": "boolean"
+          },
+          "rationale": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          },
+          "score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "type": "integer"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "post_id",
+          "version",
+          "publish",
+          "score",
+          "rationale"
+        ],
+        "title": "Review",
+        "type": "object"
+      },
       "ReviewInput": {
         "description": "请求标识在客户端重试时不变。",
         "properties": {
@@ -941,6 +1307,69 @@
           "request_id"
         ],
         "title": "ReviewInput",
+        "type": "object"
+      },
+      "ReviseInput": {
+        "description": "带意见修订草稿：服务端重新校验并给出结构差异。",
+        "properties": {
+          "draft": {
+            "additionalProperties": true,
+            "title": "Draft",
+            "type": "object"
+          },
+          "feedback": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Feedback",
+            "type": "string"
+          }
+        },
+        "required": [
+          "draft",
+          "feedback"
+        ],
+        "title": "ReviseInput",
+        "type": "object"
+      },
+      "Revision": {
+        "description": "A version-bound, retry-safe author correction.",
+        "properties": {
+          "body": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "post_id": {
+            "format": "uuid",
+            "title": "Post Id",
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "post_id",
+          "version",
+          "request_id",
+          "title",
+          "body"
+        ],
+        "title": "Revision",
         "type": "object"
       },
       "RunInput": {
@@ -1100,6 +1529,77 @@
         "title": "StageInput",
         "type": "object"
       },
+      "Submission": {
+        "properties": {
+          "body": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "title",
+          "body"
+        ],
+        "title": "Submission",
+        "type": "object"
+      },
+      "TeamRunInput": {
+        "description": "团队协作运行：已有 Agent 名单 + 一句话目标。",
+        "properties": {
+          "agent_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Agent Ids",
+            "type": "array"
+          },
+          "approved": {
+            "default": false,
+            "title": "Approved",
+            "type": "boolean"
+          },
+          "max_rounds": {
+            "default": 6,
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Max Rounds",
+            "type": "integer"
+          },
+          "mode": {
+            "default": "group_chat",
+            "title": "Mode",
+            "type": "string"
+          },
+          "task": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Task",
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent_ids",
+          "task"
+        ],
+        "title": "TeamRunInput",
+        "type": "object"
+      },
       "ToolCallInput": {
         "additionalProperties": false,
         "properties": {
@@ -1206,6 +1706,81 @@
           "confirmation"
         ],
         "title": "WeeklyInput",
+        "type": "object"
+      },
+      "Withdrawal": {
+        "properties": {
+          "post_id": {
+            "format": "uuid",
+            "title": "Post Id",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "post_id",
+          "version"
+        ],
+        "title": "Withdrawal",
+        "type": "object"
+      },
+      "rag_tech_retriever__api__routes__automation__DraftInput": {
+        "description": "只生成草稿：不落库，便于先改后存。",
+        "properties": {
+          "goal": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          },
+          "mode": {
+            "default": "rules",
+            "title": "Mode",
+            "type": "string"
+          },
+          "template": {
+            "default": "generic",
+            "title": "Template",
+            "type": "string"
+          }
+        },
+        "required": [
+          "goal"
+        ],
+        "title": "DraftInput",
+        "type": "object"
+      },
+      "rag_tech_retriever__api__routes__resume_optimizer__DraftInput": {
+        "properties": {
+          "lead_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Lead Id",
+            "type": "string"
+          },
+          "resume_id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Resume Id",
+            "type": "string"
+          },
+          "template_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Template Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "template_id",
+          "resume_id",
+          "lead_id"
+        ],
+        "title": "DraftInput",
         "type": "object"
       }
     }
@@ -1613,6 +2188,16 @@
               "title": "Record Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "project",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Project",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1894,6 +2479,471 @@
         "summary": "Call"
       }
     },
+    "/api/automation/code-roots": {
+      "get": {
+        "description": "管理员登记过的代码工作区；只返回名称与写权限，不含绝对路径。",
+        "operationId": "code_roots_api_automation_code_roots_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {},
+                  "title": "Response Code Roots Api Automation Code Roots Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Code Roots"
+      }
+    },
+    "/api/automation/compose": {
+      "post": {
+        "description": "生成 Agent 与 DAG 并落库；执行仍复用既有 workflows/{id}/run 端点。",
+        "operationId": "compose_api_automation_compose_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComposeInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Compose Api Automation Compose Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compose"
+      }
+    },
+    "/api/automation/compose/draft": {
+      "post": {
+        "description": "只生成草稿不落库：先改、再看差异、最后才保存。",
+        "operationId": "compose_draft_api_automation_compose_draft_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/rag_tech_retriever__api__routes__automation__DraftInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Compose Draft Api Automation Compose Draft Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compose Draft"
+      }
+    },
+    "/api/automation/compose/revise": {
+      "post": {
+        "description": "按意见重出草稿，返回新草稿与结构差异；不写库。",
+        "operationId": "compose_revise_api_automation_compose_revise_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviseInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Compose Revise Api Automation Compose Revise Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compose Revise"
+      }
+    },
+    "/api/automation/compose/save": {
+      "post": {
+        "description": "确认后的草稿才落库；草稿里的权限字段会重新校验，不信任前端。",
+        "operationId": "compose_save_api_automation_compose_save_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Compose Save Api Automation Compose Save Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compose Save"
+      }
+    },
+    "/api/automation/loop/run": {
+      "post": {
+        "description": "跑一次自动编码循环：外部只给目标与门禁，绿点与回退在服务层做。",
+        "operationId": "loop_run_api_automation_loop_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoopInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Loop Run Api Automation Loop Run Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Loop Run"
+      }
+    },
+    "/api/automation/queue": {
+      "get": {
+        "description": "任务列表；传 status 可只看某一状态（如 dead 看死信）。",
+        "operationId": "list_jobs_api_automation_queue_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {},
+                  "title": "Response List Jobs Api Automation Queue Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Jobs"
+      },
+      "post": {
+        "description": "入队一个任务，返回任务视图；同一幂等键重复提交只会有一个任务。",
+        "operationId": "enqueue_api_automation_queue_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnqueueInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Enqueue Api Automation Queue Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enqueue"
+      }
+    },
+    "/api/automation/queue/stats": {
+      "get": {
+        "description": "各状态任务计数。",
+        "operationId": "stats_api_automation_queue_stats_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Stats Api Automation Queue Stats Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Stats"
+      }
+    },
+    "/api/automation/queue/{job_id}": {
+      "get": {
+        "description": "任务详情：含载荷、结果与检查点。",
+        "operationId": "job_detail_api_automation_queue__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Job Detail Api Automation Queue  Job Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Job Detail"
+      }
+    },
+    "/api/automation/queue/{job_id}/cancel": {
+      "post": {
+        "description": "取消排队中或执行中的任务。",
+        "operationId": "cancel_api_automation_queue__job_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Cancel Api Automation Queue  Job Id  Cancel Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel"
+      }
+    },
+    "/api/automation/queue/{job_id}/replay": {
+      "post": {
+        "description": "死信重放：回到队列并重置尝试计数。",
+        "operationId": "replay_api_automation_queue__job_id__replay_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Replay Api Automation Queue  Job Id  Replay Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replay"
+      }
+    },
     "/api/automation/setup": {
       "post": {
         "operationId": "setup_api_automation_setup_post",
@@ -1912,6 +2962,47 @@
           }
         },
         "summary": "Setup"
+      }
+    },
+    "/api/automation/teams/run": {
+      "post": {
+        "description": "让已有 Agent 组成团队跑一轮：群聊轮流发言，或磁石模式自动规划。\n\n写操作不在本轮执行：未批准时把「需批准」如实回给模型，由用户带 approved 重跑。",
+        "operationId": "team_run_api_automation_teams_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamRunInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Team Run Api Automation Teams Run Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Team Run"
       }
     },
     "/api/bookmarks": {
@@ -2447,6 +3538,784 @@
           }
         },
         "summary": "Execute"
+      }
+    },
+    "/api/community/ask": {
+      "post": {
+        "operationId": "ask_api_community_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Ask"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Ask Api Community Ask Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ask"
+      }
+    },
+    "/api/community/attachments": {
+      "post": {
+        "operationId": "attach_api_community_attachments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Attachment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Attach Api Community Attachments Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Attach"
+      }
+    },
+    "/api/community/download": {
+      "get": {
+        "operationId": "download_api_community_download_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "file",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "File",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download"
+      }
+    },
+    "/api/community/draft": {
+      "get": {
+        "description": "Return only the current author's private draft and explicit feedback.",
+        "operationId": "read_draft_api_community_draft_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "post",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Post",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Read Draft Api Community Draft Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Draft"
+      }
+    },
+    "/api/community/mine": {
+      "get": {
+        "operationId": "mine_api_community_mine_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Mine Api Community Mine Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mine"
+      }
+    },
+    "/api/community/posts": {
+      "post": {
+        "operationId": "submit_api_community_posts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submission"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Submit Api Community Posts Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit"
+      }
+    },
+    "/api/community/reviews": {
+      "get": {
+        "description": "Give moderators a bounded queue, excluding their own submissions.",
+        "operationId": "pending_api_community_reviews_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 256,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Pending Api Community Reviews Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pending"
+      },
+      "post": {
+        "description": "Decide once against the inspected version; reviewers cannot grade themselves.",
+        "operationId": "review_api_community_reviews_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Review"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Review Api Community Reviews Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review"
+      }
+    },
+    "/api/community/revise": {
+      "post": {
+        "description": "Archive the prior version and require new approval, under a row lock.",
+        "operationId": "revise_api_community_revise_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Revision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Revise Api Community Revise Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revise"
+      }
+    },
+    "/api/community/search": {
+      "get": {
+        "description": "Only public search can reuse encoded output; DB token guards every hit.",
+        "operationId": "search_api_community_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "maxLength": 120,
+              "minLength": 1,
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search"
+      }
+    },
+    "/api/community/session": {
+      "delete": {
+        "operationId": "logout_api_community_session_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Logout"
+      },
+      "get": {
+        "operationId": "profile_api_community_session_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Profile Api Community Session Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Profile"
+      },
+      "post": {
+        "operationId": "login_api_community_session_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Invitation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Login Api Community Session Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login"
+      }
+    },
+    "/api/community/topics": {
+      "get": {
+        "description": "Stable feed; optional citation version must match the public revision.",
+        "operationId": "topics_api_community_topics_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "topic",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Topic"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expected Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Topics"
+      }
+    },
+    "/api/community/withdraw": {
+      "post": {
+        "description": "Withdraw the author's inspected version without physically deleting evidence.",
+        "operationId": "withdraw_api_community_withdraw_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Withdrawal"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Withdraw Api Community Withdraw Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Withdraw"
+      }
+    },
+    "/api/community/workspace-session": {
+      "post": {
+        "operationId": "workspace_session_api_community_workspace_session_post",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Workspace Session Api Community Workspace Session Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Workspace Session"
+      }
+    },
+    "/api/draft-projects": {
+      "get": {
+        "operationId": "listing_api_draft_projects_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {},
+                  "title": "Response Listing Api Draft Projects Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Listing"
+      },
+      "post": {
+        "operationId": "create_api_draft_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Api Draft Projects Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create"
+      }
+    },
+    "/api/draft-projects/{record_id}": {
+      "get": {
+        "operationId": "detail_api_draft_projects__record_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Detail Api Draft Projects  Record Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Detail"
+      }
+    },
+    "/api/draft-projects/{record_id}/action": {
+      "post": {
+        "operationId": "action_api_draft_projects__record_id__action_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Action Api Draft Projects  Record Id  Action Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Action"
       }
     },
     "/api/eval/questions": {
@@ -5071,6 +6940,57 @@
         "summary": "From Interview"
       }
     },
+    "/api/learning/from-simulation/{run_id}": {
+      "post": {
+        "operationId": "from_simulation_api_learning_from_simulation__run_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidateInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response From Simulation Api Learning From Simulation  Run Id  Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "From Simulation"
+      }
+    },
     "/api/lessons": {
       "get": {
         "operationId": "lessons_list_api_lessons_get",
@@ -6055,6 +7975,16 @@
               "title": "Password",
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "x-private-ticket",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "X-Private-Ticket",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -6171,6 +8101,16 @@
             "schema": {
               "default": "",
               "title": "Ticket",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-private-ticket",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "X-Private-Ticket",
               "type": "string"
             }
           }
@@ -6498,6 +8438,104 @@
           }
         },
         "summary": "Record Restore"
+      }
+    },
+    "/api/resume/apply": {
+      "post": {
+        "operationId": "apply_api_resume_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply"
+      }
+    },
+    "/api/resume/optimize": {
+      "post": {
+        "operationId": "optimize_api_resume_optimize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/rag_tech_retriever__api__routes__resume_optimizer__DraftInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Optimize Api Resume Optimize Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Optimize"
+      }
+    },
+    "/api/resume/templates": {
+      "get": {
+        "operationId": "templates_api_resume_templates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {},
+                  "title": "Response Templates Api Resume Templates Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Templates"
       }
     },
     "/api/session": {
@@ -7041,6 +9079,135 @@
         "summary": "Status"
       }
     },
+    "/api/traits": {
+      "get": {
+        "operationId": "trait_list_api_traits_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "trash",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Trash",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RecordOut"
+                  },
+                  "title": "Response Trait List Api Traits Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trait List"
+      },
+      "post": {
+        "operationId": "trait_create_api_traits_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trait Create"
+      }
+    },
+    "/api/traits/{record_id}": {
+      "put": {
+        "operationId": "trait_update_api_traits__record_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trait Update"
+      }
+    },
     "/api/trash": {
       "get": {
         "description": "汇总公开工作区的回收站；一次返回计数与最近条目，避免前端逐模块请求。",
@@ -7443,22 +9610,6 @@
         "tags": [
           "operations"
         ]
-      }
-    },
-    "/legacy": {
-      "get": {
-        "operationId": "legacy_index_legacy_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Legacy Index"
       }
     }
   }

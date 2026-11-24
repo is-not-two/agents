@@ -13,12 +13,14 @@ from rag_tech_retriever.domains.learning import VALIDATORS as LEARNING_VALIDATOR
 from rag_tech_retriever.domains.learning import validate_references as validate_learning_references
 from rag_tech_retriever.domains.lessons import validate_lesson
 from rag_tech_retriever.domains.life_planning import DomainError, validate_plan
+from rag_tech_retriever.domains.self_traits import validate_self_trait
 
 SNAPSHOT_VALIDATORS = {
     "knowledge": validate_knowledge,
     "bookmark": validate_bookmark,
     "lesson": validate_lesson,
     "plan": validate_plan,
+    "self_trait": validate_self_trait,
     "interview_prep": validate_interview_prep,
     **VALIDATORS,
     **JOB_VALIDATORS,
@@ -106,4 +108,8 @@ def preview_restore(current: dict, target: dict) -> dict:
         "changes": changes[:50],
         "change_count": len(changes),
         "trash_count": sum(r["deleted"] for r in target["records"]),
+        "missing_learning_sources": sum(
+            row["kind"] == "learning_card" and row["data"]["source"] != "manual"
+            and row["data"]["source_id"] not in desired for row in target["records"]
+        ),
     }

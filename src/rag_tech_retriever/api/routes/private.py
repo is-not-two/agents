@@ -14,7 +14,7 @@ import json
 import secrets
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from rag_tech_retriever.api.dependencies import WorkspaceContext
@@ -181,10 +181,12 @@ def create_router(context: WorkspaceContext) -> APIRouter:
         }
 
     @router.get("/api/private/{kind}")
-    def private_list(kind: str, ticket: str = "", password: str = "") -> list:
+    def private_list(
+        kind: str, ticket: str = "", password: str = "", x_private_ticket: str = Header(default="")
+    ) -> list:
         if kind not in ("wish", "diary"):
             raise HTTPException(status_code=404, detail="未知类型")
-        secret = secret_for(password or None, ticket or None)
+        secret = secret_for(password or None, x_private_ticket or ticket or None)
         rows = store.list(kind)
         return [_decrypt_record(row, secret) for row in rows]
 
@@ -209,6 +211,8 @@ def create_router(context: WorkspaceContext) -> APIRouter:
         if kind not in ("wish", "diary"):
             raise HTTPException(status_code=404, detail="未知类型")
         secret = secret_for(payload.password or None, payload.ticket or None)
+        if store.get(record_id)["kind"] != kind:
+            raise RecordMissing("私密条目不存在")
         title = str(payload.data.get("title", "")).strip()
         if not title:
             raise HTTPException(status_code=400, detail="请填写名称")
@@ -218,10 +222,12 @@ def create_router(context: WorkspaceContext) -> APIRouter:
         return store.save(kind, {"cipher": cipher}, record_id, payload.version)
 
     @router.delete("/api/private/{kind}/{record_id}")
-    def private_delete(kind: str, record_id: str, version: int, ticket: str = "") -> dict:
+    def private_delete(
+        kind: str, record_id: str, version: int, ticket: str = "", x_private_ticket: str = Header(default="")
+    ) -> dict:
         if kind not in ("wish", "diary"):
             raise HTTPException(status_code=404, detail="未知类型")
-        secret_for(None, ticket)
+        secret_for(None, x_private_ticket or ticket)
         row = store.get(record_id)
         if row["kind"] != kind:
             raise RecordMissing("私密条目不存在")

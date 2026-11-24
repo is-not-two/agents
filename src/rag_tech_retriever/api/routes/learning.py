@@ -41,6 +41,10 @@ def create_router(context: WorkspaceContext) -> APIRouter:
     def from_interview(report_id: str, payload: CandidateInput) -> dict:
         return LearningService(context.store).from_interview(report_id, payload.version, payload.points, payload.confirmation)
 
+    @router.post("/api/learning/from-simulation/{run_id}")
+    def from_simulation(run_id: str, payload: CandidateInput) -> dict:
+        return LearningService(context.store).from_simulation(run_id, payload.version, payload.points, payload.confirmation)
+
     @router.post("/api/learning/cards/{card_id}/review")
     def review(card_id: str, payload: ReviewInput) -> dict:
         return LearningService(context.store).review(card_id, payload.version, payload.rating, payload.request_id)

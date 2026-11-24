@@ -93,6 +93,45 @@ class LearningService:
                 created.append(self.store._save(cur, "learning_card", data, record_id, None))
             return {"created": created, "reused": reused}
 
+    def from_simulation(self, run_id: str, version: int, points: list[str], confirmation: str) -> dict:
+        """Copy explicitly selected prompts, never private facts or run references."""
+        if confirmation != "确认创建复习卡":
+            raise DomainError("请明确确认创建复习卡")
+        selected = strings(points, "选中练习点")
+        if not selected:
+            raise DomainError("请至少选择一个练习点")
+        with self.store.transaction() as cur:
+            cur.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (self.store.prefix + ":learning",))
+            cur.execute(f"SELECT * FROM {self.store.records} WHERE id=%s FOR UPDATE", (run_id,))
+            row = cur.fetchone()
+            if row is None or row["kind"] != "agent_session" or row["deleted"] or not row["data"].get("private_interview"):
+                raise RecordMissing("模拟运行不存在或已归档")
+            if row["version"] != version:
+                raise VersionConflict("模拟结果已更新，请重新打开")
+            data = row["data"]
+            if data.get("kind") != "graph" or data.get("status") != "completed":
+                raise DomainError("只能从已完成的三角色模拟建卡")
+            evidence = data.get("node_outputs", {}).get("boss_review", {}).get("evidence", {})
+            allowed = {point for field in ("pending", "suggestions") for point in evidence.get(field, [])
+                       if isinstance(point, str) and 0 < len(point) <= 1000}
+            if not set(selected) <= allowed:
+                raise DomainError("只能选择本次模拟复盘已有的待确认事项或练习建议")
+            created, reused = [], []
+            for point in selected:
+                key = hashlib.sha256((run_id + "\n" + point).encode()).hexdigest()
+                card_id = "learn-sim-" + key
+                cur.execute(f"SELECT * FROM {self.store.records} WHERE id=%s", (card_id,))
+                old = cur.fetchone()
+                if old:
+                    if old["kind"] != "learning_card" or old["deleted"]:
+                        raise VersionConflict("对应复习卡已归档，请到回收站恢复")
+                    reused.append(self.store._serialize(old))
+                    continue
+                card = validate_card({"title": point, "answer_ref": "模拟练习提示，不是事实或答案。请用真实材料核对并补充答法。",
+                                      "due_at": utcnow()})
+                created.append(self.store._save(cur, "learning_card", card, card_id, None))
+            return {"created": created, "reused": reused}
+
     def review(self, card_id: str, version: int, rating: int, request_id: str) -> dict:
         """同一请求可安全重放；变更载荷或过期版本不会再次推进间隔。"""
         if not isinstance(request_id, str) or not re.fullmatch(r"[a-zA-Z0-9_-]{16,100}", request_id):

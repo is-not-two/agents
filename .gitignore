@@ -77,3 +77,25 @@ output/v2/recovery-tools/
 output/verification/release-convergence-*/
 output/verification/live-8771-*/
 output/frontend-redesign-*/
+
+# 2026-11-10 桌面浏览器断言产物（每次跑门禁重新生成）
+output/desktop-ux-check/
+
+# Vue runtime is generated from shilie/ when building the release.
+/src/rag_tech_retriever/api/static/vue/
+
+# 社区前端验证截图（每次浏览器回归重新生成，不入库）
+output/community-vue/
+
+# 社区发行 wheel 构建产物（可重生成，不入库）
+output/community-wheel/
+
+# 社区上线前一次性压测/探针脚本（连 preview 库、造 cohort，非交付工具）。
+# 保留在磁盘供复现，不纳入版本库；正式部署工具是 scripts/deploy_community_*.py。
+scripts/community_*_probe.py
+scripts/community_*_probe.inc
+scripts/community_*_probe.sql
+scripts/community_capacity_baseline.sql
+scripts/community_search_parity.sql
+scripts/community_scan_batch.py
+scripts/community_mixed_sessions.py

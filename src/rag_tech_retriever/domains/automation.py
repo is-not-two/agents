@@ -40,7 +40,7 @@ def validate_agent(payload: dict) -> dict:
     for name, allowed in {"model": {"alias", "temperature", "max_tokens"},
                           "budget": {"max_rounds", "max_tool_calls", "max_context_chars"},
                           "context": {"strategy", "max_messages", "keep_recent_users"}, "memory": {"scope"},
-                          "handoffs": {"allowed"}}.items():
+                          "handoffs": {"allowed"}, "workspace": {"root", "write", "shell"}}.items():
         value = payload.get(name, {})
         if not isinstance(value, dict) or set(value) - allowed:
             raise DomainError(f"Agent {name} 配置包含无效字段")
@@ -53,6 +53,16 @@ def validate_agent(payload: dict) -> dict:
         raise DomainError("交接白名单须为最多32个有效Agent标识")
     if not isinstance(scope, str) or scope not in {"none", "session", "persistent"}:
         raise DomainError("记忆范围只支持 none/session/persistent")
+    workspace_root = sections["workspace"].get("root", "")
+    if (not isinstance(workspace_root, str)
+            or (workspace_root and not re.fullmatch(r"[a-z][a-z0-9_-]{0,40}", workspace_root))):
+        raise DomainError("代码工作区标识只能引用管理员登记的根目录")
+    workspace_write = sections["workspace"].get("write", "each")
+    if not isinstance(workspace_write, str) or workspace_write not in {"each", "run"}:
+        raise DomainError("写入确认策略只支持 each/run")
+    workspace_shell = sections["workspace"].get("shell", False)
+    if not isinstance(workspace_shell, bool):
+        raise DomainError("命令执行开关必须为布尔值")
     alias = model.get("alias", "")
     if not isinstance(alias, str) or (alias and not re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", alias)):
         raise DomainError("模型别名必须为管理员登记的标识")
@@ -79,6 +89,7 @@ def validate_agent(payload: dict) -> dict:
         "generate": generate,
         "memory": {"scope": scope},
         "handoffs": {"allowed": list(dict.fromkeys(allowed))},
+        "workspace": {"root": workspace_root, "write": workspace_write, "shell": workspace_shell},
         "model": {"alias": alias, "temperature": temperature, "max_tokens": tokens},
         "budget": normalized_budget,
         "context": {"strategy": context.get("strategy", "window"), "max_messages": integer(
@@ -104,10 +115,48 @@ def validate_workflow(payload: dict) -> dict:
     }
 
 
+def _validate_terminal_run(payload: dict) -> dict:
+    """Team and loop records are historical results, never resumable workflow state."""
+    kind = payload["kind"]
+    if payload["status"] not in {"completed", "failed"}:
+        raise DomainError("团队或自动编码备份只允许已结束的运行")
+    if any(payload.get(key) for key in ("pending_calls", "pending_node", "pending_child", "pending_children")):
+        raise DomainError("已结束的运行不能包含待执行操作")
+    text(payload.get("title", ""), "运行名称", 160, True)
+    inputs = payload.get("input")
+    if not isinstance(inputs, dict):
+        raise DomainError("运行输入格式错误")
+    text(inputs.get("task", ""), "运行任务", 2000, True)
+    if kind == "team":
+        result = payload.get("result")
+        if not isinstance(result, dict) or not isinstance(result.get("notes", []), list):
+            raise DomainError("团队运行结果格式错误")
+        text(result.get("answer", ""), "团队回答", 100000)
+        turns = payload.get("turns", [])
+        if not isinstance(turns, list) or len(turns) > 1000:
+            raise DomainError("团队发言记录格式错误")
+        for turn in turns:
+            if not isinstance(turn, dict):
+                raise DomainError("团队发言格式错误")
+            text(turn.get("author", ""), "发言人", 160)
+            text(turn.get("text", ""), "发言正文", 100000)
+    else:
+        summary = payload.get("summary")
+        if not isinstance(summary, dict):
+            raise DomainError("自动编码运行缺少结果摘要")
+        attempts = summary.get("attempts", [])
+        if not isinstance(attempts, list) or len(attempts) > 1000 or any(not isinstance(a, dict) for a in attempts):
+            raise DomainError("自动编码轮次记录格式错误")
+        text(summary.get("diff", ""), "改动摘要", 100000)
+    return deepcopy(payload)
+
+
 def validate_run(payload: dict) -> dict:
     """恢复已存运行记录时验证必要结构，禁止伪造类型进入其他领域。"""
     if not isinstance(payload.get("kind"), str) or not isinstance(payload.get("status"), str):
         raise DomainError("运行类型与状态必须是文本")
+    if payload["kind"] in {"team", "loop"}:
+        return _validate_terminal_run(payload)
     if payload.get("kind") not in {"answer", "ingest", "agent", "graph"} or payload.get("status") not in {
         "running", "completed", "fallback", "awaiting_confirmation", "confirmed", "failed"
     }:

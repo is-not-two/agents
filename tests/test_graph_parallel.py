@@ -361,3 +361,47 @@ def test_parallel_agents_pause_and_confirm_together():
     assert confirmed["data"]["node_status"] == {"input": "completed", "a": "completed", "b": "completed"}
     assert confirmed["data"]["pending_children"] == []
     assert [call[0] for call in service.runtime.calls] == ["a-run", "b-run"]
+
+
+def test_merge_passes_through_approval_gate():
+    """审批节点没有正文；合并必须穿透它拿到上游内容，否则结果静默为空。"""
+    cfg = {
+        "title": "审批后汇总", "kind": "graph",
+        "nodes": [{"id": "input", "type": "input"},
+                  {"id": "ask", "type": "merge"},
+                  {"id": "gate", "type": "approval", "message": "确认后汇总"},
+                  {"id": "final", "type": "merge", "strategy": "concat"}],
+        "edges": [["input", "ask"], ["ask", "gate"], ["gate", "final"]],
+        "max_parallel": 1, "max_retries": 0, "node_timeout_seconds": 30,
+    }
+    store = FakeStore(run_record(cfg))
+    service = GraphWorkflowService(store, None, None, FakeRuntime())
+    data = {
+        "input": {"query": "检索"},
+        "workflow": {"id": "wf", "kind": "workflow", "version": 1, "data": cfg},
+        "node_outputs": {"ask": {"answer": "面试问题清单"}, "gate": {"approved": True}},
+    }
+    merged = asyncio.run(service._execute_node(data, {"id": "final", "type": "merge"}))
+    assert merged["answer"] == "面试问题清单"
+
+
+def test_merge_deduplicates_content_reaching_it_twice():
+    """穿透审批后同一条正文可能被收集两次，合并要去重且保持顺序。"""
+    cfg = {
+        "title": "双路径", "kind": "graph",
+        "nodes": [{"id": "input", "type": "input"},
+                  {"id": "ask", "type": "merge"},
+                  {"id": "gate", "type": "approval", "message": "确认"},
+                  {"id": "final", "type": "merge", "strategy": "concat"}],
+        "edges": [["input", "ask"], ["ask", "gate"], ["ask", "final"], ["gate", "final"]],
+        "max_parallel": 1, "max_retries": 0, "node_timeout_seconds": 30,
+    }
+    store = FakeStore(run_record(cfg))
+    service = GraphWorkflowService(store, None, None, FakeRuntime())
+    data = {
+        "input": {"query": "检索"},
+        "workflow": {"id": "wf", "kind": "workflow", "version": 1, "data": cfg},
+        "node_outputs": {"ask": {"answer": "同一段正文"}, "gate": {"approved": True}},
+    }
+    merged = asyncio.run(service._execute_node(data, {"id": "final", "type": "merge"}))
+    assert merged["answer"] == "同一段正文"
