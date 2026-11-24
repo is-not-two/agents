@@ -1,7 +1,10 @@
 """Publish only the Vue community dependency closure; leave workspace index alone."""
 import gzip
+import hashlib
+import os
 import re
 import subprocess
+import tempfile
 from pathlib import Path
 
 root=Path("shilie/dist").resolve()
@@ -36,3 +39,20 @@ print("PASS community published; workspace index unchanged; assets reopened")
 """
 ssh=["ssh","-T","-o","BatchMode=yes","-o","StrictHostKeyChecking=yes","-i",str(Path.home()/".ssh/selfstock_8_156_81_128_rsa"),"root@8.156.81.128","python3 -"]
 subprocess.run(ssh,input=("files="+repr(files)+chr(10)+script).encode(),check=True)
+# Keep the distributable in step with the tested public entry. Only the same
+# community dependency closure is synchronized; never replace workspace index.
+package=Path("src/rag_tech_retriever/api/static/vue").resolve()
+assert package.is_relative_to(Path.cwd().resolve()) and package.is_dir()
+workspace_hash=hashlib.sha256((package/"index.html").read_bytes()).hexdigest()
+for name,data in sorted(files.items(),key=lambda item:1 if item[0].endswith('.html') else 0):
+ destination=package/name
+ assert destination.resolve().is_relative_to(package)
+ if not name.endswith('.html') and destination.exists():
+  assert destination.read_bytes()==data,'package asset collision'
+ destination.parent.mkdir(parents=True,exist_ok=True)
+ with tempfile.NamedTemporaryFile(dir=destination.parent,delete=False) as f:
+  f.write(data);temporary=f.name
+ os.replace(temporary,destination)
+ assert destination.read_bytes()==data
+assert hashlib.sha256((package/"index.html").read_bytes()).hexdigest()==workspace_hash
+print("PASS distributable community entry/assets synchronized; packaged workspace index unchanged")
