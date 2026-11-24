@@ -1,5 +1,5 @@
-export interface Topic {id:string;title:string;score:number;body?:string;excerpt?:string;version:number;state?:string;review?:{score:number;rationale:string;reviewed_at:string}|null;files?:{id:string;filename:string;bytes:number}[]}
-export interface Evidence {post_id:string;quote:string;title:string}
+export interface Topic {id:string;title:string;score:number;body?:string;excerpt?:string;version:number;state?:string;author_feedback?:string;review?:{score:number;rationale:string;reviewed_at:string}|null;files?:{id:string;filename:string;bytes:number}[]}
+export interface Evidence {post_id:string;version:number;quote:string;title:string}
 export interface Answer {mode:string;reason?:string;evidence:Evidence[]}
 export class CommunityError extends Error {constructor(public status:number,message:string){super(message)}}
 export async function api<T>(path:string,method="GET",data?:unknown):Promise<T>{
