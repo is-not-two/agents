@@ -15,7 +15,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 CHECKS: list[tuple[str, list[str]]] = [
-    ("ruff 代码检查", [sys.executable, "-m", "ruff", "check", "src", "tests", "scripts"]),
+    # 测试只存在于本地（不入库），发布包/远端没有 tests/ 时不能把它当 ruff 目标。
+    ("ruff 代码检查", [sys.executable, "-m", "ruff", "check", "src", "scripts"]
+     + (["tests"] if (ROOT / "tests").is_dir() else [])),
     ("OpenAPI 契约一致", [sys.executable, "scripts/openapi_contract.py"]),
     ("前端接口契约一致", [sys.executable, "scripts/frontend_api_contract.py"]),
     ("Vue wheel 与静态资源", [sys.executable, "scripts/check_vue_candidate.py"]),
@@ -100,11 +102,14 @@ def main() -> int:
         print(message)
         if not ok:
             failures.append(name)
-    if not failures:
+    if not failures and (ROOT / "tests").is_dir():
         ok, message = run("纯逻辑 pytest", [sys.executable, "-m", "pytest", "-q"] + PURE_LOGIC_TESTS, timeout=600)
         print(message)
         if not ok:
             failures.append("纯逻辑 pytest")
+    elif not (ROOT / "tests").is_dir():
+        # 测试文件不随仓库分发（2026-11-24 规定），远端与发布包内没有 tests/。
+        print("[SKIP] 纯逻辑 pytest：tests/ 未入库，本目录没有测试文件")
     print("=" * 56)
     if failures:
         print(f"CI_GATE_FAILED：{'、'.join(failures)}")

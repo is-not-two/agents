@@ -220,8 +220,9 @@ def main() -> int:
 
     # 静态与安全检查：始终阻断
     gate.check("敏感文件未入库", check_no_secrets_tracked)
+    ruff_targets = ["src", "scripts"] + (["tests"] if (PROJECT / "tests").is_dir() else [])
     gate.run("ruff 代码检查",
-             [str(VENV_PY), "-m", "ruff", "check", "src", "scripts", "tests"], blocking=True)
+             [str(VENV_PY), "-m", "ruff", "check", *ruff_targets], blocking=True)
     # 契约快照不连数据库：端点或响应模型变化未同步 docs/openapi.json 时阻断。
     gate.run("OpenAPI 契约一致",
              [str(VENV_PY), "scripts/openapi_contract.py"], blocking=True)
@@ -236,10 +237,13 @@ def main() -> int:
     gate.run("依赖完整性", [str(VENV_PY), "-m", "pip", "check"], blocking=False)
     gate.check("记录类型与数据库一致", check_kind_consistency, blocking=True)
 
-    # 测试：快速模式跳过
+    # 测试：快速模式跳过；tests/ 不随仓库分发时同样跳过并说明原因
     if args.quick:
         gate._record("pytest 全量", SKIP, "快速模式跳过", False)
         print("\n-> pytest 全量\n  [SKIP] --quick 跳过")
+    elif not (PROJECT / "tests").is_dir():
+        gate._record("pytest 全量", SKIP, "tests/ 未入库", False)
+        print("\n-> pytest 全量\n  [SKIP] tests/ 未入库，本目录没有测试文件")
     else:
         gate.run("pytest 全量", [str(VENV_PY), "-m", "pytest", "-q", "--tb=line"],
                  blocking=True, timeout=900)

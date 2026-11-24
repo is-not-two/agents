@@ -131,11 +131,9 @@ rag-tech-doc-retriever/
 │   ├── v2b_enable_status.py     # V2-b：启用状态感知功能
 │   ├── v2e_start_api.py         # V2-e：启动FastAPI服务
 │   └── record_metric.py         # 量化成果账本（记录/导出简历数据，跨阶段通用）
-├── tests/                       # 单元测试（与主包结构一一对应）
+├── tests/                       # 单元测试（仅本地，扁平单目录，不入库）
 │   ├── conftest.py              # 测试配置与fixture
-│   ├── test_rag/
-│   ├── test_agent/
-│   └── test_tools/
+│   └── test_*.py                # 全部测试平铺在此，不再分子目录
 └── output/                      # 各阶段输出产物、报告、日志
     ├── v0/                      # V0切片统计、抽样检查结果
     ├── v1/                      # V1基线报告、前缀对比数据
@@ -325,12 +323,12 @@ rag-tech-doc-retriever/
 5. 配置项必须有默认值，避免配置缺失导致崩溃
 
 ## Testing Specification
-1. 测试框架：pytest
-2. 测试结构与主包结构一一对应，保证模块可独立测试
-3. 核心模块必须覆盖：数据预处理、嵌入、检索、工具函数
-4. 每个阶段完成后必须运行对应测试用例
-5. 基准测试结果必须存入`output/`对应阶段目录
-6. 测试用例必须包含正常用例与异常用例
+1. **测试只放一个目录**：全部测试位于仓库根 `tests/`，扁平结构，不再新建 `tests/test_xxx/` 子目录；本次已把遗留的 `test_common/`、`test_rag/` 拍平。
+2. **测试文件不入库**（2026-11-24 用户规定）：`.gitignore` 忽略 `/tests/`，`git archive`、Docker 构建与服务器 release 均不含测试文件；除用户明确要求外，不得把测试提交或推送。
+3. **证据仍然落盘**：一次性验收脚本、探针、截图放 `output/`（已忽略），不得放进 `tests/`；测试结论以本机实跑为准，证据写入 `output/`，不得用“CI 绿”代替测试已跑。
+4. **门禁显式跳过**：`scripts/ci_gate.py`、`local_gate.py`、`ci_verify.py` 在缺 `tests/` 时打印 `[SKIP]` 并记录原因，不静默通过；因此远端 CI 与服务器全量 QA 不再包含测试步骤。
+5. 测试框架：pytest；核心模块必须覆盖数据预处理、嵌入、检索、工具函数；用例须同时包含正常与异常分支。
+6. 每个阶段完成后必须在本机运行对应测试用例；基准测试结果存入 `output/` 对应阶段目录。
 
 ## Key Notes
 ### 关键技术坑点

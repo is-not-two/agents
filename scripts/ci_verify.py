@@ -258,15 +258,20 @@ def run(vue_assets: Path | None = None) -> None:
             # Full-suite assertions require default rate-limit settings; only browser
             # stress/recovery scenarios disable the limiter in their own server env.
             test_env = {**env, "WEB_RATE_LIMIT_PER_MINUTE": "120"}
-            test = subprocess.run([sys.executable, "-m", "pytest", "-q", "--basetemp", str(root / "pytest-tmp")], check=False, cwd=PROJECT,
-                                  env=test_env, capture_output=True, text=True, encoding="utf-8",
-                                  errors="replace", timeout=300, **HIDDEN)
-            (EVIDENCE / "pytest.stdout.txt").write_text(test.stdout, encoding="utf-8")
-            (EVIDENCE / "pytest.stderr.txt").write_text(test.stderr, encoding="utf-8")
-            (EVIDENCE / "pytest.exit.txt").write_text(str(test.returncode), encoding="utf-8")
-            print(test.stdout, flush=True)
-            if test.returncode:
-                raise RuntimeError("Full pytest failed on disposable PostgreSQL; see pytest logs")
+            # 测试文件不随仓库分发（2026-11-24 规定）：缺 tests/ 时显式跳过并留痕。
+            if not (PROJECT / "tests").is_dir():
+                (EVIDENCE / "pytest.exit.txt").write_text("skipped: tests/ not tracked", encoding="utf-8")
+                print("[SKIP] tests/ 未入库，跳过全量 pytest", flush=True)
+            else:
+                test = subprocess.run([sys.executable, "-m", "pytest", "-q", "--basetemp", str(root / "pytest-tmp")], check=False, cwd=PROJECT,
+                                      env=test_env, capture_output=True, text=True, encoding="utf-8",
+                                      errors="replace", timeout=300, **HIDDEN)
+                (EVIDENCE / "pytest.stdout.txt").write_text(test.stdout, encoding="utf-8")
+                (EVIDENCE / "pytest.stderr.txt").write_text(test.stderr, encoding="utf-8")
+                (EVIDENCE / "pytest.exit.txt").write_text(str(test.returncode), encoding="utf-8")
+                print(test.stdout, flush=True)
+                if test.returncode:
+                    raise RuntimeError("Full pytest failed on disposable PostgreSQL; see pytest logs")
 
             env["WORKSPACE_MCP_TOKEN"] = secrets.token_urlsafe(32)
             proc = start()
