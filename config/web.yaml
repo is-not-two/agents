@@ -15,6 +15,9 @@ web:
   session_hours: 12
   remember_days: 30
   rate_limit_per_minute: 120
+  # Bound active IP keys and accepted request timestamps, not account count.
+  rate_limit_max_clients: 4096
+  rate_limit_max_events: 131072
   # 数据库连接池上限：默认 8；0 表示每事务新建连接（测试隔离用）。
   db_pool_size: 8
   # 保留的空闲连接数；不超过上限，避免突发流量后反复建连。
