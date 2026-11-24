@@ -33,6 +33,10 @@ fi
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 
+# git push 会把 GIT_DIR/GIT_INDEX_FILE 等指向当前仓库；测试里会新建临时仓库并执行
+# git commit，若继承这些变量就会作用到本仓库（2026-11-24 实测污染了 develop）。
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_PREFIX GIT_QUARANTINE_PATH
+
 PY=""
 if [ -x ".venv/Scripts/python.exe" ]; then
   PY=".venv/Scripts/python.exe"

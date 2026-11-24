@@ -72,6 +72,11 @@ def run(name: str, command: list[str], timeout: int = 300) -> tuple[bool, str]:
     env = os.environ.copy()
     env.setdefault("PYTHONIOENCODING", "utf-8")
     env.setdefault("PYTHONUTF8", "1")
+    # 从 git hook / push 上下文调用时会继承 GIT_DIR 等变量；测试里新建临时仓库再
+    # git commit 就会作用到本仓库（2026-11-24 实测污染过 develop）。这里统一剔除。
+    for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+                "GIT_PREFIX", "GIT_QUARANTINE_PATH"):
+        env.pop(key, None)
     try:
         result = subprocess.run(command, check=False, cwd=ROOT, capture_output=True, text=True,
                                 encoding="utf-8", errors="replace", env=env, timeout=timeout)
