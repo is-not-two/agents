@@ -297,8 +297,8 @@ rag-tech-doc-retriever/
 7. 未配置远端前不猜测推送地址；推送前先确认 `git remote -v` 与目标分支
 
 ## Branch & Environment Mapping
-1. 仓库 `origin` = `git@gitee.com:luojiee/agents.git`（Gitee 私有仓库，SSH 密钥 `id_ed25519_gitee`）
-2. 只维护两个长期分支：`develop`（测试/开发，对应服务器 8771）与 `master`（正式，对应服务器 8770）
+1. 默认远端 `origin` = `git@github.com:is-not-two/agents.git`（GitHub，默认分支 `develop`，2026-11-24 用户改定）；`gitee` = `git@gitee.com:luojiee/agents.git` 仅作备份，不自动推送，需要时显式指定 `git push gitee <branch>`。
+2. 只维护两个长期分支：`develop`（测试/开发，对应服务器 8771）与 `master`（正式，对应服务器 8770）；GitHub 上遗留的 `main` 与 `codex/*` 分支不参与开发。
 3. 日常改动提交到 `develop`；正式晋级必须经用户明确同意，用合并/评审把 `develop` 合入 `master`，不直接在 `master` 上开发
 4. 服务器部署以分支为准：8771 取 `develop`，8770 取 `master`；禁止把未验收的提交直接部署到 8770
 5. 分支保护、CI 触发与部署密钥属于平台/服务器配置，按需单独授权后设置
