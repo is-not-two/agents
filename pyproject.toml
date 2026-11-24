@@ -29,7 +29,7 @@ dev = ["pytest>=8.0.0", "ruff>=0.4.0", "httpx>=0.27.0", "tomli>=2.0.1,<3; python
 where = ["src"]
 
 [tool.setuptools.package-data]
-rag_tech_retriever = ["api/static/vue/*", "api/static/vue/assets/*", "api/static/vue/wallpaper/*"]
+rag_tech_retriever = ["platform/community_*.sql", "api/static/vue/*", "api/static/vue/assets/*", "api/static/vue/wallpaper/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
