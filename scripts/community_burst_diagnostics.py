@@ -69,7 +69,7 @@ def stage_summary(rows):
 
 
 def application_summary(remote, prefix):
-    if not re.fullmatch(r"curl-cap-[a-f0-9]{32}-(100|200|300)-[0-9]+", prefix):
+    if not re.fullmatch(r"curl-cap-[a-f0-9]{32}-(100|200|300)-[0-9]+(?:-write-(?:posts|reviews|withdraw))?", prefix):
         raise ValueError("invalid diagnostic request prefix")
     script = (
         "prefix="
