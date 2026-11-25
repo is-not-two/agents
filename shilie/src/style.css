@@ -336,3 +336,16 @@ html[data-theme="dark"] .start-orbits { opacity: .38; }
 @media (prefers-reduced-motion: reduce) {
   .start-trail,.start-stars { animation: none !important; }
 }
+body[data-native=true] #app { isolation:isolate }
+body[data-native=true] .wallpaper { display:none }
+#wallpaper-bg { position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; background:var(--paper) url("/wallpaper/shilie-spring.webp") center/cover }
+#wallpaper-bg :is(img,video) { width:100%;height:100%;object-fit:cover;display:block }
+#wallpaper-bg .drift { animation:wall-drift 32s ease-in-out infinite alternate }
+@keyframes wall-drift { to { transform:scale(1.045) } }
+.wall-change-enter-active,.wall-change-leave-active { transition:opacity .42s }
+.wall-change-enter-from,.wall-change-leave-to { opacity:0 }
+body[data-native=true] .glass { background:color-mix(in srgb,var(--solid) 86%,transparent); backdrop-filter:none }
+body[data-native=true] :is(dialog,[role=dialog],[role=alertdialog],input,textarea,select) { background-color:var(--solid) }
+body[data-native=true] :is(main,header,aside) { --glass:color-mix(in srgb,var(--solid) 88%,transparent) }
+body[data-native=true] main :is(h1,h2,h3,p,label,summary) { text-shadow:0 0 3px var(--solid),0 0 6px var(--solid) }
+@media (prefers-reduced-motion:reduce) { .wall-change-enter-active,.wall-change-leave-active { transition:none } }
