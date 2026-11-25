@@ -522,6 +522,12 @@ def native_restore(
             if _major(runner, pg_restore, env, timeout) != manifest["pg_dump_major"]:
                 raise NativeBackupError("恢复工具主版本不匹配")
             toc = _toc(runner, pg_restore, archive, env, timeout, prefix)
+            # This legacy dump deliberately omits ACLs. A successful data restore
+            # must not be mistaken for restoration of community role boundaries.
+            if any(r.get("schema") == "community" for r in manifest["source"]["relations"]) or re.search(
+                rb"^\d+;\s+\d+\s+\d+\s+(?:SCHEMA - community|TABLE community)\s", toc, re.MULTILINE
+            ):
+                raise NativeBackupError("此归档含技巧交流区，但旧备份不保留权限；不能用此工具恢复。未连接或修改目标库。")
             db = connect(**options, cursor_factory=RealDictCursor)
             db.set_session(readonly=True, isolation_level="READ COMMITTED")
             with db.cursor() as cur:
