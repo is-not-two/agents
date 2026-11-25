@@ -1,6 +1,6 @@
-export interface Topic {id:string;title:string;score:number;body?:string;excerpt?:string;version:number;state?:string;author_feedback?:string;review?:{score:number;rationale:string;reviewed_at:string}|null;files?:{id:string;filename:string;bytes:number}[]}
+export interface Topic {attachment_status?:{filename:string;scan_state:"pending"|"clean"|"rejected"}[];id:string;title:string;score:number;body?:string;excerpt?:string;version:number;state?:string;author_feedback?:string;review?:{score:number;rationale:string;reviewed_at:string}|null;files?:{id:string;filename:string;bytes:number}[]}
 export interface Evidence {post_id:string;version:number;quote:string;title:string}
-export interface Answer {mode:string;reason?:string;evidence:Evidence[]}
+export interface Answer {mode:string;reason?:string;reason_code?:string;evidence:Evidence[]}
 export class CommunityError extends Error {constructor(public status:number,message:string){super(message)}}
 export async function api<T>(path:string,method="GET",data?:unknown):Promise<T>{
  const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),path==="ask"?35000:12000);
@@ -12,9 +12,10 @@ export async function api<T>(path:string,method="GET",data?:unknown):Promise<T>{
  finally {clearTimeout(timer)}
 }
 export function keywords(question:string,manual:string):string[]{
- if(manual.trim()){const items=[...new Set(manual.split(/[,，、]/).map(x=>x.trim()).filter(Boolean))];if(items.length>5||items.some(x=>Array.from(x).length>40))throw Error("请填写最多5个关键词，每个最多40字。");return items}
+ if(manual.trim()){const items=[...new Set(manual.split(/[,，、]/).map(x=>x.trim()).filter(Boolean))];if(!items.length||items.length>5||items.some(x=>Array.from(x).length>40))throw Error("请填写1到5个关键词，每个最多40字。");return items}
  const ignore=new Set("如何 怎么 怎样 可以 请问 帮我 我想 进行 一个 什么 哪些 有没有 能不能 是否 使用 办法 方法 需要".split(" "));
  const Segmenter=(Intl as any).Segmenter;
+ for(const filler of "今天 遇到 问题 请教 一下 大家 类似 经验 帮忙 看一下 想问 我要 出来 想要 请教一下".split(" "))ignore.add(filler);
  const words=Segmenter?[...new Segmenter("zh",{granularity:"word"}).segment(question)].filter(x=>x.isWordLike).map(x=>x.segment as string):question.match(/[\p{L}\p{N}]+/gu)||[];
  const result=[...new Set([...(question.match(/豆包|飞书|钉钉/gu)||[]),...words].filter(x=>x.length>1&&x.length<=40&&!ignore.has(x)))].slice(0,5);
  if(result.length)return result;

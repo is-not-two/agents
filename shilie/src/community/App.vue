@@ -3,6 +3,7 @@ import {computed,nextTick,onMounted,onUnmounted,ref,watch} from "vue";
 import {useRoute,useRouter} from "vue-router";
 import {api,CommunityError,keywords,type Topic,type Answer} from "./api";
 import {useCommunity} from "./store";
+import InviteMembers from "./InviteMembers.vue";
 import PlainText from "./PlainText.vue";
 const route=useRoute(),router=useRouter(),session=useCommunity();
 const citationChanged=ref(false);
@@ -17,8 +18,18 @@ const reviewDirty=computed(()=>queue.value.some(x=>x.decision||x.scoreInput!==un
 function allowBatchChange(){return name.value!=="review"||!reviewDirty.value||confirm("这批有尚未提交的审核填写。离开会清空这些填写，已提交的审核不受影响。继续？")}
 const editOrigin=ref<Topic>();
 const draft=ref({title:"",body:""}),requestId=ref<string>(),question=ref(""),terms=ref(""),answer=ref<Answer>();
+const autoTerms=computed(()=>{try{return question.value.trim()?keywords(question.value,""):[]}catch{return []}});
 const name=computed(()=>String(route.name||"feed"));
-const removeLeaveGuard=router.beforeEach(()=>allowBatchChange());
+const draftDirty=computed(()=>name.value==="write"?!!(draft.value.title||draft.value.body):
+ name.value==="edit"&&!!editOrigin.value&&(draft.value.title!==editOrigin.value.title||draft.value.body!==(editOrigin.value.body||"")));
+const removeLeaveGuard=router.beforeEach(()=>allowBatchChange()&&(!draftDirty.value||
+ confirm("这篇投稿有未提交的修改。留在此页可继续编辑；确定离开并放弃修改？")));
+const clearDepartedDraft=router.afterEach((to,from,failure)=>{
+ if(!failure&&to.fullPath!==from.fullPath&&["write","edit"].includes(String(from.name))){
+  draft.value={title:"",body:""};requestId.value=undefined;editOrigin.value=undefined
+ }
+});
+function unloadDraft(event:BeforeUnloadEvent){if(draftDirty.value||reviewDirty.value){event.preventDefault();event.returnValue=""}}
 const titles:Record<string,string>={feed:"工作技巧",write:"分享一个实用方法",edit:"修改并重新送审",mine:"我的投稿",review:"审核工作台",ask:"问 AI",topic:"原帖"};
 const currentQuery=computed(()=>String(route.query.q||""));
 const back=computed(()=>({name:"feed",query:currentQuery.value?{q:currentQuery.value}:{}}));
@@ -26,7 +37,13 @@ function link(row:{id?:string;post_id?:string;version?:number},rating=false){ret
 function focusRating(){document.getElementById("rating")?.focus()}
 function fail(e:unknown){if(e instanceof CommunityError&&e.status===401){session.status="guest";session.message="请重新登录交流区。";mine.value=[];queue.value=[];answer.value=undefined}error.value=e instanceof Error?e.message:"操作失败，请重试。"}
 let sequence=0;
+const retryMore=ref(false);
+async function retryRead(){
+ if(busy.value||acting.value||!allowBatchChange())return;
+ if(name.value==="feed"&&retryMore.value)await more();else await load();
+}
 async function load(){
+ retryMore.value=false;
  if(privatePageName!==name.value){privatePageName=name.value;resetPrivatePages()}
  privateNext.value=null;
  const id=++sequence;citationChanged.value=false;error.value="";notice.value="";busy.value=true;topic.value=undefined;answer.value=undefined;
@@ -68,15 +85,15 @@ async function privatePage(direction:"next"|"previous"|"first"){
  await load();await nextTick();document.getElementById("batch-heading")?.focus();
 }
 function refreshIdentity(){session.restore();session.checkWorkspace()}
-onMounted(()=>{refreshIdentity();window.addEventListener("focus",refreshIdentity)});
-onUnmounted(()=>{window.removeEventListener("focus",refreshIdentity);removeLeaveGuard()});
+onMounted(()=>{refreshIdentity();window.addEventListener("focus",refreshIdentity);window.addEventListener("beforeunload",unloadDraft)});
+onUnmounted(()=>{window.removeEventListener("focus",refreshIdentity);window.removeEventListener("beforeunload",unloadDraft);removeLeaveGuard();clearDepartedDraft()});
 watch(()=>session.status,value=>{if(value==="guest"){mine.value=[];queue.value=[];answer.value=undefined;resetPrivatePages()}});
 async function workspaceLogin(){if(!confirm("将以工作台所有者（可审核投稿）的身份进入交流区。继续？"))return;acting.value=true;error.value="";try{await session.workspaceLogin();resetPrivatePages();mine.value=[];queue.value=[];answer.value=undefined;if(["mine","review","edit"].includes(name.value))await load()}catch(e){fail(e)}finally{acting.value=false}}
 
 async function find(){const q=search.value.trim();if(name.value==="feed"&&q===currentQuery.value)return load();await router.push({name:"feed",query:q?{q}:{}})}
 async function more(){
- if(!cursor.value||busy.value)return;busy.value=true;const id=sequence;
- try{const data=await api<{items:Topic[];next?:string}>("topics?before="+encodeURIComponent(cursor.value));if(id!==sequence)return;rows.value.push(...data.items);cursor.value=data.next||null}catch(e){fail(e)}finally{if(id===sequence)busy.value=false}
+ if(!cursor.value||busy.value)return;busy.value=true;error.value="";retryMore.value=false;const id=sequence;
+ try{const data=await api<{items:Topic[];next?:string}>("topics?before="+encodeURIComponent(cursor.value));if(id!==sequence)return;rows.value.push(...data.items);cursor.value=data.next||null}catch(e){if(id===sequence){retryMore.value=true;fail(e)}}finally{if(id===sequence)busy.value=false}
 }
 async function login(){acting.value=true;error.value="";try{await session.login(token.value.trim());token.value="";resetPrivatePages();if(["mine","review","edit"].includes(name.value))await load()}catch(e){fail(e)}finally{acting.value=false}}
 async function logout(){acting.value=true;try{await session.logout();draft.value={title:"",body:""};editOrigin.value=undefined;mine.value=[];queue.value=[];answer.value=undefined;if(["mine","review","edit"].includes(name.value))await router.push("/")}catch(e){fail(e)}finally{acting.value=false}}
@@ -105,7 +122,23 @@ async function review(row:ReviewRow){
 }
 async function ask(){
  acting.value=true;error.value="";answer.value=undefined;
- try{answer.value=await api<Answer>("ask","POST",{question:question.value,keywords:keywords(question.value,terms.value)})}catch(e){fail(e)}finally{acting.value=false}
+ const id=sequence, current=()=>id===sequence&&name.value==="ask"&&session.status==="member";
+ let finished=false;
+ try{
+  const payload={question:question.value,keywords:keywords(question.value,terms.value)};
+  void api<Answer>("ask","POST",{...payload,preview_only:true}).then(r=>{
+   if(!finished&&current()&&r.evidence.length)answer.value=r
+  }).catch(()=>{ /* Optional preview; final request reports errors. */ });
+  const result=await api<Answer>("ask","POST",payload);
+  if(current()){
+   finished=true;answer.value=result;
+   if(result.reason_code==="source_changed"){
+    const refreshed=await api<Answer>("ask","POST",{...payload,preview_only:true});
+    if(current()&&refreshed.evidence.length)answer.value={...refreshed,mode:"keyword",reason:"原引用已变化。以下是重新查到的公开原文，不是 AI 结论。"}
+    else if(current())answer.value={mode:"no_evidence",reason:"原引用已失效。已重新检索，目前没有可展示的公开原文。",evidence:[]}
+   }
+  }
+ }catch(e){if(id===sequence)fail(e)}finally{finished=true;acting.value=false}
 }
 function state(value?:string){return ({pending:"待审核",published:"已公开",rejected:"已退回",withdrawn:"已撤回"} as Record<string,string>)[value||""]||value}
 function scoreClass(score?:number){return score==null?"unknown":score>=80?"high":score>=60?"pass":"low"}
@@ -134,10 +167,11 @@ function scoreClass(score?:number){return score==null?"unknown":score>=80?"high"
    <a class="back-workspace" href="/#/workspace">← 返回工作台</a>
   </aside>
   <main id="main">
+   <InviteMembers v-if="name==='review' && session.status==='member' && session.owner" />
    <div class="breadcrumbs"><a href="/#/workspace">工作台</a><span>/</span><RouterLink to="/">技巧交流区</RouterLink><template v-if="name!=='feed'"><span>/</span><span>{{titles[name]}}</span></template></div>
    <header v-if="name!=='topic'" class="page-title"><div><h1 id="batch-heading" tabindex="-1">{{titles[name]}}</h1><p v-if="name==='feed'">找到一个能照着做的方法，再核对它是否适合你的工作。</p><p v-else-if="name==='ask'">从已公开的技巧里找依据，引用可以回到原帖。</p><p v-else-if="name==='review'">按投稿时间从早到晚审核，每批最多20条；返回首批可读取新增或重新送审的内容。</p><p v-else-if="name==='write'">写清楚怎么做、适合谁，以及如何判断做对了。</p></div><RouterLink v-if="name==='feed'" class="primary" to="/write">＋ 写技巧</RouterLink><RouterLink v-else class="quiet" :to="back">← 返回主题列表</RouterLink></header>
    <p v-if="notice" class="notice" role="status">{{notice}}</p>
-   <div v-if="error" class="error" role="alert"><p>{{error}}</p><button v-if="['feed','topic','mine','review'].includes(name)&&!citationChanged" class="quiet" @click="load">重新读取</button><RouterLink v-if="citationChanged" class="quiet" to="/ask">重新检索依据</RouterLink></div>
+   <div v-if="error" class="error" role="alert"><p>{{error}}</p><button v-if="['feed','topic','mine','review'].includes(name)&&!citationChanged" class="quiet" :disabled="busy||acting" @click="retryRead">{{retryMore?'重试加载更多':'重新读取'}}</button><RouterLink v-if="citationChanged" class="quiet" to="/ask">重新检索依据</RouterLink></div>
    <template v-if="name==='feed'">
     <form id="lookup" class="search" @submit.prevent="find"><label class="sr-only" for="query">搜索工作技巧</label><input id="query" v-model="search" type="search" maxlength="120" placeholder="搜索工具、任务或遇到的问题…"><button :disabled="busy">搜索</button></form>
     <div class="list-heading"><span>{{currentQuery?'搜索结果':'公开主题'}}</span><span>审核分 / 100</span></div>
@@ -162,6 +196,7 @@ function scoreClass(score?:number){return score==null?"unknown":score>=80?"high"
     <p class="muted">链接会在原帖中直接打开。附件上传尚未开放，请勿粘贴密码、客户资料或其他隐私信息。</p><div class="form-actions"><button :disabled="acting||busy">{{acting?'提交中…':name==='edit'?'保存并重新送审':'提交审核'}}</button><RouterLink class="quiet" :to="name==='edit'?'/mine':'/'">取消，返回列表</RouterLink></div>
    </form>
    <template v-else-if="name==='mine'">
+    <details v-if="session.status==='member'&&session.recoveryId"><summary>我的成员编号</summary><p><code>{{session.recoveryId}}</code></p><p>退出前可保存编号。需要重新登录时，通过原联系方式联系邀请人补发登录码。编号本身不能登录。</p></details>
     <p v-if="busy" role="status">正在读取投稿…</p>
     <div v-else-if="!mine.length&&!error" class="empty">
      <h2>{{privateIndex===0?'还没有投稿':'本批已无投稿'}}</h2>
@@ -171,7 +206,8 @@ function scoreClass(score?:number){return score==null?"unknown":score>=80?"high"
     <section id="mineRows">
      <article v-for="row in mine" :key="row.id" class="mine-row">
       <div><RouterLink v-if="row.state==='published'" class="topic-title" :to="link(row)">{{row.title}}</RouterLink><strong v-else>{{row.title}}</strong><p class="muted">{{state(row.state)}}</p><p v-if="row.author_feedback" class="author-note">审核反馈：{{row.author_feedback}}</p></div>
-      <RouterLink v-if="['pending','rejected','published'].includes(row.state||'')" class="quiet" :to="{name:'edit',params:{id:row.id}}">修改并送审</RouterLink>
+      <div v-if="row.attachment_status?.length"><strong>随帖附件</strong><ul><li v-for="(file,i) in row.attachment_status" :key="i">{{file.filename}} · {{file.scan_state==='clean'?'扫描通过':file.scan_state==='pending'?'等待扫描，不可下载':'未通过扫描，不可下载'}}</li></ul><p class="muted">只有已发布投稿中扫描通过的附件可以下载。含附件的投稿暂不支持改稿。</p></div>
+      <RouterLink v-else-if="['pending','rejected','published'].includes(row.state||'')" class="quiet" :to="{name:'edit',params:{id:row.id}}">修改并送审</RouterLink>
       <button v-if="['published','pending'].includes(row.state||'')" class="quiet" :disabled="acting||busy" @click="withdraw(row)">撤回投稿</button>
      </article>
     </section>
@@ -191,7 +227,7 @@ function scoreClass(score?:number){return score==null?"unknown":score>=80?"high"
      <button :disabled="acting">确认审核</button>
     </form>
    </section>
-   <form v-else-if="name==='ask'" id="ask" class="editor" @submit.prevent="ask"><label>你想完成什么？<textarea v-model="question" required maxlength="240" rows="3" placeholder="描述任务，也可以说明手头使用的工具。"></textarea></label><details><summary>调整检索词（可选）</summary><label>用逗号分隔，最多5个<input v-model="terms" maxlength="160"></label></details><p class="muted">仅将你的问题和候选公开帖片段发送给配置的模型，不读取私有知识库。</p><button :disabled="acting">{{acting?'正在查找原文依据…':'查找原文依据'}}</button><section v-if="answer" id="answer" aria-live="polite"><h2>{{answer.mode==='ai_evidence'?'AI 选出的相关原文':answer.mode==='no_evidence'?'没有足够的公开依据':'关键词参考（未生成 AI 结果）'}}</h2><p v-if="answer.reason" class="muted">{{answer.reason}}</p><p v-if="answer.mode==='no_evidence'">换个说法或调整检索词。没有依据时不会编造答案。</p><blockquote v-for="(item,i) in answer.evidence" :key="i"><PlainText :text="item.quote"/><RouterLink :to="link(item)">查看《{{item.title}}》 →</RouterLink></blockquote></section></form>
+   <form v-else-if="name==='ask'" id="ask" class="editor" @submit.prevent="ask"><label>你想完成什么？<textarea v-model="question" required maxlength="240" rows="3" placeholder="描述任务，也可以说明手头使用的工具。"></textarea></label><details><summary>调整检索词（可选）</summary><p v-if="autoTerms.length" class="muted">自动提取：{{autoTerms.join("、")}}</p><label>手动检索词（留空则自动，最多5个，用逗号分隔）<input v-model="terms" maxlength="204" :disabled="acting"></label><button v-if="autoTerms.length&&!terms" class="quiet" type="button" :disabled="acting" @click="terms=autoTerms.join('，')">用自动词开始编辑</button><button v-if="terms" class="quiet" type="button" :disabled="acting" @click="terms=''">恢复自动选词</button></details><p class="muted">仅将你的问题和候选公开帖片段发送给配置的模型，不读取私有知识库。</p><button :disabled="acting">{{acting?'正在查找原文依据…':'查找原文依据'}}</button><section v-if="answer" id="answer" aria-live="polite"><h2>{{answer.mode==='keyword_preview'?(acting?'先看关键词原文 · AI 正在筛选':'关键词原文') :answer.mode==='ai_evidence'?'AI 选出的相关原文':answer.mode==='no_evidence'?'没有足够的公开依据':'关键词参考（未生成 AI 结果）'}}</h2><p v-if="answer.reason" class="muted">{{answer.reason}}</p><p v-if="answer.mode==='no_evidence'">换个说法或调整检索词。没有依据时不会编造答案。</p><blockquote v-for="(item,i) in answer.evidence" :key="i"><PlainText :text="item.quote"/><RouterLink :to="link(item)">查看《{{item.title}}》 →</RouterLink></blockquote></section></form>
    <nav v-if="name==='mine'||name==='review'" id="pageControls" class="batch-controls" :aria-label="name==='mine'?'投稿分页':'审核分页'">
     <p role="status">第 {{privateIndex+1}} 批 · 每批最多 {{name==='mine'?30:20}} 条</p>
     <div><button class="quiet" :disabled="busy||acting" @click="privatePage('first')">{{privateIndex===0?'刷新本批':'返回首批'}}</button><button class="quiet" :disabled="busy||acting||privateIndex===0" @click="privatePage('previous')">上一批</button><button class="quiet" :disabled="busy||acting||!privateNext" @click="privatePage('next')">下一批</button></div>

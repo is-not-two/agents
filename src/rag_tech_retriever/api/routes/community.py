@@ -25,6 +25,10 @@ class Invitation(BaseModel):
     token: str = Field(min_length=40, max_length=128)
 
 
+class InviteMember(BaseModel):
+    display_name: str = Field(min_length=1, max_length=80)
+
+
 class Submission(BaseModel):
     request_id: UUID
     title: str = Field(min_length=1, max_length=120)
@@ -32,6 +36,7 @@ class Submission(BaseModel):
 
 
 class Ask(BaseModel):
+    preview_only: bool = False
     question: str = Field(min_length=1,max_length=240)
     keywords: list[str] = Field(min_length=1,max_length=5)
 
@@ -92,14 +97,17 @@ def create_router(transaction: Callable, *, public_origin: str, session_seconds:
         return key
 
     @router.get("/session")
-    def profile(request: Request) -> dict:
+    def profile(request: Request,response: Response) -> dict:
         key=session(request)
         with transaction() as cur:
-            cur.execute("""SELECT m.display_name,m.role FROM community.members m JOIN community.sessions s ON s.member_id=m.id
+            cur.execute("""SELECT m.display_name,m.role,(m.subject='system:workspace-owner') AS workspace_owner,
+                CASE WHEN m.role='member' AND m.subject='invited:'||m.id::text THEN m.id END AS recovery_id
+                FROM community.members m JOIN community.sessions s ON s.member_id=m.id
                 WHERE s.token_digest=%s AND s.expires_at>now()""",(key,))
             member=cur.fetchone()
         if not member:
             raise HTTPException(401,"请登录交流区")
+        response.headers["Cache-Control"]="no-store"
         return {"authenticated":True,"member":member}
 
     @router.post("/workspace-session",status_code=201)
@@ -121,6 +129,105 @@ def create_router(transaction: Callable, *, public_origin: str, session_seconds:
         response.set_cookie(COOKIE,raw,max_age=session_seconds,path=PREFIX,secure=True,httponly=True,samesite="strict")
         response.headers["Cache-Control"]="no-store"
         return {"authenticated":True}
+    @router.get("/owner/invitations")
+    def pending_invites(request: Request, response: Response, q: str = Query("", max_length=80),
+                        after: UUID | None = None) -> dict:
+        """List only unexpired managed invitations, never credentials or digests."""
+        if owner_authorized is None or not owner_authorized(request):
+            raise HTTPException(403, "仅工作台所有者可查看邀请")
+        key = session(request)
+        with transaction() as cur:
+            cur.execute("""SELECT 1 FROM community.sessions s JOIN community.members m ON s.member_id=m.id
+                WHERE s.token_digest=%s AND s.expires_at>now() AND m.subject='system:workspace-owner'""", (key,))
+            if not cur.fetchone():
+                raise HTTPException(403, "请先使用工作台身份")
+            anchor = str(after) if after else None
+            cur.execute("""SELECT m.id,m.display_name,i.expires_at FROM community.members m
+                JOIN community.invitations i ON i.member_id=m.id AND i.expires_at>now()
+                WHERE m.subject='invited:'||m.id::text AND strpos(lower(m.display_name),lower(%s))>0
+                AND (%s::uuid IS NULL OR m.id>%s::uuid) ORDER BY m.id LIMIT 26""",
+                        (q.strip(), anchor, anchor))
+            rows = cur.fetchall()
+        response.headers["Cache-Control"] = "no-store"
+        return {"items": rows[:25], "next": rows[24]["id"] if len(rows)>25 else None}
+
+    @router.post("/owner/invitations", status_code=201)
+    def invite_member(data: InviteMember, request: Request, response: Response) -> dict:
+        """Issue a one-time member credential; a moderator session alone is insufficient."""
+        same_origin(request)
+        if owner_authorized is None or not owner_authorized(request):
+            raise HTTPException(403, "仅工作台所有者可发放邀请")
+        name = data.display_name.strip()
+        if not name:
+            raise HTTPException(422, "成员名称不能为空")
+        key = session(request)
+        raw = secrets.token_urlsafe(32)
+        with transaction() as cur:
+            cur.execute("""SELECT community.issue_member_invite(%s,%s) AS id
+                FROM community.sessions s JOIN community.members m ON m.id=s.member_id
+                WHERE s.token_digest=%s AND s.expires_at>now() AND m.subject='system:workspace-owner'""",
+                        (name, digest(raw), key))
+            member = cur.fetchone()
+            if not member:
+                raise HTTPException(403, "请先以工作台所有者身份进入交流区")
+        response.headers["Cache-Control"] = "no-store"
+        return {"member_id": member["id"], "token": raw, "expires_in_hours": 24}
+
+    @router.get("/owner/members/{member_id}")
+    def lookup_member(member_id: UUID, request: Request, response: Response) -> dict:
+        """Confirm a managed account by its permanent ID, never by display name alone."""
+        if owner_authorized is None or not owner_authorized(request):
+            raise HTTPException(403,"仅工作台所有者可核对成员")
+        key=session(request)
+        with transaction() as cur:
+            cur.execute("""SELECT target.id,target.display_name,target.created_at FROM community.members target
+                WHERE target.id=%s AND target.subject='invited:'||target.id::text AND target.role='member'
+                AND EXISTS (SELECT 1 FROM community.sessions s JOIN community.members owner ON owner.id=s.member_id
+                WHERE s.token_digest=%s AND s.expires_at>now() AND owner.subject='system:workspace-owner')""",
+                        (str(member_id),key))
+            row=cur.fetchone()
+            if not row:
+                raise HTTPException(404,"未找到可核对的成员")
+        response.headers["Cache-Control"]="no-store"
+        return row
+
+    @router.post("/owner/members/{member_id}/invitation", status_code=201)
+    def return_invite(member_id: UUID, request: Request, response: Response) -> dict:
+        """Issue a new login for the same ordinary member; never modify their posts or role."""
+        same_origin(request)
+        if owner_authorized is None or not owner_authorized(request):
+            raise HTTPException(403,"仅工作台所有者可补发邀请")
+        key=session(request)
+        raw=secrets.token_urlsafe(32)
+        with transaction() as cur:
+            cur.execute("""SELECT community.return_member_invite(%s,%s) AS id FROM community.sessions s
+                JOIN community.members m ON m.id=s.member_id WHERE s.token_digest=%s AND s.expires_at>now()
+                AND m.subject='system:workspace-owner'""",(str(member_id),digest(raw),key))
+            row=cur.fetchone()
+            if not row:
+                raise HTTPException(403,"请先使用工作台身份")
+            if not row["id"]:
+                raise HTTPException(404,"未找到可补发邀请的普通成员")
+        response.headers["Cache-Control"]="no-store"
+        return {"member_id":member_id,"token":raw,"expires_in_hours":24}
+
+    @router.delete("/owner/invitations/{member_id}", status_code=204)
+    def revoke_invite(member_id: UUID, request: Request) -> Response:
+        """Remove an unconsumed invitation, never an active member or session."""
+        same_origin(request)
+        if owner_authorized is None or not owner_authorized(request):
+            raise HTTPException(403, "仅工作台所有者可撤销邀请")
+        key = session(request)
+        with transaction() as cur:
+            cur.execute("""DELETE FROM community.invitations i USING community.members invited
+                WHERE i.member_id=invited.id AND invited.id=%s AND invited.subject='invited:'||invited.id::text
+                AND EXISTS (SELECT 1 FROM community.sessions s JOIN community.members m ON m.id=s.member_id
+                    WHERE s.token_digest=%s AND s.expires_at>now() AND m.subject='system:workspace-owner')
+                RETURNING i.member_id""", (str(member_id), key))
+            if not cur.fetchone():
+                raise HTTPException(404, "没有可撤销的邀请")
+        return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
     @router.post("/session", status_code=201)
     def login(data: Invitation, request: Request, response: Response) -> dict:
         same_origin(request)
@@ -236,7 +343,9 @@ def create_router(transaction: Callable, *, public_origin: str, session_seconds:
             if not actor:
                 raise HTTPException(401,"请登录交流区")
             condition=" AND (p.created_at,p.id)<(%s,%s::uuid)" if boundary else ""
-            cur.execute("""SELECT p.id,p.title,p.state,p.version,p.created_at,coalesce(r.author_feedback,'') AS author_feedback
+            cur.execute("""SELECT p.id,p.title,p.state,p.version,p.created_at,coalesce(r.author_feedback,'') AS author_feedback,
+                (SELECT coalesce(json_agg(json_build_object('filename',a.filename,'scan_state',a.scan_state)
+                    ORDER BY a.filename,a.id),'[]'::json) FROM community.attachments a WHERE a.post_id=p.id) AS attachment_status
                 FROM community.posts p LEFT JOIN community.reviews r ON r.post_id=p.id AND r.version=p.version-1
                 WHERE p.author_id=%s"""+condition+" ORDER BY p.created_at DESC,p.id DESC LIMIT 31",
                 (actor["member_id"],*(boundary or ())))
@@ -394,14 +503,19 @@ def create_router(transaction: Callable, *, public_origin: str, session_seconds:
             rows=cur.fetchall()
         if answers is None:
             raise HTTPException(503,"社区 AI 尚未启用")
-        result=answers.answer(data.question,rows)
+        result=(answers.preview(data.question,rows,tuple(terms)) if data.preview_only else
+                answers.answer(data.question,rows,tuple(terms)))
         if result["evidence"]:
             with transaction() as cur:
                 cur.execute("SELECT id,version FROM community.public_topics WHERE id=ANY(%s::uuid[])",([x["post_id"] for x in result["evidence"]],))
                 live={(str(x["id"]),x["version"]) for x in cur.fetchall()}
             result["evidence"]=[x for x in result["evidence"] if (x["post_id"],x["version"]) in live]
             if not result["evidence"]:
-                result["mode"]="no_evidence"
+                return {"mode":"no_evidence","reason_code":"source_changed",
+                        "reason":"检索期间，引用的版本已修改或撤回。旧原文不再展示。","evidence":[]}
+        elif result["mode"]=="no_evidence" and not result.get("reason_code"):
+            result={**result,"reason_code":"no_passages" if rows else "no_matches",
+                    "reason":"匹配的帖子没有可引用的正文。" if rows else "没有找到匹配关键词的公开帖子。"}
         return result
 
     def public_response(cur,request,key,loader):
