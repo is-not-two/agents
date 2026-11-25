@@ -28,6 +28,7 @@ def main():
     parser.add_argument(
         "--apply", action="store_true", help="Submit real pending drafts; no publishing"
     )
+    parser.add_argument("--refresh-excel-evidence", action="store_true")
     args = parser.parse_args()
     items = json.loads(Path("data/community/curated_notes.json").read_text(encoding="utf-8"))
     assert len(items) == 3 and len({item["slug"] for item in items}) == 3
@@ -38,7 +39,7 @@ def main():
             urlparse(url).scheme == "https" and urlparse(url).hostname in allowed
             for url in item["sources"]
         )
-        assert "未" in item["body"] and "复核和评分" in item["body"]
+        assert "未" in item["body"] and "评分" in item["body"] and "核验状态" in item["body"]
     if not args.apply:
         print(
             json.dumps(
@@ -85,6 +86,20 @@ def main():
                 f"SELECT id FROM community.posts WHERE author_id='{MEMBER}' AND request_id='{request_id}'"
             )
             if existing:
+                if args.refresh_excel_evidence and item["slug"]=="excel-flash-fill-pattern":
+                    current=call("draft?post="+existing)[1]["item"]
+                    sources="\n\n官方来源\n"+"\n".join(item["sources"])
+                    desired=item["body"]+sources
+                    previous=item["body"].split("核验状态\n")[0]+"核验状态\n2026-11-24查阅微软官方帮助；未对用户真实表格进行实操，尚待审核员复核和评分。"+sources
+                    if current["body"]!=desired:
+                        assert current["version"]==1 and current["state"]=="pending" and current["title"]==item["title"] and current["body"]==previous,"refuse to overwrite independent edits"
+                        status,result=call("revise",{"post_id":existing,"version":1,"title":item["title"],"body":desired,"request_id":str(uuid.uuid5(uuid.NAMESPACE_URL,existing+"/excel16-test"))})
+                        assert status==200 and result["state"]=="pending"
+                    saved=call("draft?post="+existing)[1]["item"]
+                    assert saved["body"]==desired and saved["state"]=="pending"
+                    assert sql(f"SELECT count(*) FROM community.public_topics WHERE id='{existing}'")=="0"
+                    records.append({"slug":item["slug"],"id":existing,"action":"verified_pending_revision","version":saved["version"]})
+                    continue
                 records.append(
                     {"slug": item["slug"], "id": existing, "action": "existing_not_modified"}
                 )
