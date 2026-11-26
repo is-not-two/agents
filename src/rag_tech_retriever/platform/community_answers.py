@@ -1,12 +1,12 @@
 """Source-bound AI search: model selects evidence; server renders verifiable excerpts."""
 import hashlib
 import json
+import re
 import time
 from collections import OrderedDict
-from concurrent.futures import Future
-import re
-from heapq import nsmallest
 from collections.abc import Callable
+from concurrent.futures import Future
+from heapq import nsmallest
 from itertools import zip_longest
 from queue import Empty, Queue
 from threading import BoundedSemaphore, Lock, Thread
@@ -95,9 +95,9 @@ class CommunityAnswers:
                             break
             question_pairs = {question[i:i+2].lower() for i in range(len(question)-1)
                               if question[i:i+2].isalnum()}
-            def rank(line):
+            def rank(line, pairs=question_pairs):
                 lower=line.lower()
-                overlap=sum(pair in lower for pair in question_pairs)
+                overlap=sum(pair in lower for pair in pairs)
                 return (-sum(term in lower for term in terms),-overlap)
             best = nsmallest(40, dict.fromkeys(passages(row["body"])),key=rank)
             selected = []

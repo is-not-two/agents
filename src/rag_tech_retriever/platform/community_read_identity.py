@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import hashlib
 import re
-from time import perf_counter
 from collections.abc import Callable
+from time import perf_counter
 
 
 def public_read_member(transaction: Callable, token: str, *,

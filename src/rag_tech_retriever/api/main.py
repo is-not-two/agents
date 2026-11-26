@@ -169,8 +169,9 @@ def create_app(
         if rate_limit_env.strip().lstrip("-").isdigit()
         else int(config.get("web.rate_limit_per_minute", 120))
     )
-    from rag_tech_retriever.platform.community_read_identity import public_read_member
     from random import randrange
+
+    from rag_tech_retriever.platform.community_read_identity import public_read_member
     identity_sample_every = int(config.env("COMMUNITY_IDENTITY_SAMPLE_EVERY", "0"))
     def resolve_read_member(token: str) -> str | None:
         observe = None
