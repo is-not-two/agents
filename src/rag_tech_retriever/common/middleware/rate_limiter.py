@@ -13,6 +13,7 @@ from collections.abc import Awaitable, Callable
 from math import isfinite
 
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -88,10 +89,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         limit: int,
         window_seconds: float = 60.0,
         *,
+        read_member: Callable[[str], str | None] | None = None,
+        read_lookup_limit: int = 0,
         max_clients: int = DEFAULT_MAX_CLIENTS,
         max_events: int = DEFAULT_MAX_EVENTS,
     ) -> None:
         super().__init__(app)
+        self._read_member = read_member
+        self._lookup = SlidingWindowLimiter(read_lookup_limit, window_seconds, max_clients=max_clients, max_events=max_events) if read_lookup_limit > 0 and read_member else None
         self._off = limit <= 0
         self._limiter = (
             None
@@ -111,7 +116,18 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         assert self._limiter is not None
         key = request.client.host if request.client else "unknown"
-        ok, retry_after = self._limiter.allow(key)
+        quota_key = key
+        ok, retry_after = True, 0
+        if self._lookup and self._read_member and request.method == "GET" and request.url.path in {"/api/community/search", "/api/community/topics"}:
+            token = request.cookies.get("__Secure-community_session", "")
+            if len(token) == 43:
+                ok, retry_after = self._lookup.allow(key)
+                if ok:
+                    member = await run_in_threadpool(self._read_member, token)
+                    if member:
+                        quota_key = "member:" + member
+        if ok:
+            ok, retry_after = self._limiter.allow(quota_key)
         if not ok:
             log_event(
                 limit_log,

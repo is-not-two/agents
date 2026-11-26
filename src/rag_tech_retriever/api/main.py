@@ -169,8 +169,21 @@ def create_app(
         if rate_limit_env.strip().lstrip("-").isdigit()
         else int(config.get("web.rate_limit_per_minute", 120))
     )
+    from rag_tech_retriever.platform.community_read_identity import public_read_member
+    from random import randrange
+    identity_sample_every = int(config.env("COMMUNITY_IDENTITY_SAMPLE_EVERY", "0"))
+    def resolve_read_member(token: str) -> str | None:
+        observe = None
+        if identity_sample_every > 0 and randrange(identity_sample_every) == 0:
+            def observe(fields):
+                log_event(get_logger("community_identity"), "identity_timing",
+                          request_id=current_request_id(), **fields)
+        return public_read_member(store.transaction, token, observe=observe)
+
     application.add_middleware(
         RateLimitMiddleware,
+        read_member=resolve_read_member,
+        read_lookup_limit=int(config.env("COMMUNITY_READ_LOOKUPS_PER_IP_MINUTE", "0")) if config.env("COMMUNITY_PUBLIC_ORIGIN", "") else 0,
         limit=rate_limit,
         window_seconds=60,
         max_clients=int(settings.env(

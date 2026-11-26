@@ -1,0 +1,598 @@
+{
+  "schema": 1,
+  "suite_version": "2026-10-28.runtime-contract.v1",
+  "suite_sha256": "94eb8cd5b7f356be9c8cfc50b2e972b5f5603d7e26f1aecc94a06c67e2c97ce7",
+  "runtime_sha256": "f2044fe8ed65975c1ed691b2f2808f025654feeeafc5e615814f9e695f7dc327",
+  "adapter_sha256": "3180ba797fe43e0c8083f5001a241c4d0a848d9d10cf8baab50fa359e67a25e5",
+  "adapter": "scripted-boundaries-real-AgentRuntime",
+  "quality_verified": false,
+  "model": "mock",
+  "usage": "unknown",
+  "cost": "unknown",
+  "passed": true,
+  "passed_cases": 30,
+  "total_cases": 30,
+  "cases": [
+    {
+      "id": "answer-0",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true,
+        "answer_contains": true,
+        "max_calls": true
+      },
+      "observed": {
+        "status": "completed",
+        "executed": [],
+        "answer": "fixture answer",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": []
+      },
+      "duration_ms": 1.099
+    },
+    {
+      "id": "answer-1",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true,
+        "answer_contains": true,
+        "max_calls": true
+      },
+      "observed": {
+        "status": "completed",
+        "executed": [],
+        "answer": "fixture answer",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": []
+      },
+      "duration_ms": 0.324
+    },
+    {
+      "id": "answer-2",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true,
+        "answer_contains": true,
+        "max_calls": true
+      },
+      "observed": {
+        "status": "completed",
+        "executed": [],
+        "answer": "fixture answer",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": []
+      },
+      "duration_ms": 0.258
+    },
+    {
+      "id": "lookup-0",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true,
+        "answer_contains": true,
+        "max_calls": true
+      },
+      "observed": {
+        "status": "completed",
+        "executed": [
+          "lookup"
+        ],
+        "answer": "引用 fixture-result",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": []
+      },
+      "duration_ms": 0.454
+    },
+    {
+      "id": "lookup-1",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true,
+        "answer_contains": true,
+        "max_calls": true
+      },
+      "observed": {
+        "status": "completed",
+        "executed": [
+          "lookup"
+        ],
+        "answer": "引用 fixture-result",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": []
+      },
+      "duration_ms": 0.38
+    },
+    {
+      "id": "lookup-2",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true,
+        "answer_contains": true,
+        "max_calls": true
+      },
+      "observed": {
+        "status": "completed",
+        "executed": [
+          "lookup"
+        ],
+        "answer": "引用 fixture-result",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": []
+      },
+      "duration_ms": 0.359
+    },
+    {
+      "id": "denied-0",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "fallback",
+        "executed": [],
+        "answer": "未执行请求",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": [
+          "工具未授权或不存在"
+        ]
+      },
+      "duration_ms": 0.347
+    },
+    {
+      "id": "denied-1",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "fallback",
+        "executed": [],
+        "answer": "未执行请求",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": [
+          "工具未授权或不存在"
+        ]
+      },
+      "duration_ms": 0.374
+    },
+    {
+      "id": "denied-2",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "fallback",
+        "executed": [],
+        "answer": "未执行请求",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": [
+          "工具未授权或不存在"
+        ]
+      },
+      "duration_ms": 0.327
+    },
+    {
+      "id": "bad-arguments-0",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "fallback",
+        "executed": [],
+        "answer": "参数不可用",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": [
+          "工具参数JSON错误"
+        ]
+      },
+      "duration_ms": 0.465
+    },
+    {
+      "id": "bad-arguments-1",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "fallback",
+        "executed": [],
+        "answer": "参数不可用",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": [
+          "工具参数必须为大小受限的JSON对象"
+        ]
+      },
+      "duration_ms": 0.441
+    },
+    {
+      "id": "bad-arguments-2",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "fallback",
+        "executed": [],
+        "answer": "参数不可用",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": [
+          "工具参数必须为大小受限的JSON对象"
+        ]
+      },
+      "duration_ms": 0.41
+    },
+    {
+      "id": "pending-save",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true,
+        "max_calls": true
+      },
+      "observed": {
+        "status": "awaiting_confirmation",
+        "executed": [],
+        "answer": "",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": []
+      },
+      "duration_ms": 0.323
+    },
+    {
+      "id": "pending-notify",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true,
+        "max_calls": true
+      },
+      "observed": {
+        "status": "awaiting_confirmation",
+        "executed": [],
+        "answer": "",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": []
+      },
+      "duration_ms": 0.282
+    },
+    {
+      "id": "pending-memory",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true,
+        "max_calls": true
+      },
+      "observed": {
+        "status": "awaiting_confirmation",
+        "executed": [],
+        "answer": "",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": []
+      },
+      "duration_ms": 0.272
+    },
+    {
+      "id": "reject-save",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "failed",
+        "executed": [],
+        "answer": "",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": [
+          "用户拒绝了待确认的工具调用，未执行"
+        ]
+      },
+      "duration_ms": 0.435
+    },
+    {
+      "id": "reject-notify",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "failed",
+        "executed": [],
+        "answer": "",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": [
+          "用户拒绝了待确认的工具调用，未执行"
+        ]
+      },
+      "duration_ms": 0.429
+    },
+    {
+      "id": "reject-memory",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "failed",
+        "executed": [],
+        "answer": "",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": [
+          "用户拒绝了待确认的工具调用，未执行"
+        ]
+      },
+      "duration_ms": 0.446
+    },
+    {
+      "id": "approve-save",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "completed",
+        "executed": [
+          "write"
+        ],
+        "answer": "完成 fixture action",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": []
+      },
+      "duration_ms": 0.73
+    },
+    {
+      "id": "approve-notify",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "completed",
+        "executed": [
+          "write"
+        ],
+        "answer": "完成 fixture action",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": []
+      },
+      "duration_ms": 0.918
+    },
+    {
+      "id": "approve-memory",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "completed",
+        "executed": [
+          "write"
+        ],
+        "answer": "完成 fixture action",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": []
+      },
+      "duration_ms": 0.801
+    },
+    {
+      "id": "model-unavailable",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "failed",
+        "executed": [],
+        "answer": "",
+        "calls_used": 0,
+        "model_steps": 0,
+        "notes": [
+          "Fixture model unavailable"
+        ]
+      },
+      "duration_ms": 0.472
+    },
+    {
+      "id": "empty-answer",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "failed",
+        "executed": [],
+        "answer": "",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": [
+          "模型返回了空回答"
+        ]
+      },
+      "duration_ms": 0.316
+    },
+    {
+      "id": "null-answer",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "failed",
+        "executed": [],
+        "answer": "",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": [
+          "模型返回了空回答"
+        ]
+      },
+      "duration_ms": 0.304
+    },
+    {
+      "id": "loop-budget",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "failed",
+        "executed": [
+          "lookup"
+        ],
+        "answer": "",
+        "calls_used": 1,
+        "model_steps": 1,
+        "notes": [
+          "模型调用轮数达到上限，已停止"
+        ]
+      },
+      "duration_ms": 0.402
+    },
+    {
+      "id": "duplicate-id",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "failed",
+        "executed": [
+          "lookup"
+        ],
+        "answer": "",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": [
+          "模型工具调用结构不正确或ID重复"
+        ]
+      },
+      "duration_ms": 0.425
+    },
+    {
+      "id": "bad-call",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "failed",
+        "executed": [],
+        "answer": "",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": [
+          "模型工具调用结构不正确或ID重复"
+        ]
+      },
+      "duration_ms": 0.276
+    },
+    {
+      "id": "upstream-failure",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "fallback",
+        "executed": [
+          "explode"
+        ],
+        "answer": "工具失败，不声称完成",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": [
+          "Fixture upstream unavailable"
+        ]
+      },
+      "duration_ms": 0.435
+    },
+    {
+      "id": "oversize-result",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "fallback",
+        "executed": [
+          "oversize"
+        ],
+        "answer": "结果超出限制",
+        "calls_used": 1,
+        "model_steps": 2,
+        "notes": [
+          "工具结果超过限制，未作为成功结果使用"
+        ]
+      },
+      "duration_ms": 0.492
+    },
+    {
+      "id": "call-budget",
+      "passed": true,
+      "assertions": {
+        "status": true,
+        "executed": true
+      },
+      "observed": {
+        "status": "failed",
+        "executed": [],
+        "answer": "",
+        "calls_used": 0,
+        "model_steps": 1,
+        "notes": [
+          "模型工具调用格式或数量不正确"
+        ]
+      },
+      "duration_ms": 0.279
+    }
+  ]
+}

@@ -120,7 +120,22 @@ async function review(row:ReviewRow){
   queue.value=queue.value.filter(x=>x.id!==row.id);notice.value=row.decision==="yes"?"已发布。":"已退回。";
  }catch(e){fail(e)}finally{acting.value=false}
 }
+const retryPending=ref(false);
+let retryTimer:ReturnType<typeof setTimeout>|undefined;
+function cancelWait(){clearTimeout(retryTimer);retryPending.value=false}
+function scheduleRetry(){
+ if(acting.value||retryPending.value||answer.value?.reason_code!=="model_busy")return;
+ retryPending.value=true;
+ retryTimer=setTimeout(()=>{
+  retryPending.value=false;
+  if(name.value==="ask"&&session.status==="member"&&!acting.value)void ask()
+ },5000)
+}
+watch([question,terms,()=>route.fullPath,()=>session.status],cancelWait,{flush:"sync"});
+onUnmounted(cancelWait);
 async function ask(){
+ cancelWait();
+ if(acting.value)return;
  acting.value=true;error.value="";answer.value=undefined;
  const id=sequence, current=()=>id===sequence&&name.value==="ask"&&session.status==="member";
  let finished=false;
@@ -227,7 +242,7 @@ function scoreClass(score?:number){return score==null?"unknown":score>=80?"high"
      <button :disabled="acting">确认审核</button>
     </form>
    </section>
-   <form v-else-if="name==='ask'" id="ask" class="editor" @submit.prevent="ask"><label>你想完成什么？<textarea v-model="question" required maxlength="240" rows="3" placeholder="描述任务，也可以说明手头使用的工具。"></textarea></label><details><summary>调整检索词（可选）</summary><p v-if="autoTerms.length" class="muted">自动提取：{{autoTerms.join("、")}}</p><label>手动检索词（留空则自动，最多5个，用逗号分隔）<input v-model="terms" maxlength="204" :disabled="acting"></label><button v-if="autoTerms.length&&!terms" class="quiet" type="button" :disabled="acting" @click="terms=autoTerms.join('，')">用自动词开始编辑</button><button v-if="terms" class="quiet" type="button" :disabled="acting" @click="terms=''">恢复自动选词</button></details><p class="muted">仅将你的问题和候选公开帖片段发送给配置的模型，不读取私有知识库。</p><button :disabled="acting">{{acting?'正在查找原文依据…':'查找原文依据'}}</button><section v-if="answer" id="answer" aria-live="polite"><h2>{{answer.mode==='keyword_preview'?(acting?'先看关键词原文 · AI 正在筛选':'关键词原文') :answer.mode==='ai_evidence'?'AI 选出的相关原文':answer.mode==='no_evidence'?'没有足够的公开依据':'关键词参考（未生成 AI 结果）'}}</h2><p v-if="answer.reason" class="muted">{{answer.reason}}</p><p v-if="answer.mode==='no_evidence'">换个说法或调整检索词。没有依据时不会编造答案。</p><blockquote v-for="(item,i) in answer.evidence" :key="i"><PlainText :text="item.quote"/><RouterLink :to="link(item)">查看《{{item.title}}》 →</RouterLink></blockquote></section></form>
+   <form v-else-if="name==='ask'" id="ask" class="editor" @submit.prevent="ask"><label>你想完成什么？<textarea v-model="question" required maxlength="240" rows="3" placeholder="描述任务，也可以说明手头使用的工具。"></textarea></label><details><summary>调整检索词（可选）</summary><p v-if="autoTerms.length" class="muted">自动提取：{{autoTerms.join("、")}}</p><label>手动检索词（留空则自动，最多5个，用逗号分隔）<input v-model="terms" maxlength="204" :disabled="acting"></label><button v-if="autoTerms.length&&!terms" class="quiet" type="button" :disabled="acting" @click="terms=autoTerms.join('，')">用自动词开始编辑</button><button v-if="terms" class="quiet" type="button" :disabled="acting" @click="terms=''">恢复自动选词</button></details><p class="muted">仅将你的问题和候选公开帖片段发送给配置的模型，不读取私有知识库。</p><button :disabled="acting">{{acting?'正在查找原文依据…':'查找原文依据'}}</button><section v-if="answer" id="answer" aria-live="polite"><h2>{{answer.mode==='keyword_preview'?(acting?'先看关键词原文 · AI 正在筛选':'关键词原文') :answer.mode==='ai_evidence'?'AI 选出的相关原文':answer.mode==='no_evidence'?'没有足够的公开依据':'关键词参考（未生成 AI 结果）'}}</h2><p v-if="answer.reason" class="muted">{{answer.reason}}</p><template v-if="answer.reason_code==='model_busy'&&!acting"><button v-if="!retryPending" type="button" class="quiet" @click="scheduleRetry">5 秒后再试一次 AI</button><button v-else type="button" class="quiet" @click="cancelWait">取消等待</button><span class="muted"> 等待期间仍可查看下方原文，不会连续重试。</span></template><p v-if="answer.mode==='no_evidence'">换个说法或调整检索词。没有依据时不会编造答案。</p><blockquote v-for="(item,i) in answer.evidence" :key="i"><PlainText :text="item.quote"/><RouterLink :to="link(item)">查看《{{item.title}}》 →</RouterLink></blockquote></section></form>
    <nav v-if="name==='mine'||name==='review'" id="pageControls" class="batch-controls" :aria-label="name==='mine'?'投稿分页':'审核分页'">
     <p role="status">第 {{privateIndex+1}} 批 · 每批最多 {{name==='mine'?30:20}} 条</p>
     <div><button class="quiet" :disabled="busy||acting" @click="privatePage('first')">{{privateIndex===0?'刷新本批':'返回首批'}}</button><button class="quiet" :disabled="busy||acting||privateIndex===0" @click="privatePage('previous')">上一批</button><button class="quiet" :disabled="busy||acting||!privateNext" @click="privatePage('next')">下一批</button></div>
