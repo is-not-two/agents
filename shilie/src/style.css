@@ -349,3 +349,88 @@ body[data-native=true] :is(dialog,[role=dialog],[role=alertdialog],input,textare
 body[data-native=true] :is(main,header,aside) { --glass:color-mix(in srgb,var(--solid) 88%,transparent) }
 body[data-native=true] main :is(h1,h2,h3,p,label,summary) { text-shadow:0 0 3px var(--solid),0 0 6px var(--solid) }
 @media (prefers-reduced-motion:reduce) { .wall-change-enter-active,.wall-change-leave-active { transition:none } }
+
+/* ===================== 求职流水线画布（JobFlowView） ===================== */
+.pipeline-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 2px 0 14px; }
+.pipeline-title { font-family: var(--serif); font-size: 21px; letter-spacing: -.02em; }
+.pipeline-sub { color: var(--muted); font-size: 13px; margin-top: 3px; }
+.pipeline-toolbar .primary { display: inline-flex; align-items: center; gap: 6px; }
+.pipeline-canvas { padding: 22px clamp(16px, 3vw, 30px) 26px; }
+.pipeline-heading { display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px; }
+.pipeline-kicker { font-size: 12px; font-weight: 700; letter-spacing: .12em; color: var(--accent-ink); }
+.pipeline-hint { font-size: 12px; color: var(--muted); }
+
+/* 主流程：阶段节点 + 箭头 */
+.stage-track { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) repeat(3, 46px); align-items: center; }
+.stage-node {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  min-width: 0; min-height: 128px; padding: 14px 15px; text-align: left;
+  background: var(--solid); border: 1px solid var(--stroke); border-radius: 15px;
+  box-shadow: 0 4px 14px #80534212; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.stage-node:hover { transform: translateY(-2px); box-shadow: 0 9px 22px #8053421f; }
+.stage-node:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 3px; }
+.stage-node.active { border-color: var(--accent); box-shadow: 0 0 0 2px #c97b3a33, 0 9px 22px #8053421f; }
+.stage-node.empty { border-style: dashed; background: #fffdfc; }
+.node-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: #f8e6e2; color: var(--accent-ink); }
+.tone-amber .node-icon { background: #f9ecd9; color: #925b1e; }
+.tone-violet .node-icon { background: #efe5f3; color: #6d4a82; }
+.tone-green .node-icon { background: #e6f2e7; color: #2f6b3a; }
+.node-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.node-body strong { font-size: 15px; font-family: var(--serif); }
+.node-body small { color: var(--muted); font-size: 11.5px; line-height: 1.45; }
+.node-count { position: absolute; top: 12px; right: 14px; font-size: 21px; font-weight: 700; color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+.stage-node.empty .node-count { color: #b9a9ac; }
+.stage-arrow { width: 46px; height: 20px; color: #d5b8ad; }
+
+/* 关联模块 */
+.pipeline-divider { display: flex; align-items: center; gap: 12px; margin: 24px 0 4px; color: var(--muted); font-size: 12px; letter-spacing: .08em; }
+.pipeline-divider::before, .pipeline-divider::after { content: ""; flex: 1; height: 1px; background: var(--stroke); }
+.link-hint { text-align: center; margin-top: 4px; }
+.link-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 11px; margin-top: 14px; }
+.link-node {
+  display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 10px 13px; text-align: left;
+  background: #fffdfc; border: 1px dashed #dcc4c6; border-radius: 13px; transition: background .2s, border-color .2s, transform .2s;
+}
+.link-node:hover { background: var(--solid); border-color: var(--accent); transform: translateY(-1px); }
+.link-node:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 3px; }
+.link-node.active { border-style: solid; border-color: var(--accent); background: var(--solid); }
+.link-icon { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 auto; border-radius: 9px; background: #f8e6e2; color: var(--accent-ink); }
+.tone-amber .link-icon { background: #f9ecd9; color: #925b1e; }
+.tone-violet .link-icon { background: #efe5f3; color: #6d4a82; }
+.tone-green .link-icon { background: #e6f2e7; color: #2f6b3a; }
+.link-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.link-text strong { font-size: 13.5px; }
+.link-text small { color: var(--muted); font-size: 11.5px; }
+.link-chevron { color: #b9a9ac; flex: 0 0 auto; }
+
+/* 详情抽屉 */
+.pipeline-detail { margin-top: 16px; padding: 18px 20px 20px; animation: detail-in .22s ease-out; }
+.detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.detail-kicker { color: var(--accent-ink); font-size: 11px; font-weight: 700; letter-spacing: .1em; }
+.detail-head h3 { font-family: var(--serif); font-size: 19px; margin-top: 2px; }
+.detail-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; max-height: 320px; overflow: auto; }
+.detail-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; border-radius: 10px; background: #fffdfc; border: 1px solid var(--stroke); }
+.detail-list li > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.detail-list strong { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.detail-list small { color: var(--muted); font-size: 11.5px; }
+.row-version { color: var(--muted); font-size: 11px; flex: 0 0 auto; }
+.pipeline-detail .empty-state { box-shadow: none; border: 0; background: #fffdfc; }
+.pipeline-detail .empty-state .primary { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; }
+.pipeline-empty-hint { margin-top: 12px; color: var(--muted); font-size: 13px; text-align: center; }
+
+@keyframes detail-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 860px) {
+  .stage-track { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .stage-arrow { display: none; }
+  .link-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .link-grid { grid-template-columns: 1fr; }
+  .stage-node { min-height: 112px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage-node, .link-node, .pipeline-detail { transition: none; animation: none; }
+  .stage-node:hover, .link-node:hover { transform: none; }
+}
